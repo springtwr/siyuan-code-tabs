@@ -1,26 +1,57 @@
-#helloPanel {
-    border: 1px rgb(189, 119, 119) dashed;
+.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0.5em; /* 可选：添加内边距 */
+    background-color: #f0f0f0; /* 设置背景颜色为浅灰色 */
+    border-radius: 5px; /* 可选：添加边框圆角 */
 }
 
-.plugin-sample {
-    &__custom-tab {
-        background-color: var(--b3-theme-background);
-        height: 100%;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+.tab-content pre {
+    margin: 0 !important;
+}
 
-    &__custom-dock {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+.tabs {
+    color: #525860;
+    display: flex;
+    margin-bottom: 0;
+    overflow-x: auto;
+    padding: 0 !important;
+    justify-content: space-between;
+}
 
-    &__time {
-        background: var(--b3-card-info-background);
-        border-radius: 4px;
-        padding: 2px 8px;
-    }
+.tab-item--active {
+    border-bottom-color: #7f6df2 !important;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    color: #7f6df2;
+    order: 0;
+}
+
+.tab-item {
+    border-bottom: 3px solid #0000;
+    cursor: pointer;
+    display: inline-flex;
+    padding: 5px 16px 5px 16px;
+    font-size: 16px;
+    font-weight: bold;
+    order: 0;
+}
+
+.tab-item--toggle {
+    border-bottom: 3px solid #0000;
+    cursor: pointer;
+    display: inline-flex;
+    padding: 5px 16px 5px 16px;
+    margin-left: auto;
+    font-size: 16px;
+    font-weight: bold;
+    order: 9;
+}
+
+.tab-content--active {
+    display: block !important;
+}
+
+.tab-content {
+    display: none;
 }

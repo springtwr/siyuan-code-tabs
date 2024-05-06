@@ -1,8 +1,8 @@
 {
-  "name": "plugin-sample-vite-svelte",
-  "author": "frostime",
-  "url": "https://github.com/siyuan-note/plugin-sample-vite-svelte",
-  "version": "0.3.5",
+  "name": "code-tabs",
+  "author": "springtwr",
+  "url": "https://github.com/springtwr/siyuan-code-tabs",
+  "version": "0.0.1",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
@@ -19,23 +19,18 @@
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite and svelte",
-    "zh_CN": "插件样例 vite + svelte 版"
+    "en_US": "code-tabs",
+    "zh_CN": "code-tabs"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite and svelte",
-    "zh_CN": "使用 vite 和 svelte 开发的思源插件样例"
+    "en_US": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
+    "zh_CN": "这个思源插件允许你将多种语言的代码放在一组标签页下"
   },
   "readme": {
     "en_US": "README.md",
     "zh_CN": "README_zh_CN.md"
   },
-  "funding": {
-    "custom": [
-      "https://afdian.net/a/frostime"
-    ]
-  },
   "keywords": [
-    "plugin", "sample", "插件样例"
+    "code", "tab", "代码块", "标签"
   ]
 }

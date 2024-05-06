@@ -1,11 +1,11 @@
 {
-  "name": "plugin-sample-vite-svelte",
-  "version": "0.3.5",
+  "name": "code-tabs",
+  "version": "0.0.1",
   "type": "module",
-  "description": "This is a sample plugin based on vite and svelte for Siyuan (https://b3log.org/siyuan)",
+  "description": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
   "repository": "",
   "homepage": "",
-  "author": "frostime",
+  "author": "springtwr",
   "license": "MIT",
   "scripts": {
     "make-link": "node  --no-warnings ./scripts/make_dev_link.js",
@@ -19,6 +19,7 @@
     "@types/node": "^20.3.0",
     "fast-glob": "^3.2.12",
     "glob": "^7.2.3",
+    "highlight.js": "^11.9.0",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "rollup-plugin-livereload": "^2.0.5",

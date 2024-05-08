@@ -34,14 +34,17 @@ export default class CodeTabs extends Plugin {
             const editElement = item.querySelector('[contenteditable="true"]');
             if (editElement && item.dataset.type === "NodeCodeBlock") {
                 const id = item.dataset.nodeId;
+                // codeText 是代码块中的原始文本
                 const codeText = editElement.textContent;
+                // codeBg 是一个rgba颜色字符串, 用于设置HTMLBlock中的代码块背景
                 const {tempId:tempId,bg:codeBg} = await this.getBackgroundColor(id);
-                // 创建思源笔记中的HTMLBlock
+                // 生成思源笔记中的HTMLBlock字符串
                 const htmlBlock = this.createHtmlBlock(id, codeText, codeBg);
-                // 更新代码块
+                // 更新代码块，将它转换为HTMLBlock
                 if (codeText.split("tab:").length > 1) {
                     updateBlock("dom",htmlBlock, item.dataset.nodeId).then(() => {
                         console.log("更新代码块");
+                        // 更新代码块之后删除用于获取背景颜色的临时代码块
                         deleteBlock(tempId);
                     });
                 }
@@ -52,10 +55,13 @@ export default class CodeTabs extends Plugin {
     private async updateAllTabs(detail: any) {
         const id = detail.blockElements[0].dataset.nodeId;
         const {tempId:tempId,bg:codeBg} = await  this.getBackgroundColor(id)
+        // 找到当前文档中所有的HTMLBlock
         const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
         htmlBlocks.forEach((htmlBlock:HTMLDivElement) => {
             const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
+            // 找到代码标签页的元素
             if (shadowRoot.querySelector('.tabs-container')) {
+                // 更新HTMLBlock
                 const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
                 const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText, codeBg);
                 updateBlock('dom', html, htmlBlock.dataset.nodeId);
@@ -64,6 +70,13 @@ export default class CodeTabs extends Plugin {
         await deleteBlock(tempId);
     }
 
+    /**
+     * 生成HTMLBlock的dom字符串
+     * @param id 要转换的代码块的data-node-id
+     * @param codeText 代码块的原始文本
+     * @param codeBg 当前主题下代码块的背景颜色
+     * @private
+     */
     private createHtmlBlock(id: string, codeText: string, codeBg: string) {
         const html_1 = `
             <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
@@ -84,6 +97,13 @@ export default class CodeTabs extends Plugin {
         return html_1 + html_2 + html_3;
     }
 
+    /**
+     * 生成HTMLBlock中 protyle-html 元素的data-content的dom字符串，即可直接在思源的HTMLBlock中编辑的dom字符串
+     * @param id 要转换的代码块的data-node-id
+     * @param codeText 代码块的原始文本
+     * @param codeBg 当前主题下代码块的背景颜色
+     * @private
+     */
     private createProtyleHtml(id: string, codeText: string, codeBg: string) {
         const codeStyle = document.getElementById('protyleHljsStyle').getAttribute('href');
         const html_1 = `  
@@ -98,7 +118,15 @@ export default class CodeTabs extends Plugin {
         return this.escapeHtml(html);
     }
 
+    /**
+     * 生成代码标签页的dom字符串
+     * @param id 要转换的代码块的data-node-id
+     * @param codeText 代码块的原始文本
+     * @param codeBg 当前主题下代码块的背景颜色
+     * @private
+     */
     private createTabs(id: string, codeText: string, codeBg: string) {
+        // tab-container类用于存放所有的标签和标签内容
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tabs-container';
         tabContainer.id = id;
@@ -106,18 +134,19 @@ export default class CodeTabs extends Plugin {
         // tabs 包含所有标签页的标题
         const tabs = document.createElement("div");
         tabs.className = "tabs";
-        // tabContents 包含所有标签页的内容
+        // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
         tabContents.className = "tab-contents";
 
         // 解析代码块中的代码，将它们放到对应的标签页中
         const codeTagTextArray = codeText.split("tab:");
         for (let i = 1; i < codeTagTextArray.length; i++) {
+            // 通过tab：分割不同的语言代码
             const codeBlock = codeTagTextArray[i].split('\n');
             const language = codeBlock.shift()?.trim();
             const code = codeBlock.join('\n').trim();
 
-            // fill up tab
+            // 填充标签
             const tab = document.createElement("div");
             tab.className = "tab-item";
             tab.textContent = language;
@@ -125,7 +154,7 @@ export default class CodeTabs extends Plugin {
             if (i === 1) tab.classList.add("tab-item--active");
             tabs.appendChild(tab);
 
-            // fill up tab-content
+            // 填充对应的标签页内容
             const content = document.createElement('div');
             content.className = "tab-content hljs";
             if (i === 1) content.classList.add("tab-content--active");
@@ -163,7 +192,13 @@ export default class CodeTabs extends Plugin {
         return tabContainer.outerHTML;
     }
 
+    /**
+     * 获取当前文档主题下的代码块背景颜色
+     * @param id 当前文档中的任意一个块的data-node-id
+     * @private
+     */
     private async getBackgroundColor(id: string) {
+        /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
         const result = await appendBlock("markdown", "\`\`\`python\nprint(\"error\")\n", id);
         const tempId = result[0].doOperations[0].id;
         const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
@@ -171,7 +206,13 @@ export default class CodeTabs extends Plugin {
         return {tempId, bg};
     }
 
+    /**
+     * 转义dom字符串中的特殊字符
+     * @param input 要转义的字符串
+     * @private
+     */
     private escapeHtml(input: string): string {
+        /* 不转义尖括号刚好能正常运行 */
         return input.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');

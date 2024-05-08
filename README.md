@@ -30,8 +30,11 @@ print("hello world")
    ![fig2-3](./asset/2-3.png)
    ![fig2-4](./asset/2-4.png)
 
-3. If you need to edit the code, click `toggle to code-block` in the upper right corner of the tab, and then convert the code block to a tab again after editing is complete
+3. If you need to edit the code, click the block menu in the upper-left corner of the block -> Plugins -> `toggle to code-block`, and then convert the code-block to a tab again after editing is complete
    ![fig3](./asset/3.png)
 
+4. You can also use click the block menu in the upper-left corner of the block -> Plugins -> `Update all code-tabs in current document` to quickly update the style of the code-tabs in the document to the current theme style
+
 ## Comment
-I haven't had much exposure to frontend technologies. Essentially, this plugin was written with the help of Wenxin Yiyán and ChatGPT. If no serious bugs arise, the update frequency should be quite low.
+- I haven't had much exposure to frontend technologies. Essentially, this plugin was written with the help of Wenxin Yiyán and ChatGPT. If no serious bugs arise, the update frequency should be quite low.
+- This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)

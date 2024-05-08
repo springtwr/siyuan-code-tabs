@@ -1,6 +1,7 @@
 ---
 codeToTabs: 将代码块转换为标签页
 toggleToCode: 切回代码块
+updateAllTabs: 更新当前文档所有代码标签页
 cancel: 取消
 save: 保存
 helloPlugin: 你好，这是code-tabs！

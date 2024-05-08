@@ -1,6 +1,7 @@
 {
     "codeToTabs": "Convert code-block to tabs",
     "toggleToCode": "Toggle to code-block",
+    "updateAllTabs": "Upgrade all code-tabs in current document",
     "cancel": "Cancel",
     "save": "Save",
     "helloPlugin": "Hello, this is code-tabs!",

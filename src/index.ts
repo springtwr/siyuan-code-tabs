@@ -24,6 +24,9 @@ export default class CodeTabs extends Plugin {
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabs, click: () => this.convertToTabs(detail),
         });
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.updateAllTabs, click: () => this.updateAllTabs(detail),
+        });
     }
 
     private async convertToTabs(detail: any) {
@@ -35,13 +38,11 @@ export default class CodeTabs extends Plugin {
                 const tempBlock = await this.getBackgroundColor(id);
                 const tempId = tempBlock["tempId"];
                 const codeBg = tempBlock["bg"];
-                console.log(window.getComputedStyle(editElement).backgroundColor);
-                console.log(codeBg);
                 // 创建思源笔记中的HTMLBlock
                 const htmlBlock = this.createHtmlBlock(id, codeText, codeBg);
                 // 更新代码块
                 if (codeText.split("tab:").length > 1) {
-                    this.update(htmlBlock, item.dataset.nodeId).then(() => {
+                    updateBlock("dom",htmlBlock, item.dataset.nodeId).then(() => {
                         console.log("更新代码块");
                         deleteBlock(tempId);
                     });
@@ -50,34 +51,36 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    private async update(data: string, nodeId: string) {
-        updateBlock("dom", data, nodeId).then(() => {
-            console.log("update done");
-            // const node = document.documentElement
-            //     .getElementsByClassName("protyle-wysiwyg protyle-wysiwyg--attr")[0]
-            //     .querySelector(`[data-node-id="${nodeId}"]`);
-            // const shadow = node.querySelector('[data-content]').shadowRoot;
-            // const toggleSwitch = shadow.querySelector('.tab-toggle');
-            // if (toggleSwitch) {
-            //     toggleSwitch.addEventListener('click', () => {
-            //         // 从标签页切换回代码块
-            //         this.toggleToCode(node);
-            //     });
-            // } else {
-            //     console.error('Element not found.');
-            // }
-        });
-    }
-
-    // private toggleToCode(htmlBlock: Element) {
-    //     const codeText = htmlBlock.getElementsByTagName('protyle-html')[0]
-    //         .shadowRoot.querySelector('.tab-sourcecode').textContent;
-    //     const nodeId = htmlBlock.getAttribute("data-node-id");
-    //     // 先插入代码块，然后再删除原本的HTML块
-    //     appendBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
-    //         deleteBlock(nodeId).then();
-    //     })
+    // private async update(data: string, nodeId: string) {
+    //     updateBlock("dom", data, nodeId).then(() => {
+    //         console.log("update done");
+    //     });
     // }
+
+    private async updateAllTabs(detail: any) {
+        const id = detail.blockElements[0].dataset.nodeId;
+        const tempBlock = await this.getBackgroundColor(id);
+        const tempId = tempBlock["tempId"];
+        const codeBg = tempBlock["bg"];
+
+        const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
+        htmlBlocks.forEach((htmlBlock:HTMLDivElement) => {
+            const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
+            if (shadowRoot.querySelector('.tabs-container')) {
+                // const preElements = shadowRoot.querySelectorAll('.tabs-container pre.hljs');
+                // preElements.forEach((pre: HTMLPreElement) => {
+                //     pre.style.backgroundColor = codeBg;
+                // });
+                const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
+                const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText, codeBg);
+                // const html = htmlBlock.outerHTML
+                //     .replace(/&amp;amp;lt;/g,'&amp;amp;amp;lt;')
+                //     .replace(/&amp;amp;gt;/g,'&amp;amp;amp;gt;')
+                updateBlock('dom', html, htmlBlock.dataset.nodeId);
+            }
+        });
+        await deleteBlock(tempId);
+    }
 
     private createHtmlBlock(id: string, codeText: string, codeBg: string) {
         const html_1 = `
@@ -148,10 +151,10 @@ export default class CodeTabs extends Plugin {
             pre.className = "hljs";
             /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
             try {
-                pre.innerHTML = hljs.highlight(language,code, true).value
+                pre.innerHTML = hljs.highlight(language, code, true).value
                     .replace(/&lt;/g, '&amp;amp;lt;')
                     .replace(/&gt;/g, '&amp;amp;gt;');
-            }catch (err){
+            } catch (err) {
                 pre.innerHTML = hljs.highlight("plaintext", code, true).value
                     .replace(/&lt;/g, '&amp;amp;lt;')
                     .replace(/&gt;/g, '&amp;amp;gt;');

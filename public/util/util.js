@@ -22,9 +22,7 @@ function toggle(evt) {
         return parent;
     }
     const shadowRoot = findRootParent(evt.target);
-    console.log(shadowRoot)
     const nodeId = shadowRoot.querySelector('.tabs-container').id;
-    console.log(nodeId);
     const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
     appendBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
         deleteBlock(nodeId).then();
@@ -52,7 +50,6 @@ async function deleteBlock(id) {
 async function request(urlSuffix, data) {
     const baseUrl = 'http://127.0.0.1:6806';
     const url = baseUrl + urlSuffix;
-    console.log(data);
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -61,7 +58,6 @@ async function request(urlSuffix, data) {
             },
             body: JSON.stringify(data),
         });
-        console.log(response);
         if (response.code === 0) {
             return await response;
         }

@@ -32,12 +32,10 @@ export default class CodeTabs extends Plugin {
     private async convertToTabs(detail: any) {
         for (const item of detail.blockElements) {
             const editElement = item.querySelector('[contenteditable="true"]');
-            if (editElement && item.getAttribute("data-type") === "NodeCodeBlock") {
-                const codeText = editElement.textContent;
+            if (editElement && item.dataset.type === "NodeCodeBlock") {
                 const id = item.dataset.nodeId;
-                const tempBlock = await this.getBackgroundColor(id);
-                const tempId = tempBlock["tempId"];
-                const codeBg = tempBlock["bg"];
+                const codeText = editElement.textContent;
+                const {tempId:tempId,bg:codeBg} = await this.getBackgroundColor(id);
                 // 创建思源笔记中的HTMLBlock
                 const htmlBlock = this.createHtmlBlock(id, codeText, codeBg);
                 // 更新代码块
@@ -51,31 +49,15 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    // private async update(data: string, nodeId: string) {
-    //     updateBlock("dom", data, nodeId).then(() => {
-    //         console.log("update done");
-    //     });
-    // }
-
     private async updateAllTabs(detail: any) {
         const id = detail.blockElements[0].dataset.nodeId;
-        const tempBlock = await this.getBackgroundColor(id);
-        const tempId = tempBlock["tempId"];
-        const codeBg = tempBlock["bg"];
-
+        const {tempId:tempId,bg:codeBg} = await  this.getBackgroundColor(id)
         const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
         htmlBlocks.forEach((htmlBlock:HTMLDivElement) => {
             const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
             if (shadowRoot.querySelector('.tabs-container')) {
-                // const preElements = shadowRoot.querySelectorAll('.tabs-container pre.hljs');
-                // preElements.forEach((pre: HTMLPreElement) => {
-                //     pre.style.backgroundColor = codeBg;
-                // });
                 const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
                 const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText, codeBg);
-                // const html = htmlBlock.outerHTML
-                //     .replace(/&amp;amp;lt;/g,'&amp;amp;amp;lt;')
-                //     .replace(/&amp;amp;gt;/g,'&amp;amp;amp;gt;')
                 updateBlock('dom', html, htmlBlock.dataset.nodeId);
             }
         });
@@ -107,10 +89,10 @@ export default class CodeTabs extends Plugin {
         const html_1 = `  
             <div> 
                 <link rel="stylesheet" href="${codeStyle}">  
-                <link rel="stylesheet" href="/plugins/code-tabs/index.css">`
-            .replace(/>\s+</g, '><').trim();
+                <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(id, codeText, codeBg);
-        const html_3 = `<script src="/plugins/code-tabs/util/util.js"></script>
+        const html_3 = `
+                <script src="/plugins/code-tabs/util/util.js"></script>
             </div>`.replace(/>\s+</g, '><').trim();
         const html = html_1 + html_2 + html_3;
         return this.escapeHtml(html);
@@ -122,21 +104,21 @@ export default class CodeTabs extends Plugin {
         tabContainer.id = id;
 
         // tabs 包含所有标签页的标题
-        let tabs = document.createElement("div");
+        const tabs = document.createElement("div");
         tabs.className = "tabs";
         // tabContents 包含所有标签页的内容
-        let tabContents = document.createElement("div");
+        const tabContents = document.createElement("div");
         tabContents.className = "tab-contents";
 
         // 解析代码块中的代码，将它们放到对应的标签页中
-        let codeTagTextArray = codeText.split("tab:");
+        const codeTagTextArray = codeText.split("tab:");
         for (let i = 1; i < codeTagTextArray.length; i++) {
             const codeBlock = codeTagTextArray[i].split('\n');
             const language = codeBlock.shift()?.trim();
             const code = codeBlock.join('\n').trim();
 
             // fill up tab
-            let tab = document.createElement("div");
+            const tab = document.createElement("div");
             tab.className = "tab-item";
             tab.textContent = language;
             tab.setAttribute('onclick', 'openTag(event)');
@@ -144,34 +126,32 @@ export default class CodeTabs extends Plugin {
             tabs.appendChild(tab);
 
             // fill up tab-content
-            let content = document.createElement('div');
-            content.className = "tab-content";
+            const content = document.createElement('div');
+            content.className = "tab-content hljs";
             if (i === 1) content.classList.add("tab-content--active");
-            const pre = document.createElement('pre');
-            pre.className = "hljs";
+            content.dataset.render = "true";
+            content.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none;";
             /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
+            let hlText = code;
             try {
-                pre.innerHTML = hljs.highlight(language, code, true).value
-                    .replace(/&lt;/g, '&amp;amp;lt;')
-                    .replace(/&gt;/g, '&amp;amp;gt;');
+                hlText = hljs.highlight(language, code, true).value
             } catch (err) {
-                pre.innerHTML = hljs.highlight("plaintext", code, true).value
-                    .replace(/&lt;/g, '&amp;amp;lt;')
-                    .replace(/&gt;/g, '&amp;amp;gt;');
+                hlText = hljs.highlight("plaintext", code, true).value
             }
-            pre.style.backgroundColor = codeBg;
-            content.appendChild(pre);
+            content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')
+                .replace(/&gt;/g, '&amp;amp;gt;');
+            content.style.backgroundColor = codeBg;
             tabContents.appendChild(content);
         }
         // 最后添加自定义内容
         // 切换键，用来将标签页切回代码块
-        let tabCustomTag = document.createElement("div");
+        const tabCustomTag = document.createElement("div");
         tabCustomTag.className = "tab-toggle";
         tabCustomTag.setAttribute('onclick', 'toggle(event)');
         tabCustomTag.textContent = this.i18n.toggleToCode;
         tabs.appendChild(tabCustomTag);
         // 用来保存原始的代码块内容
-        let tabSourceCode = document.createElement('div');
+        const tabSourceCode = document.createElement('div');
         tabSourceCode.className = "tab-sourcecode";
         /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
         tabSourceCode.innerHTML = codeText.replace(/</g, '&amp;amp;lt;')
@@ -187,9 +167,7 @@ export default class CodeTabs extends Plugin {
         const result = await appendBlock("markdown", "\`\`\`python\nprint(\"error\")\n", id);
         const tempId = result[0].doOperations[0].id;
         const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
-        console.log(tempElement);
         const bg = window.getComputedStyle(tempElement).backgroundColor;
-        // await deleteBlock(tempId);
         return {tempId, bg};
     }
 

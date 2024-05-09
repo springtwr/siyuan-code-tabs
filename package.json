@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "type": "module",
   "description": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
-  "repository": "",
+  "repository": "https://github.com/springtwr/siyuan-code-tabs",
   "homepage": "",
   "author": "springtwr",
   "license": "MIT",

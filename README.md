@@ -11,28 +11,29 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ## Example
 **Hint: 3.0.12 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor**.
 1. Insert a code-block into a SiYuan document with the following content and formatting
-```
-tab:c
-#include<stdio.h>
-int main(){
-    printf("hello world\n");
-    return 0;
-}
-tab:java
-public class HelloWorld {
-    public static void main(String[] args) {
-        System.out.println("Hello World");
-    }
-}
-tab:python
-print("hello world")
-```
-![fig1](./asset/1.png)
+   ```
+   tab:c
+   #include<stdio.h>
+   int main(){
+      printf("hello world\n");
+      return 0;
+   }
+  
+   tab:java
+   public class HelloWorld {
+      public static void main(String[] args) {
+         System.out.println("Hello World");
+      }
+   }
+  
+   tab:python
+   print("hello world")
+   ```
+   ![fig1](./asset/1.png)
+
 2. Click the block menu in the upper left corner of the code-block -> Plugin -> Convert code-block to tabs
    ![fig2-1](./asset/2-1.png)
    ![fig2-2](./asset/2-2.png)
-   ![fig2-3](./asset/2-3.png)
-   ![fig2-4](./asset/2-4.png)
 
 3. If you need to edit the code, click the block menu in the upper-left corner of the block -> Plugin -> `toggle to code-block`, and then convert the code-block to a tab again after editing is complete
    ![fig3](./asset/3.png)

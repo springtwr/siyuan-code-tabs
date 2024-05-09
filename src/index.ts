@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {appendBlock, deleteBlock, updateBlock} from "@/api";
+import {updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 
@@ -25,7 +25,7 @@ export default class CodeTabs extends Plugin {
             iconHTML: "", label: this.i18n.codeToTabs, click: () => this.convertToTabs(detail),
         });
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.updateAllTabs, click: () => this.updateAllTabs(detail),
+            iconHTML: "", label: this.i18n.updateAllTabs, click: () => this.updateAllTabs(),
         });
     }
 
@@ -36,48 +36,40 @@ export default class CodeTabs extends Plugin {
                 const id = item.dataset.nodeId;
                 // codeText 是代码块中的原始文本
                 const codeText = editElement.textContent;
-                // codeBg 是一个rgba颜色字符串, 用于设置HTMLBlock中的代码块背景
-                const {tempId:tempId,bg:codeBg} = await this.getBackgroundColor(id);
                 // 生成思源笔记中的HTMLBlock字符串
-                const htmlBlock = this.createHtmlBlock(id, codeText, codeBg);
+                const htmlBlock = this.createHtmlBlock(id, codeText);
                 // 更新代码块，将它转换为HTMLBlock
                 if (codeText.split("tab:").length > 1) {
-                    updateBlock("dom",htmlBlock, item.dataset.nodeId).then(() => {
+                    updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
                         console.log("更新代码块");
-                        // 更新代码块之后删除用于获取背景颜色的临时代码块
-                        deleteBlock(tempId);
                     });
                 }
             }
         }
     }
 
-    private async updateAllTabs(detail: any) {
-        const id = detail.blockElements[0].dataset.nodeId;
-        const {tempId:tempId,bg:codeBg} = await  this.getBackgroundColor(id)
+    private async updateAllTabs() {
         // 找到当前文档中所有的HTMLBlock
         const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
-        htmlBlocks.forEach((htmlBlock:HTMLDivElement) => {
+        htmlBlocks.forEach((htmlBlock: HTMLDivElement) => {
             const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
             // 找到代码标签页的元素
             if (shadowRoot.querySelector('.tabs-container')) {
                 // 更新HTMLBlock
                 const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
-                const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText, codeBg);
+                const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText);
                 updateBlock('dom', html, htmlBlock.dataset.nodeId);
             }
         });
-        await deleteBlock(tempId);
     }
 
     /**
      * 生成HTMLBlock的dom字符串
      * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
-     * @param codeBg 当前主题下代码块的背景颜色
      * @private
      */
-    private createHtmlBlock(id: string, codeText: string, codeBg: string) {
+    private createHtmlBlock(id: string, codeText: string) {
         const html_1 = `
             <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
                 <div class="protyle-icons">
@@ -89,7 +81,7 @@ export default class CodeTabs extends Plugin {
                     </span>
                 </div>
                 <div>`.replace(/>\s+</g, '><').trim();
-        const html_2 = `<protyle-html data-content="${this.createProtyleHtml(id, codeText, codeBg)}"></protyle-html>`;
+        const html_2 = `<protyle-html data-content="${this.createProtyleHtml(id, codeText)}"></protyle-html>`;
         const html_3 = `<span style="position: absolute"></span>
                 </div>
                 <div class="protyle-attr" contenteditable="false"></div>
@@ -101,16 +93,23 @@ export default class CodeTabs extends Plugin {
      * 生成HTMLBlock中 protyle-html 元素的data-content的dom字符串，即可直接在思源的HTMLBlock中编辑的dom字符串
      * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
-     * @param codeBg 当前主题下代码块的背景颜色
      * @private
      */
-    private createProtyleHtml(id: string, codeText: string, codeBg: string) {
+    private createProtyleHtml(id: string, codeText: string) {
+        const siyuanDefaultStyle = document.getElementById('themeDefaultStyle').getAttribute('href');
+        const themeStyle = document.getElementById('themeStyle')?.getAttribute('href');
         const codeStyle = document.getElementById('protyleHljsStyle').getAttribute('href');
+        let themeStyleDom = "";
+        if (themeStyle) {
+            themeStyleDom = `<link id="tabSyThemeStyle" rel="stylesheet" href="${themeStyle}">`
+        }
         const html_1 = `  
             <div> 
-                <link rel="stylesheet" href="${codeStyle}">  
+                <link id="tabSyThemeDefaultStyle" rel="stylesheet" href="${siyuanDefaultStyle}">
+                ${themeStyleDom}
+                <link id="tabSyCodeStyle" rel="stylesheet" href="${codeStyle}">  
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
-        const html_2 = this.createTabs(id, codeText, codeBg);
+        const html_2 = this.createTabs(id, codeText);
         const html_3 = `
                 <script src="/plugins/code-tabs/util/util.js"></script>
             </div>`.replace(/>\s+</g, '><').trim();
@@ -122,10 +121,9 @@ export default class CodeTabs extends Plugin {
      * 生成代码标签页的dom字符串
      * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
-     * @param codeBg 当前主题下代码块的背景颜色
      * @private
      */
-    private createTabs(id: string, codeText: string, codeBg: string) {
+    private createTabs(id: string, codeText: string) {
         // tab-container类用于存放所有的标签和标签内容
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tabs-container';
@@ -136,7 +134,7 @@ export default class CodeTabs extends Plugin {
         tabs.className = "tabs";
         // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
-        tabContents.className = "tab-contents";
+        tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
 
         // 解析代码块中的代码，将它们放到对应的标签页中
         const codeTagTextArray = codeText.split("tab:");
@@ -159,7 +157,6 @@ export default class CodeTabs extends Plugin {
             content.className = "tab-content hljs";
             if (i === 1) content.classList.add("tab-content--active");
             content.dataset.render = "true";
-            content.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none;";
             /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
             let hlText = code;
             try {
@@ -169,7 +166,6 @@ export default class CodeTabs extends Plugin {
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')
                 .replace(/&gt;/g, '&amp;amp;gt;');
-            content.style.backgroundColor = codeBg;
             tabContents.appendChild(content);
         }
         // 最后添加自定义内容
@@ -190,20 +186,6 @@ export default class CodeTabs extends Plugin {
         tabContainer.appendChild(tabs);
         tabContainer.appendChild(tabContents);
         return tabContainer.outerHTML;
-    }
-
-    /**
-     * 获取当前文档主题下的代码块背景颜色
-     * @param id 当前文档中的任意一个块的data-node-id
-     * @private
-     */
-    private async getBackgroundColor(id: string) {
-        /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
-        const result = await appendBlock("markdown", "\`\`\`python\nprint(\"error\")\n", id);
-        const tempId = result[0].doOperations[0].id;
-        const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
-        const bg = window.getComputedStyle(tempElement).backgroundColor;
-        return {tempId, bg};
     }
 
     /**

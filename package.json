@@ -1,6 +1,6 @@
 {
   "name": "code-tabs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
   "repository": "",

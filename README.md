@@ -5,6 +5,9 @@
 ## Introduction
 Siyuan plugin that allows you to put code in multiple languages under a set of tabs
 
+## Known Issues
+- !!! Do not include `<` or `>` in code-block, as this can lead to code loss, see [Issue #11321 - siyuan-note/siyuan](https://github.com/siyuan-note/siyuan/issues/11321)  for details.  
+
 ## Example
 **Hint: 3.0.12 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor**.
 1. Insert a code-block into a SiYuan document with the following content and formatting

@@ -3,7 +3,7 @@
   "author": "springtwr",
   "url": "https://github.com/springtwr/siyuan-code-tabs",
   "version": "0.0.1",
-  "minAppVersion": "3.0.12",
+  "minAppVersion": "3.0.10",
   "backends": [
     "windows",
     "linux",

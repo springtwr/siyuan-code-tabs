@@ -1,12 +1,3 @@
-.protyle-wysiwyg .hljs{
-    border-radius: 5px;
-    padding: 15px;
-}
-
-.tab-content pre {
-    margin: 0 !important;
-}
-
 .tabs {
     color: #525860;
     display: flex;
@@ -47,6 +38,8 @@
 
 .tab-content--active {
     display: block !important;
+    border-radius: 5px;
+    padding: 15px;
 }
 
 .tab-content {

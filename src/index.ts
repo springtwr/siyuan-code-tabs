@@ -10,6 +10,23 @@ export default class CodeTabs extends Plugin {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
         console.log("loading code-tabs");
         console.log(this.i18n.helloPlugin);
+
+        // 添加快捷键
+        this.addCommand({
+            langKey: "codeToTabs",
+            hotkey: "",
+            callback: () => {
+                const selection = document.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const currentNode = range.startContainer.parentNode?.parentNode as any;
+                    const editElement = currentNode?.querySelector('[contenteditable="true"]');
+                    if (editElement && currentNode.dataset?.type === "NodeCodeBlock") {
+                        this.convertToTabs(currentNode);
+                    }
+                }
+            }
+        });
     }
 
     async onunload() {
@@ -22,29 +39,31 @@ export default class CodeTabs extends Plugin {
 
     private blockIconEvent({detail}: any) {
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.codeToTabs, click: () => this.convertToTabs(detail),
+            iconHTML: "", label: this.i18n.codeToTabs, click: () => {
+                for (const item of detail.blockElements) {
+                    const editElement = item.querySelector('[contenteditable="true"]');
+                    if (editElement && item.dataset?.type === "NodeCodeBlock") {
+                        this.convertToTabs(item).then()
+                    }
+                }
+            }
         });
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.updateAllTabs, click: () => this.updateAllTabs(),
         });
     }
 
-    private async convertToTabs(detail: any) {
-        for (const item of detail.blockElements) {
-            const editElement = item.querySelector('[contenteditable="true"]');
-            if (editElement && item.dataset.type === "NodeCodeBlock") {
-                const id = item.dataset.nodeId;
-                // codeText 是代码块中的原始文本
-                const codeText = editElement.textContent;
-                // 生成思源笔记中的HTMLBlock字符串
-                const htmlBlock = this.createHtmlBlock(id, codeText);
-                // 更新代码块，将它转换为HTMLBlock
-                if (codeText.split("tab:").length > 1) {
-                    updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
-                        console.log("更新代码块");
-                    });
-                }
-            }
+    private async convertToTabs(item: any) {
+        const id = item.dataset.nodeId;
+        // codeText 是代码块中的原始文本
+        const codeText = item.querySelector('[contenteditable="true"]').textContent;
+        // 生成思源笔记中的HTMLBlock字符串
+        const htmlBlock = this.createHtmlBlock(id, codeText);
+        // 更新代码块，将它转换为HTMLBlock
+        if (codeText.split("tab:").length > 1) {
+            updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
+                console.log("更新代码块");
+            });
         }
     }
 
@@ -135,6 +154,7 @@ export default class CodeTabs extends Plugin {
         // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
         tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
+        tabContents.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none;"
 
         // 解析代码块中的代码，将它们放到对应的标签页中
         const codeTagTextArray = codeText.split("tab:");
@@ -159,9 +179,10 @@ export default class CodeTabs extends Plugin {
             content.dataset.render = "true";
             /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
             let hlText = code;
-            try {
-                hlText = hljs.highlight(language, code, true).value
-            } catch (err) {
+            if (hljs.getLanguage(language) !== undefined) {
+                // 如果语言被支持，则进行高亮处理
+                hlText = hljs.highlight(language, code, true).value;
+            } else {
                 hlText = hljs.highlight("plaintext", code, true).value
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')

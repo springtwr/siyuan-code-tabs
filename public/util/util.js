@@ -22,45 +22,48 @@ function toggle(evt) {
         return parent;
     }
     const shadowRoot = findRootParent(evt.target);
-    const nodeId = shadowRoot.querySelector('.tabs-container').id;
-    const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
-    appendBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
-        deleteBlock(nodeId).then();
-    })
+    const htmlBlock = shadowRoot.host.parentNode.parentNode;
+    const nodeId = htmlBlock.dataset.nodeId;
+
+    // const nodeId = shadowRoot.querySelector('.tabs-container').id;
+    // const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
+    getBlockAttrs(nodeId).then(res => {
+        const codeText = res['custom-plugin-code-tabs-sourcecode'];
+        updateBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
+            console.log("标签页转为代码块");
+        });
+    });
 }
 
-async function appendBlock(dataType, data, parentID) {
-    let payload = {
-        dataType,
-        data,
-        parentID
-    }
-    let url = '/api/block/appendBlock';
-    return request(url, payload);
-}
-
-async function deleteBlock(id) {
+async function getBlockAttrs(id) {
     let data = {
         id: id
     }
-    let url = '/api/block/deleteBlock';
+    let url = '/api/attr/getBlockAttrs';
     return request(url, data);
 }
 
-async function request(urlSuffix, data) {
+async function updateBlock(dataType, data, id) {
+    let payload = {
+        dataType: dataType,
+        data: data,
+        id: id
+    }
+    let url = '/api/block/updateBlock';
+    return request(url, payload);
+}
+
+async function request(route, data) {
     const baseUrl = 'http://127.0.0.1:6806';
-    const url = baseUrl + urlSuffix;
+    const url = baseUrl + route;
     try {
         const response = await fetch(url, {
-            method: 'POST',
-            headers: {
+            method: 'POST', headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            }, body: JSON.stringify(data),
         });
-        if (response.code === 0) {
-            return await response;
-        }
+        const resData = await response.json();
+        return resData.code === 0 ? resData.data : null;
     } catch (error) {
         console.error('There has been a problem with your fetch operation:', error);
         throw error;

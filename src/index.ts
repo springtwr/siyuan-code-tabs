@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {updateBlock} from "@/api";
+import {setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 
@@ -63,6 +63,9 @@ export default class CodeTabs extends Plugin {
         if (codeText.split("tab:").length > 1) {
             updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
                 console.log("更新代码块");
+                setBlockAttrs(item.dataset.nodeId, {["custom-plugin-code-tabs-sourcecode"]: codeText}).then(() => {
+                    console.log("更新属性");
+                });
             });
         }
     }
@@ -196,13 +199,6 @@ export default class CodeTabs extends Plugin {
         tabCustomTag.setAttribute('onclick', 'toggle(event)');
         tabCustomTag.textContent = this.i18n.toggleToCode;
         tabs.appendChild(tabCustomTag);
-        // 用来保存原始的代码块内容
-        const tabSourceCode = document.createElement('div');
-        tabSourceCode.className = "tab-sourcecode";
-        /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
-        tabSourceCode.innerHTML = codeText.replace(/</g, '&amp;amp;lt;')
-            .replace(/>/g, '&amp;amp;gt;');
-        tabContents.appendChild(tabSourceCode);
 
         tabContainer.appendChild(tabs);
         tabContainer.appendChild(tabContents);

@@ -30,7 +30,7 @@ function toggle(evt) {
     getBlockAttrs(nodeId).then(res => {
         const codeText = res['custom-plugin-code-tabs-sourcecode'];
         updateBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
-            console.log("标签页转为代码块");
+            console.log("code-tabs: 标签页转为代码块");
         });
     });
 }

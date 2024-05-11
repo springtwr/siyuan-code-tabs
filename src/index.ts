@@ -61,12 +61,7 @@ export default class CodeTabs extends Plugin {
         const htmlBlock = this.createHtmlBlock(id, codeText);
         // 更新代码块，将它转换为HTMLBlock
         if (codeText.split("tab:").length > 1) {
-            updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
-                console.log("更新代码块");
-                setBlockAttrs(item.dataset.nodeId, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
-                    console.log("更新属性");
-                });
-            });
+            this.update('dom', htmlBlock, id, codeText);
         }
     }
 
@@ -82,13 +77,17 @@ export default class CodeTabs extends Plugin {
                     const nodeId = htmlBlock.dataset.nodeId;
                     const codeText = res['custom-plugin-code-tabs-sourcecode'];
                     const html = this.createHtmlBlock(nodeId, codeText);
-                    updateBlock('dom', html, nodeId).then(() => {
-                        console.log("更新代码块");
-                        setBlockAttrs(nodeId, {['custom-plugin-code-tabs-sourcecode']: codeText}).then();
-                    })
+                    this.update('dom', html, nodeId, codeText);
                 });
             }
         });
+    }
+
+    private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
+        updateBlock(dataType, data, id).then(() => {
+            console.log("code-tabs: 更新代码块");
+            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then();
+        })
     }
 
     /**

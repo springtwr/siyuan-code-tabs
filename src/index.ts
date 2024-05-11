@@ -33,9 +33,6 @@ export default class CodeTabs extends Plugin {
     }
 
     onLayoutReady() {
-        console.log("layout ready");
-        console.log(document.documentElement.dataset.themeMode);
-
         // 监听系统主题变化
         const rootNode = document.documentElement;
         const config = {attributes: true, attributeFilter: ['data-theme-mode', 'data-light-theme', 'data-dark-theme']};
@@ -43,8 +40,6 @@ export default class CodeTabs extends Plugin {
             // 遍历所有变动
             for (let mutation of mutationsList) {
                 if (mutation.type === 'attributes') {
-                    console.log('属性 ' + mutation.attributeName + ' 被修改');
-                    console.log('新的值: ' + rootNode.getAttribute(mutation.attributeName));
                     this.putStyleFile().then();
                 }
             }
@@ -132,7 +127,7 @@ export default class CodeTabs extends Plugin {
                     </span>
                 </div>
                 <div>`.replace(/>\s+</g, '><').trim();
-        const html_2 = `<protyle-html data-content="${this.createProtyleHtml(id, codeText)}"></protyle-html>`;
+        const html_2 = `<protyle-html data-content="${this.createProtyleHtml(codeText)}"></protyle-html>`;
         const html_3 = `<span style="position: absolute"></span>
                 </div>
                 <div class="protyle-attr" contenteditable="false"></div>
@@ -142,18 +137,17 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 生成HTMLBlock中 protyle-html 元素的data-content的dom字符串，即可直接在思源的HTMLBlock中编辑的dom字符串
-     * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
      * @private
      */
-    private createProtyleHtml(id: string, codeText: string) {
+    private createProtyleHtml(codeText: string) {
         const html_1 = `  
             <div> 
                 <link rel="stylesheet" href="/plugins/code-tabs/siyuan-theme-default.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
                 <link rel="stylesheet" href="/plugins/code-tabs/theme.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
-        const html_2 = this.createTabs(id, codeText);
+        const html_2 = this.createTabs(codeText);
         const html_3 = `
                 <script src="/plugins/code-tabs/util/util.js"></script>
             </div>`.replace(/>\s+</g, '><').trim();
@@ -163,15 +157,13 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 生成代码标签页的dom字符串
-     * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
      * @private
      */
-    private createTabs(id: string, codeText: string) {
+    private createTabs(codeText: string) {
         // tab-container类用于存放所有的标签和标签内容
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tabs-container';
-        tabContainer.id = id;
 
         // tabs 包含所有标签页的标题
         const tabs = document.createElement("div");
@@ -206,9 +198,9 @@ export default class CodeTabs extends Plugin {
             let hlText = code;
             if (hljs.getLanguage(language) !== undefined) {
                 // 如果语言被支持，则进行高亮处理
-                hlText = hljs.highlight(language, code, true).value;
+                hlText = hljs.highlight(language, code).value;
             } else {
-                hlText = hljs.highlight("plaintext", code, true).value
+                hlText = hljs.highlight("plaintext", code).value
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')
                 .replace(/&gt;/g, '&amp;amp;gt;');

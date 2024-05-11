@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {setBlockAttrs, updateBlock} from "@/api";
+import {getBlockAttrs, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 
@@ -63,7 +63,7 @@ export default class CodeTabs extends Plugin {
         if (codeText.split("tab:").length > 1) {
             updateBlock("dom", htmlBlock, item.dataset.nodeId).then(() => {
                 console.log("更新代码块");
-                setBlockAttrs(item.dataset.nodeId, {["custom-plugin-code-tabs-sourcecode"]: codeText}).then(() => {
+                setBlockAttrs(item.dataset.nodeId, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
                     console.log("更新属性");
                 });
             });
@@ -78,9 +78,15 @@ export default class CodeTabs extends Plugin {
             // 找到代码标签页的元素
             if (shadowRoot.querySelector('.tabs-container')) {
                 // 更新HTMLBlock
-                const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
-                const html = this.createHtmlBlock(htmlBlock.dataset.nodeId, codeText);
-                updateBlock('dom', html, htmlBlock.dataset.nodeId);
+                getBlockAttrs(htmlBlock.dataset.nodeId).then(res => {
+                    const nodeId = htmlBlock.dataset.nodeId;
+                    const codeText = res['custom-plugin-code-tabs-sourcecode'];
+                    const html = this.createHtmlBlock(nodeId, codeText);
+                    updateBlock('dom', html, nodeId).then(() => {
+                        console.log("更新代码块");
+                        setBlockAttrs(nodeId, {['custom-plugin-code-tabs-sourcecode']: codeText}).then();
+                    })
+                });
             }
         });
     }

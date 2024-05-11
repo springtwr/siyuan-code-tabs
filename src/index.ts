@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {getBlockAttrs, setBlockAttrs, updateBlock} from "@/api";
+import {getBlockAttrs, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 
@@ -27,6 +27,30 @@ export default class CodeTabs extends Plugin {
                 }
             }
         });
+
+        // 加载配件时配置样式文件
+        this.putStyleFile().then();
+    }
+
+    onLayoutReady() {
+        console.log("layout ready");
+        console.log(document.documentElement.dataset.themeMode);
+
+        // 监听系统主题变化
+        const rootNode = document.documentElement;
+        const config = {attributes: true, attributeFilter: ['data-theme-mode', 'data-light-theme', 'data-dark-theme']};
+        const callback = (mutationsList: any) => {
+            // 遍历所有变动
+            for (let mutation of mutationsList) {
+                if (mutation.type === 'attributes') {
+                    console.log('属性 ' + mutation.attributeName + ' 被修改');
+                    console.log('新的值: ' + rootNode.getAttribute(mutation.attributeName));
+                    this.putStyleFile().then();
+                }
+            }
+        };
+        const observer = new MutationObserver(callback);
+        observer.observe(rootNode, config);
     }
 
     async onunload() {
@@ -123,18 +147,11 @@ export default class CodeTabs extends Plugin {
      * @private
      */
     private createProtyleHtml(id: string, codeText: string) {
-        const siyuanDefaultStyle = document.getElementById('themeDefaultStyle').getAttribute('href');
-        const themeStyle = document.getElementById('themeStyle')?.getAttribute('href');
-        const codeStyle = document.getElementById('protyleHljsStyle').getAttribute('href');
-        let themeStyleDom = "";
-        if (themeStyle) {
-            themeStyleDom = `<link id="tabSyThemeStyle" rel="stylesheet" href="${themeStyle}">`
-        }
         const html_1 = `  
             <div> 
-                <link id="tabSyThemeDefaultStyle" rel="stylesheet" href="${siyuanDefaultStyle}">
-                ${themeStyleDom}
-                <link id="tabSyCodeStyle" rel="stylesheet" href="${codeStyle}">  
+                <link rel="stylesheet" href="/plugins/code-tabs/siyuan-theme-default.css">
+                <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
+                <link rel="stylesheet" href="/plugins/code-tabs/theme.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(id, codeText);
         const html_3 = `
@@ -220,5 +237,40 @@ export default class CodeTabs extends Plugin {
         return input.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    private async fetchFileFromUrl(route: string, fileName: string) {
+        try {
+            const baseUrl = "http://127.0.0.1:6806";
+            const response = await fetch(baseUrl + route);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const blob = await response.blob();
+            return new File([blob], fileName, {type: blob.type});
+        } catch (error) {
+            console.error('fetchFileFromUrl Error: ', error);
+        }
+    }
+
+    private async putStyleFile() {
+        // 配置样式文件
+        const syStyle = document.querySelector('link#themeDefaultStyle').getAttribute('href');
+        const codeStyle = document.querySelector('link#protyleHljsStyle').getAttribute('href');
+        const themeStyle = document.querySelector('link#themeStyle')?.getAttribute('href');
+        const fileSyStyle = await this.fetchFileFromUrl(syStyle, 'siyuan-theme-default.css');
+        const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
+        let fileThemeStyle: File;
+        // 如果使用了主题就复制主题的css样式，否则就创建一个空白文件
+        if (themeStyle) {
+            fileThemeStyle = await this.fetchFileFromUrl(themeStyle, 'theme.css');
+        } else {
+            const emptyContent = new Uint8Array(0);
+            const blob = new Blob([emptyContent], {type: 'text/css'});
+            fileThemeStyle = new File([blob], 'theme.css', {type: 'text/css'});
+        }
+        putFile('/data/plugins/code-tabs/siyuan-theme-default.css', false, fileSyStyle).then();
+        putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle).then();
+        putFile('/data/plugins/code-tabs/theme.css', false, fileThemeStyle).then();
     }
 }

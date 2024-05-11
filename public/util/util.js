@@ -29,7 +29,8 @@ function toggle(evt) {
     // const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
     getBlockAttrs(nodeId).then(res => {
         const codeText = res['custom-plugin-code-tabs-sourcecode'];
-        updateBlock("markdown", `\`\`\`tab\n${codeText}\`\`\``, nodeId).then(() => {
+        const flag = "```````````````````````````";
+        updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
             console.log("code-tabs: 标签页转为代码块");
         });
     });

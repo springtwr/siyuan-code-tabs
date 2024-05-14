@@ -198,9 +198,9 @@ export default class CodeTabs extends Plugin {
             let hlText = code;
             if (hljs.getLanguage(language) !== undefined) {
                 // 如果语言被支持，则进行高亮处理
-                hlText = hljs.highlight(language, code).value;
+                hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
             } else {
-                hlText = hljs.highlight("plaintext", code).value
+                hlText = hljs.highlight(code, {language: "plaintext", ignoreIllegals: true}).value
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')
                 .replace(/&gt;/g, '&amp;amp;gt;');

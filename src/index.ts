@@ -233,13 +233,21 @@ export default class CodeTabs extends Plugin {
 
     private async fetchFileFromUrl(route: string, fileName: string) {
         try {
-            const baseUrl = "http://127.0.0.1:6806";
-            const response = await fetch(baseUrl + route);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            let file: File;
+            if (route === undefined) {
+                const emptyContent = new Uint8Array(0);
+                const blob = new Blob([emptyContent], {type: 'text/css'});
+                file = new File([blob], fileName, {type: 'text/css'});
+            } else {
+                const baseUrl = "http://127.0.0.1:6806";
+                const response = await fetch(baseUrl + route);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const blob = await response.blob();
+                file = new File([blob], fileName, {type: blob.type});
             }
-            const blob = await response.blob();
-            return new File([blob], fileName, {type: blob.type});
+            return file
         } catch (error) {
             console.error('fetchFileFromUrl Error: ', error);
         }
@@ -247,20 +255,12 @@ export default class CodeTabs extends Plugin {
 
     private async putStyleFile() {
         // 配置样式文件
-        const syStyle = document.querySelector('link#themeDefaultStyle').getAttribute('href');
-        const codeStyle = document.querySelector('link#protyleHljsStyle').getAttribute('href');
+        const syStyle = document.querySelector('link#themeDefaultStyle')?.getAttribute('href');
+        const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
         const themeStyle = document.querySelector('link#themeStyle')?.getAttribute('href');
         const fileSyStyle = await this.fetchFileFromUrl(syStyle, 'siyuan-theme-default.css');
         const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
-        let fileThemeStyle: File;
-        // 如果使用了主题就复制主题的css样式，否则就创建一个空白文件
-        if (themeStyle) {
-            fileThemeStyle = await this.fetchFileFromUrl(themeStyle, 'theme.css');
-        } else {
-            const emptyContent = new Uint8Array(0);
-            const blob = new Blob([emptyContent], {type: 'text/css'});
-            fileThemeStyle = new File([blob], 'theme.css', {type: 'text/css'});
-        }
+        const fileThemeStyle = await this.fetchFileFromUrl(themeStyle, 'theme.css');
         putFile('/data/plugins/code-tabs/siyuan-theme-default.css', false, fileSyStyle).then();
         putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle).then();
         putFile('/data/plugins/code-tabs/theme.css', false, fileThemeStyle).then();

@@ -105,7 +105,18 @@ export default class CodeTabs extends Plugin {
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
             console.log("code-tabs: 更新代码块");
-            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then();
+            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then( () => {
+                const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
+                const editButton = node.querySelector('.protyle-action__edit');
+                const clickEvent = new MouseEvent('click', {
+                    'view': window,
+                    'bubbles': true,
+                    'cancelable': true
+                });
+                editButton.dispatchEvent(clickEvent);
+                const closeButton = document.querySelector('.block__icon--show[data-type="close"]');
+                closeButton.dispatchEvent(clickEvent);
+            });
         })
     }
 
@@ -202,8 +213,8 @@ export default class CodeTabs extends Plugin {
             } else {
                 hlText = hljs.highlight(code, {language: "plaintext", ignoreIllegals: true}).value
             }
-            content.innerHTML = hlText.replace(/&lt;/g, '&amp;amp;lt;')
-                .replace(/&gt;/g, '&amp;amp;gt;');
+            content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
+                .replace(/&gt;/g, '&amp;gt;');
             tabContents.appendChild(content);
         }
         // 最后添加自定义内容

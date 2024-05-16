@@ -27,12 +27,9 @@ export default class CodeTabs extends Plugin {
                 }
             }
         });
-
-        // 加载配件时配置样式文件
-        this.putStyleFile().then();
     }
 
-    onLayoutReady() {
+    async onLayoutReady() {
         // 监听系统主题变化
         const rootNode = document.documentElement;
         const config = {attributes: true, attributeFilter: ['data-theme-mode', 'data-light-theme', 'data-dark-theme']};
@@ -46,6 +43,23 @@ export default class CodeTabs extends Plugin {
         };
         const observer = new MutationObserver(callback);
         observer.observe(rootNode, config);
+
+        // 加载插件时配置样式文件
+        const syStyle = document.querySelector('link#themeDefaultStyle')?.getAttribute('href');
+        // 思源当前的主题css
+        const fileSyStyle = await this.fetchFileFromUrl(syStyle, 'siyuan-theme-default.css');
+        // code-tabs当前使用的css
+        const fileSyStylePlugin = await this.fetchFileFromUrl('/plugins/code-tabs/siyuan-theme-default.css', 'siyuan-theme-default.css');
+        // code-tabs目录中不存在样式文件或样式文件与思源使用的不同时重新配置样式文件
+        if (fileSyStylePlugin === undefined || fileSyStyle.size === 0) {
+            await this.putStyleFile();
+        } else {
+            const styleContent = await fileSyStyle.text();
+            const pluginStyleContent = await fileSyStylePlugin.text();
+            if (styleContent !== pluginStyleContent) {
+                await this.putStyleFile();
+            }
+        }
     }
 
     async onunload() {
@@ -105,7 +119,7 @@ export default class CodeTabs extends Plugin {
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
             console.log("code-tabs: 更新代码块");
-            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then( () => {
+            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
                 const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
                 const editButton = node.querySelector('.protyle-action__edit');
                 const clickEvent = new MouseEvent('click', {
@@ -251,14 +265,23 @@ export default class CodeTabs extends Plugin {
                 file = new File([blob], fileName, {type: 'text/css'});
             } else {
                 const baseUrl = "http://127.0.0.1:6806";
-                const response = await fetch(baseUrl + route);
+                // fetch时禁用缓存，避免后续文件判断逻辑因缓存而出错
+                const response = await fetch(baseUrl + route, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    if (response.status === 404) {
+                        return undefined;
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                 }
                 const blob = await response.blob();
                 file = new File([blob], fileName, {type: blob.type});
             }
-            return file
+            return file;
         } catch (error) {
             console.error('fetchFileFromUrl Error: ', error);
         }

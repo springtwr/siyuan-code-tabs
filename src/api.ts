@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2023 frostime. All rights reserved.
  * https://github.com/frostime/sy-plugin-template-vite
- * 
+ *
  * See API Document in [API.md](https://github.com/siyuan-note/siyuan/blob/master/API.md)
  * API 文档见 [API_zh_CN.md](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
  */
 
-import { fetchSyncPost, IWebSocketData } from "siyuan";
+import {fetchSyncPost, IWebSocketData} from "siyuan";
 
 
 export async function request(url: string, data: any) {
@@ -27,43 +27,43 @@ export async function lsNotebooks(): Promise<IReslsNotebooks> {
 
 export async function openNotebook(notebook: NotebookId) {
     let url = '/api/notebook/openNotebook';
-    return request(url, { notebook: notebook });
+    return request(url, {notebook: notebook});
 }
 
 
 export async function closeNotebook(notebook: NotebookId) {
     let url = '/api/notebook/closeNotebook';
-    return request(url, { notebook: notebook });
+    return request(url, {notebook: notebook});
 }
 
 
 export async function renameNotebook(notebook: NotebookId, name: string) {
     let url = '/api/notebook/renameNotebook';
-    return request(url, { notebook: notebook, name: name });
+    return request(url, {notebook: notebook, name: name});
 }
 
 
 export async function createNotebook(name: string): Promise<Notebook> {
     let url = '/api/notebook/createNotebook';
-    return request(url, { name: name });
+    return request(url, {name: name});
 }
 
 
 export async function removeNotebook(notebook: NotebookId) {
     let url = '/api/notebook/removeNotebook';
-    return request(url, { notebook: notebook });
+    return request(url, {notebook: notebook});
 }
 
 
 export async function getNotebookConf(notebook: NotebookId): Promise<IResGetNotebookConf> {
-    let data = { notebook: notebook };
+    let data = {notebook: notebook};
     let url = '/api/notebook/getNotebookConf';
     return request(url, data);
 }
 
 
 export async function setNotebookConf(notebook: NotebookId, conf: NotebookConf): Promise<NotebookConf> {
-    let data = { notebook: notebook, conf: conf };
+    let data = {notebook: notebook, conf: conf};
     let url = '/api/notebook/setNotebookConf';
     return request(url, data);
 }
@@ -155,6 +155,7 @@ export async function upload(assetsDirPath: string, files: any[]): Promise<IResU
 
 // **************************************** Block ****************************************
 type DataType = "markdown" | "dom";
+
 export async function insertBlock(
     dataType: DataType, data: string,
     nextID?: BlockId, previousID?: BlockId, parentID?: BlockId
@@ -318,7 +319,7 @@ export async function render(id: DocumentId, path: string): Promise<IResGetTempl
 
 export async function renderSprig(template: string): Promise<string> {
     let url = '/api/template/renderSprig';
-    return request(url, { template: template });
+    return request(url, {template: template});
 }
 
 // **************************************** File ****************************************
@@ -342,7 +343,7 @@ export async function putFile(path: string, isDir: boolean, file: any) {
     form.append('isDir', isDir.toString());
     // Copyright (c) 2023, terwer.
     // https://github.com/terwer/siyuan-plugin-importer/blob/v1.4.1/src/api/kernel-api.ts
-    form.append('modTime', Math.floor(Date.now() / 1000).toString());
+    form.append('modTime', Math.floor(Date.now()).toString());
     form.append('file', file);
     let url = '/api/file/putFile';
     return request(url, form);
@@ -355,7 +356,6 @@ export async function removeFile(path: string) {
     let url = '/api/file/removeFile';
     return request(url, data);
 }
-
 
 
 export async function readDir(path: string): Promise<IResReadDir> {
@@ -389,6 +389,7 @@ export async function exportResources(paths: string[], name: string): Promise<IR
 // **************************************** Convert ****************************************
 
 export type PandocArgs = string;
+
 export async function pandoc(args: PandocArgs[]) {
     let data = {
         args: args

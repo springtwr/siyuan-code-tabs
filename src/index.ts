@@ -189,7 +189,7 @@ export default class CodeTabs extends Plugin {
      * @return dom字符串
      * @private
      */
-    private createHtmlBlock(id: string, codeText: string):string {
+    private createHtmlBlock(id: string, codeText: string): string {
         const html_1 = `
             <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
                 <div class="protyle-icons">
@@ -249,17 +249,26 @@ export default class CodeTabs extends Plugin {
         tabContents.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none;"
 
         // 解析代码块中的代码，将它们放到对应的标签页中
-        const codeTagTextArray = codeText.split("tab:");
+        // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型
+        const codeTagTextArray = codeText.split("tab:::");
         for (let i = 1; i < codeTagTextArray.length; i++) {
-            // 通过tab：分割不同的语言代码
-            const codeBlock = codeTagTextArray[i].split('\n');
+            const codeBlockArr = codeTagTextArray[i].split('lang:::');
+            let title: string;
+            // 如果指定了语言类型，则分别设置标题和语言类型，否则标题和语言类型使用同一个值
+            if (codeBlockArr.length > 1) {
+                title = codeBlockArr.shift().trim();
+            }
+            const codeBlock = codeBlockArr[0].split('\n');
             const language = codeBlock.shift()?.trim();
             const code = codeBlock.join('\n').trim();
+            if (title === undefined) {
+                title = language;
+            }
 
             // 填充标签
             const tab = document.createElement("div");
             tab.className = "tab-item";
-            tab.textContent = language;
+            tab.textContent = title;
             tab.setAttribute('onclick', 'openTag(event)');
             if (i === 1) tab.classList.add("tab-item--active");
             tabs.appendChild(tab);
@@ -400,7 +409,7 @@ export default class CodeTabs extends Plugin {
         /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
         const block = document.querySelector('[data-type*="Node"][data-node-id]') as HTMLElement;
         const id = block?.dataset.nodeId;
-        if(id === undefined) {
+        if (id === undefined) {
             return "rgb(248, 249, 250)";
         }
         const result = await appendBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", id);

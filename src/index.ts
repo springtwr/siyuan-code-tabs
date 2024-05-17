@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {getBlockAttrs, putFile, setBlockAttrs, updateBlock} from "@/api";
+import {appendBlock, deleteBlock, getBlockAttrs, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 
@@ -30,33 +30,64 @@ export default class CodeTabs extends Plugin {
     }
 
     async onLayoutReady() {
-        // 监听系统主题变化
-        const rootNode = document.documentElement;
-        const config = {attributes: true, attributeFilter: ['data-theme-mode', 'data-light-theme', 'data-dark-theme']};
+        // 监听代码主题和系统主题变化
+        const head = document.querySelector('head');
+        const config = {attributes: true, childList: true, subtree: true};
         const callback = (mutationsList: any) => {
             // 遍历所有变动
+            const selector = /<link.*theme|<link.*style/gi;
             for (let mutation of mutationsList) {
-                if (mutation.type === 'attributes') {
-                    this.putStyleFile().then();
+                // 用防抖函数保证head中与主题相关的节点快速变化时只进行一次样式配置
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((addedNode: any) => {
+                        if (selector.test(addedNode.outerHTML)) {
+                            debounced();
+                        }
+                    });
+                    mutation.removedNodes.forEach((removedNode: any) => {
+                        if (selector.test(removedNode.outerHTML)) {
+                            debounced();
+                        }
+                    });
+                    // this.putStyleFile().then();
+                } else if (mutation.type === 'attributes') {
+                    if (selector.test(mutation.target.outerHTML)) {
+                        debounced();
+                    }
                 }
             }
         };
+        // 防抖函数
+        const debounce = <T extends Function>(func: T, wait: number) => {
+            let timeout: ReturnType<typeof setTimeout> | null = null;
+            return function (...args: any) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        // 防抖回调
+        const putFile = () => {
+            console.log(this.i18n.codeStyleChange);
+            this.putStyleFile().then();
+        }
+        const debounced = debounce(putFile, 500);
         const observer = new MutationObserver(callback);
-        observer.observe(rootNode, config);
+        observer.observe(head, config);
 
         // 加载插件时配置样式文件
-        const syStyle = document.querySelector('link#themeDefaultStyle')?.getAttribute('href');
-        // 思源当前的主题css
-        const fileSyStyle = await this.fetchFileFromUrl(syStyle, 'siyuan-theme-default.css');
-        // code-tabs当前使用的css
-        const fileSyStylePlugin = await this.fetchFileFromUrl('/plugins/code-tabs/siyuan-theme-default.css', 'siyuan-theme-default.css');
+        const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
+        // 思源当前的代码样式
+        const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
+        // code-tabs当前使用的代码样式
+        const fileCodeStylePlugin = await this.fetchFileFromUrl('/plugins/code-tabs/code-style.css', 'code-style.css');
         // code-tabs目录中不存在样式文件或样式文件与思源使用的不同时重新配置样式文件
-        if (fileSyStylePlugin === undefined || fileSyStyle.size === 0) {
+        if (fileCodeStylePlugin === undefined || fileCodeStylePlugin.size === 0) {
             await this.putStyleFile();
         } else {
-            const styleContent = await fileSyStyle.text();
-            const pluginStyleContent = await fileSyStylePlugin.text();
-            if (styleContent !== pluginStyleContent) {
+            const codeStyleContent = await fileCodeStyle.text();
+            const pluginCodeStyleContent = await fileCodeStylePlugin.text();
+            if (codeStyleContent !== pluginCodeStyleContent) {
+                console.log(this.i18n.initPutFile);
                 await this.putStyleFile();
             }
         }
@@ -86,6 +117,11 @@ export default class CodeTabs extends Plugin {
         });
     }
 
+    /**
+     * 将代码块转换为标签页
+     * @param item
+     * @private
+     */
     private async convertToTabs(item: any) {
         const id = item.dataset.nodeId;
         // codeText 是代码块中的原始文本
@@ -98,6 +134,10 @@ export default class CodeTabs extends Plugin {
         }
     }
 
+    /**
+     * 更新当前文档中所有的代码标签页
+     * @private
+     */
     private async updateAllTabs() {
         // 找到当前文档中所有的HTMLBlock
         const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
@@ -116,6 +156,14 @@ export default class CodeTabs extends Plugin {
         });
     }
 
+    /**
+     * 通过思源api更新code-tabs的HTML块
+     * @param dataType
+     * @param data
+     * @param id
+     * @param codeText
+     * @private
+     */
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
             console.log("code-tabs: 更新代码块");
@@ -138,9 +186,10 @@ export default class CodeTabs extends Plugin {
      * 生成HTMLBlock的dom字符串
      * @param id 要转换的代码块的data-node-id
      * @param codeText 代码块的原始文本
+     * @return dom字符串
      * @private
      */
-    private createHtmlBlock(id: string, codeText: string) {
+    private createHtmlBlock(id: string, codeText: string):string {
         const html_1 = `
             <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
                 <div class="protyle-icons">
@@ -163,14 +212,14 @@ export default class CodeTabs extends Plugin {
     /**
      * 生成HTMLBlock中 protyle-html 元素的data-content的dom字符串，即可直接在思源的HTMLBlock中编辑的dom字符串
      * @param codeText 代码块的原始文本
+     * @return 转义后的dom字符串
      * @private
      */
-    private createProtyleHtml(codeText: string) {
+    private createProtyleHtml(codeText: string): string {
         const html_1 = `  
             <div> 
-                <link rel="stylesheet" href="/plugins/code-tabs/siyuan-theme-default.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
-                <link rel="stylesheet" href="/plugins/code-tabs/theme.css">
+                <link rel="stylesheet" href="/plugins/code-tabs/background.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(codeText);
         const html_3 = `
@@ -183,9 +232,10 @@ export default class CodeTabs extends Plugin {
     /**
      * 生成代码标签页的dom字符串
      * @param codeText 代码块的原始文本
+     * @return dom字符串
      * @private
      */
-    private createTabs(codeText: string) {
+    private createTabs(codeText: string): string {
         // tab-container类用于存放所有的标签和标签内容
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tabs-container';
@@ -245,8 +295,9 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
-     * 转义dom字符串中的特殊字符
+     * 转义dom字符串中的特殊字符，这里只转义引号和 &
      * @param input 要转义的字符串
+     * @return 转义后的字符串
      * @private
      */
     private escapeHtml(input: string): string {
@@ -256,7 +307,14 @@ export default class CodeTabs extends Plugin {
             .replace(/'/g, '&#39;');
     }
 
-    private async fetchFileFromUrl(route: string, fileName: string) {
+    /**
+     * 通过url获取当前思源笔记中的文件
+     * @param route 文件的路由路径
+     * @param fileName 文件名
+     * @return url对应的File对象，找不到时返回一个内容为空的File对象
+     * @private
+     */
+    private async fetchFileFromUrl(route: string, fileName: string): Promise<File> {
         try {
             let file: File;
             if (route === undefined) {
@@ -266,7 +324,7 @@ export default class CodeTabs extends Plugin {
             } else {
                 const baseUrl = "http://127.0.0.1:6806";
                 // fetch时禁用缓存，避免后续文件判断逻辑因缓存而出错
-                const response = await fetch(baseUrl + route, {
+                const response = await this.fetchWithRetry(baseUrl + route, {
                     headers: {
                         'Cache-Control': 'no-cache'
                     }
@@ -287,16 +345,69 @@ export default class CodeTabs extends Plugin {
         }
     }
 
+    /**
+     * 设置fetch失败重连
+     * @param url
+     * @param options fetch选项
+     * @param retries 最大重连次数
+     * @param delay 重连间隔
+     * @private
+     */
+    private async fetchWithRetry(url: string, options: RequestInit = {}, retries: number = 3, delay: number = 500): Promise<Response> {
+        for (let attempt = 0; attempt < retries; attempt++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response; // If the request is successful, return the response
+            } catch (error) {
+                if (attempt < retries - 1) {
+                    console.warn(`Attempt ${attempt + 1} failed. Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
+                } else {
+                    console.error('All attempts failed.');
+                    throw error; /* If all retries fail, throw the error */
+                }
+            }
+        }
+        throw new Error('Failed to fetch data after multiple attempts.');
+    }
+
+    /**
+     * 在思源的主题或代码样式改变时重新配置code-tabs的样式文件
+     * @private
+     */
     private async putStyleFile() {
-        // 配置样式文件
-        const syStyle = document.querySelector('link#themeDefaultStyle')?.getAttribute('href');
+        // 配置代码样式文件
         const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
-        const themeStyle = document.querySelector('link#themeStyle')?.getAttribute('href');
-        const fileSyStyle = await this.fetchFileFromUrl(syStyle, 'siyuan-theme-default.css');
         const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
-        const fileThemeStyle = await this.fetchFileFromUrl(themeStyle, 'theme.css');
-        putFile('/data/plugins/code-tabs/siyuan-theme-default.css', false, fileSyStyle).then();
         putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle).then();
-        putFile('/data/plugins/code-tabs/theme.css', false, fileThemeStyle).then();
+        // 配置代码背景色样式文件
+        const bg = await this.getBackgroundColor();
+        const cssContent = `.tab-contents.protyle-wysiwyg .hljs { background-color: ${bg}; }`;
+        const blob = new Blob([cssContent], {type: 'text/css'});
+        const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
+        putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle).then();
+    }
+
+    /**
+     * 简单粗暴的获取当前文档主题下的代码块背景颜色
+     * @return 代码块背景色的rgb代码，如“rgb(0, 0, 0)”
+     * @private
+     */
+    private async getBackgroundColor() {
+        /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
+        const block = document.querySelector('[data-type*="Node"][data-node-id]') as HTMLElement;
+        const id = block?.dataset.nodeId;
+        if(id === undefined) {
+            return "rgb(248, 249, 250)";
+        }
+        const result = await appendBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", id);
+        const tempId = result[0].doOperations[0].id;
+        const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
+        const bg = window.getComputedStyle(tempElement).backgroundColor;
+        deleteBlock(tempId).then();
+        return bg;
     }
 }

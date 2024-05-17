@@ -2,14 +2,15 @@ import {Plugin} from "siyuan";
 import {appendBlock, deleteBlock, getBlockAttrs, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
+import logger from "@/logger";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
-        console.log("loading code-tabs");
-        console.log(this.i18n.helloPlugin);
+        logger.info("loading code-tabs");
+        logger.info(this.i18n.helloPlugin);
 
         // 添加快捷键
         this.addCommand({
@@ -30,6 +31,7 @@ export default class CodeTabs extends Plugin {
     }
 
     async onLayoutReady() {
+        logger.info("layout ready");
         // 监听代码主题和系统主题变化
         const head = document.querySelector('head');
         const config = {attributes: true, childList: true, subtree: true};
@@ -67,7 +69,7 @@ export default class CodeTabs extends Plugin {
         }
         // 防抖回调
         const putFile = () => {
-            console.log(this.i18n.codeStyleChange);
+            logger.info(this.i18n.codeStyleChange);
             this.putStyleFile().then();
         }
         const debounced = debounce(putFile, 500);
@@ -87,18 +89,18 @@ export default class CodeTabs extends Plugin {
             const codeStyleContent = await fileCodeStyle.text();
             const pluginCodeStyleContent = await fileCodeStylePlugin.text();
             if (codeStyleContent !== pluginCodeStyleContent) {
-                console.log(this.i18n.initPutFile);
+                logger.info(this.i18n.initPutFile);
                 await this.putStyleFile();
             }
         }
     }
 
     async onunload() {
-        console.log(this.i18n.byePlugin);
+        logger.info(this.i18n.byePlugin)
     }
 
     uninstall() {
-        console.log("uninstall code-tabs");
+        logger.info("uninstall code-tabs");
     }
 
     private blockIconEvent({detail}: any) {
@@ -166,7 +168,7 @@ export default class CodeTabs extends Plugin {
      */
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
-            console.log("code-tabs: 更新代码块");
+            logger.info(this.i18n.updateCodeBlock);
             setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
                 const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
                 const editButton = node.querySelector('.protyle-action__edit');
@@ -356,6 +358,7 @@ export default class CodeTabs extends Plugin {
                 });
                 if (!response.ok) {
                     if (response.status === 404) {
+                        logger.warn("file not found: " + route);
                         return undefined;
                     } else {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -429,10 +432,11 @@ export default class CodeTabs extends Plugin {
             return "rgb(248, 249, 250)";
         }
         const result = await appendBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", id);
+        logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
         const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
         const bg = window.getComputedStyle(tempElement).backgroundColor;
-        deleteBlock(tempId).then();
+        deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
         return bg;
     }
 }

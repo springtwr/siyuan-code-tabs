@@ -42,7 +42,8 @@ function toggle(evt) {
         const codeText = res['custom-plugin-code-tabs-sourcecode'];
         const flag = "```````````````````````````";
         updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
-            console.log("code-tabs: 标签页转为代码块");
+            const timestamp = new Date().toISOString();
+            log('info', '标签页转为代码块');
         });
     });
 }
@@ -89,4 +90,10 @@ async function request(route, data) {
         console.error('There has been a problem with your fetch operation:', error);
         throw error;
     }
+}
+
+function log(level, message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: ${message}`;
+    console.log(logMessage);
 }

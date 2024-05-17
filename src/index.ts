@@ -246,7 +246,23 @@ export default class CodeTabs extends Plugin {
         // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
         tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
-        tabContents.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none;"
+        tabContents.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none; position: relative;"
+        // 添加复制按钮
+        const iconContainer = document.createElement('span');
+        iconContainer.className = 'code-tabs--icon_copy';
+        iconContainer.setAttribute('onclick', 'copyCode(event)');
+        const copySvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        copySvg.setAttribute('viewBox', '0 0 35 35');
+        copySvg.setAttribute('fill', '#9a9ea9');
+        copySvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        const copyPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        copyPath.setAttribute('d',
+            'M22.545-0h-17.455c-1.6 0-2.909 1.309-2.909 2.909v20.364h2.909v-20.364h17.455v-2.909zM26.909 ' +
+            '5.818h-16c-1.6 0-2.909 1.309-2.909 2.909v20.364c0 1.6 1.309 2.909 2.909 2.909h16c1.6 0 2.909-1.309 ' +
+            '2.909-2.909v-20.364c0-1.6-1.309-2.909-2.909-2.909zM26.909 29.091h-16v-20.364h16v20.364z');
+        copySvg.appendChild(copyPath);
+        iconContainer.appendChild(copySvg);
+        tabContents.appendChild(iconContainer);
 
         // 解析代码块中的代码，将它们放到对应的标签页中
         // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型

@@ -1,7 +1,7 @@
 function openTag(evt) {
-    let tabContainer = evt.target.parentNode.parentNode;
-    let tabItems = tabContainer.querySelectorAll('.tab-item');
-    let tabContents = tabContainer.querySelectorAll('.tab-content');
+    const tabContainer = evt.target.parentNode.parentNode;
+    const tabItems = tabContainer.querySelectorAll('.tab-item');
+    const tabContents = tabContainer.querySelectorAll('.tab-content');
     tabItems.forEach((tabItem, index) => {
         if (tabItem === evt.target) {
             tabItem.classList.add('tab-item--active');
@@ -11,6 +11,20 @@ function openTag(evt) {
             tabContents[index].classList.remove('tab-content--active');
         }
     });
+}
+
+function copyCode(evt) {
+    const tabContainer = evt.target.parentNode.parentNode;
+    const tabContent = tabContainer.querySelector('.tab-content--active');
+    const textContent = tabContent.textContent;
+    if (textContent) {
+        // 使用 Clipboard API 复制文本内容到剪贴板
+        navigator.clipboard.writeText(textContent).then(() => {
+            pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
 }
 
 function toggle(evt) {
@@ -24,9 +38,6 @@ function toggle(evt) {
     const shadowRoot = findRootParent(evt.target);
     const htmlBlock = shadowRoot.host.parentNode.parentNode;
     const nodeId = htmlBlock.dataset.nodeId;
-
-    // const nodeId = shadowRoot.querySelector('.tabs-container').id;
-    // const codeText = shadowRoot.querySelector('.tab-sourcecode').textContent;
     getBlockAttrs(nodeId).then(res => {
         const codeText = res['custom-plugin-code-tabs-sourcecode'];
         const flag = "```````````````````````````";
@@ -51,6 +62,15 @@ async function updateBlock(dataType, data, id) {
         id: id
     }
     let url = '/api/block/updateBlock';
+    return request(url, payload);
+}
+
+async function pushMsg(msg, timeout = 7000) {
+    let payload = {
+        msg: msg,
+        timeout: timeout
+    };
+    let url = "/api/notification/pushMsg";
     return request(url, payload);
 }
 

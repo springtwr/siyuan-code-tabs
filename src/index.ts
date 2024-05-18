@@ -381,7 +381,7 @@ export default class CodeTabs extends Plugin {
      * @param delay 重连间隔
      * @private
      */
-    private async fetchWithRetry(url: string, options: RequestInit = {}, retries: number = 3, delay: number = 500): Promise<Response> {
+    private async fetchWithRetry(url: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
                 const response = await fetch(url, options);

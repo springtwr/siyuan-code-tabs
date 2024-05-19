@@ -93,6 +93,9 @@ async function request(route, data) {
 }
 
 function log(level, message) {
+    if (window.CODE_TABS_DEV_MODE !== 'true') {
+        return;
+    }
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: ${message}`;
     console.log(logMessage);

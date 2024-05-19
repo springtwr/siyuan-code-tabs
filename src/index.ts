@@ -32,6 +32,10 @@ export default class CodeTabs extends Plugin {
 
     async onLayoutReady() {
         logger.info("layout ready");
+        // 在开发环境中向思源注入一个全局变量，用来控制日志输出
+        if (process.env.DEV_MODE === 'true') {
+            (window as any).CODE_TABS_DEV_MODE = 'true';
+        }
         // 监听代码主题和系统主题变化
         const head = document.querySelector('head');
         const config = {attributes: true, childList: true, subtree: true};
@@ -253,17 +257,9 @@ export default class CodeTabs extends Plugin {
         const iconContainer = document.createElement('span');
         iconContainer.className = 'code-tabs--icon_copy';
         iconContainer.setAttribute('onclick', 'copyCode(event)');
-        const copySvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        copySvg.setAttribute('viewBox', '0 0 35 35');
-        copySvg.setAttribute('fill', '#9a9ea9');
-        copySvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        const copyPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        copyPath.setAttribute('d',
-            'M22.545-0h-17.455c-1.6 0-2.909 1.309-2.909 2.909v20.364h2.909v-20.364h17.455v-2.909zM26.909 ' +
-            '5.818h-16c-1.6 0-2.909 1.309-2.909 2.909v20.364c0 1.6 1.309 2.909 2.909 2.909h16c1.6 0 2.909-1.309 ' +
-            '2.909-2.909v-20.364c0-1.6-1.309-2.909-2.909-2.909zM26.909 29.091h-16v-20.364h16v20.364z');
-        copySvg.appendChild(copyPath);
-        iconContainer.appendChild(copySvg);
+        const copyImg = document.createElement('img');
+        copyImg.src = '/plugins/code-tabs/asset/copy.png';
+        iconContainer.appendChild(copyImg);
         tabContents.appendChild(iconContainer);
 
         // 解析代码块中的代码，将它们放到对应的标签页中
@@ -296,7 +292,6 @@ export default class CodeTabs extends Plugin {
             content.className = "tab-content hljs";
             if (i === 1) content.classList.add("tab-content--active");
             content.dataset.render = "true";
-            /* 不知道为什么，反正只有这样才能在思源中正确显示带内容的尖括号，如<stdio.h>*/
             let hlText = code;
             if (hljs.getLanguage(language) !== undefined) {
                 // 如果语言被支持，则进行高亮处理
@@ -349,57 +344,62 @@ export default class CodeTabs extends Plugin {
                 const blob = new Blob([emptyContent], {type: 'text/css'});
                 file = new File([blob], fileName, {type: 'text/css'});
             } else {
-                const baseUrl = "http://127.0.0.1:6806";
                 // fetch时禁用缓存，避免后续文件判断逻辑因缓存而出错
-                const response = await this.fetchWithRetry(baseUrl + route, {
+                const response = await this.fetchWithRetry(route, {
                     headers: {
                         'Cache-Control': 'no-cache'
                     }
                 });
                 if (!response.ok) {
-                    if (response.status === 404) {
-                        logger.warn("file not found: " + route);
-                        return undefined;
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                    return undefined;
                 }
                 const blob = await response.blob();
                 file = new File([blob], fileName, {type: blob.type});
             }
             return file;
         } catch (error) {
-            console.error('fetchFileFromUrl Error: ', error);
+            logger.error(`fetchFileFromUrl: ${route}, error: ${error}`);
         }
     }
 
     /**
      * 设置fetch失败重连
-     * @param url
+     * @param route
      * @param options fetch选项
      * @param retries 最大重连次数
      * @param delay 重连间隔
      * @private
      */
-    private async fetchWithRetry(url: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
+    private async fetchWithRetry(route: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
+                const baseUrl = "http://127.0.0.1:6806";
+                const url = baseUrl + route;
+                logger.info(`fetching: ${url}`);
                 const response = await fetch(url, options);
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // 获取插件的样式文件时返回404表示文件不存在，不需要重试
+                    if (response.status === 404) {
+                        if (route === '/plugins/code-tabs/code-style.css' || route === '/plugins/code-tabs/background.css') {
+                            logger.warn(`plugin style file not found: ${route}`);
+                            return response;
+                        }
+                    }
+                    logger.info(`fetch error with: ${url} ${response.status}`);
+                    throw new Error(`http error: ${response.status}`);
                 }
-                return response; // If the request is successful, return the response
+                logger.info(`fetch successes: ${url}`);
+                return response;
             } catch (error) {
                 if (attempt < retries - 1) {
-                    console.warn(`Attempt ${attempt + 1} failed. Retrying in ${delay}ms...`);
+                    logger.warn(`Attempt ${attempt + 1} failed. Retrying in ${delay}ms...`);
                     await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
                 } else {
-                    console.error('All attempts failed.');
-                    throw error; /* If all retries fail, throw the error */
+                    logger.error('All retries failed');
+                    throw error;
                 }
             }
         }
-        throw new Error('Failed to fetch data after multiple attempts.');
     }
 
     /**

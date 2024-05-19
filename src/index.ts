@@ -3,6 +3,7 @@ import {deleteBlock, getBlockAttrs, insertBlock, putFile, setBlockAttrs, updateB
 import "@/index.scss";
 import hljs from "highlight.js";
 import {marked} from "marked";
+import markedKatex from "marked-katex-extension";
 import logger from "@/logger";
 
 export default class CodeTabs extends Plugin {
@@ -227,6 +228,7 @@ export default class CodeTabs extends Plugin {
             <div> 
                 <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
                 <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
+                <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/background.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(codeText);
@@ -298,6 +300,10 @@ export default class CodeTabs extends Plugin {
             if (hljs.getLanguage(language) !== undefined) {
                 // 如果语言被支持，则进行格式处理，其中markdown单独使用marked处理
                 if (language === 'markdown') {
+                    const options = {
+                        throwOnError: false
+                    };
+                    marked.use(markedKatex(options));
                     hlText = marked.parse(code) as string;
                     hlText = `<div class="markdown-body">${hlText}</div>`;
                 } else {

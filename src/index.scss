@@ -45,6 +45,11 @@
   display: none;
 }
 
+.tab-content pre{
+  padding: 0;
+  margin: 0;
+}
+
 .tabs-container .code-tabs--icon_copy {
   opacity: 0;
   position: absolute; /* 绝对定位 */

@@ -2,6 +2,7 @@ import {Plugin} from "siyuan";
 import {deleteBlock, getBlockAttrs, insertBlock, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
+import {marked} from "marked";
 import logger from "@/logger";
 
 export default class CodeTabs extends Plugin {
@@ -225,6 +226,7 @@ export default class CodeTabs extends Plugin {
         const html_1 = `  
             <div> 
                 <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
+                <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/background.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(codeText);
@@ -252,7 +254,7 @@ export default class CodeTabs extends Plugin {
         // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
         tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
-        tabContents.style.cssText = "white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none; position: relative;"
+        tabContents.style.cssText = "word-break: break-all; font-variant-ligatures: none; position: relative;"
         // 添加复制按钮
         const iconContainer = document.createElement('span');
         iconContainer.className = 'code-tabs--icon_copy';
@@ -294,10 +296,18 @@ export default class CodeTabs extends Plugin {
             content.dataset.render = "true";
             let hlText = code;
             if (hljs.getLanguage(language) !== undefined) {
-                // 如果语言被支持，则进行高亮处理
-                hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
+                // 如果语言被支持，则进行格式处理，其中markdown单独使用marked处理
+                if (language === 'markdown') {
+                    hlText = marked.parse(code) as string;
+                    hlText = `<div class="markdown-body">${hlText}</div>`;
+                } else {
+                    hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
+                    hlText = `<pre><code class="language-${language}">${hlText}</code></pre>`;
+                }
             } else {
+                // 否则按普通文本处理
                 hlText = hljs.highlight(code, {language: "plaintext", ignoreIllegals: true}).value
+                hlText = `<pre><code class="language-plaintext">${hlText}</code></pre>`;
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
                 .replace(/&gt;/g, '&amp;gt;');
@@ -417,6 +427,15 @@ export default class CodeTabs extends Plugin {
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
         putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle).then();
+        // 配置代码中markdown的样式文件
+        const mode = document.documentElement.getAttribute('data-theme-mode');
+        if (mode === 'dark') {
+            const darkModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-dark.css', 'github-markdown.css');
+            putFile('/data/plugins/code-tabs/github-markdown.css', false, darkModeFile).then();
+        } else {
+            const lightModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-light.css', 'github-markdown.css');
+            putFile('/data/plugins/code-tabs/github-markdown.css', false, lightModeFile).then();
+        }
     }
 
     /**

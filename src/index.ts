@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {appendBlock, deleteBlock, getBlockAttrs, putFile, setBlockAttrs, updateBlock} from "@/api";
+import {deleteBlock, getBlockAttrs, insertBlock, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 import logger from "@/logger";
@@ -431,7 +431,7 @@ export default class CodeTabs extends Plugin {
         if (id === undefined) {
             return "rgb(248, 249, 250)";
         }
-        const result = await appendBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", id);
+        const result = await insertBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", '', id, '');
         logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
         const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');

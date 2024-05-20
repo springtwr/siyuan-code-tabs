@@ -277,7 +277,7 @@ export default class CodeTabs extends Plugin {
                 title = codeBlockArr.shift().trim();
             }
             const codeBlock = codeBlockArr[0].split('\n');
-            const language = codeBlock.shift()?.trim();
+            let language = codeBlock.shift()?.trim();
             const code = codeBlock.join('\n').trim();
             if (title === undefined) {
                 title = language;
@@ -297,23 +297,18 @@ export default class CodeTabs extends Plugin {
             if (i === 1) content.classList.add("tab-content--active");
             content.dataset.render = "true";
             let hlText = code;
-            if (hljs.getLanguage(language) !== undefined) {
-                // 如果语言被支持，则进行格式处理，其中markdown单独使用marked处理
-                if (language === 'markdown') {
-                    const options = {
-                        throwOnError: false
-                    };
-                    marked.use(markedKatex(options));
-                    hlText = marked.parse(code) as string;
-                    hlText = `<div class="markdown-body">${hlText}</div>`;
-                } else {
-                    hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
-                    hlText = `<pre><code class="language-${language}">${hlText}</code></pre>`;
-                }
+            // 如果语言被支持，则进行格式处理，否则按纯文本处理，其中markdown单独使用marked处理
+            language = hljs.getLanguage(language) ? language : 'plaintext';
+            if (language.toLowerCase() === 'markdown') {
+                const options = {
+                    throwOnError: false
+                };
+                marked.use(markedKatex(options));
+                hlText = marked.parse(code) as string;
+                hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
-                // 否则按普通文本处理
-                hlText = hljs.highlight(code, {language: "plaintext", ignoreIllegals: true}).value
-                hlText = `<pre><code class="language-plaintext">${hlText}</code></pre>`;
+                hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
+                hlText = `<pre><code class="language-${language}">${hlText}</code></pre>`;
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
                 .replace(/&gt;/g, '&amp;gt;');

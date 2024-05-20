@@ -5,6 +5,7 @@
     "initPutFile": "Initialization, reconfiguring stylesheet",
     "codeStyleChange": "code background or style changes and reconfigure code-tabs stylesheet",
     "updateCodeBlock": "update Code-Block",
+    "errMsgGetBackground": "code-tabs: Please open a document and change the theme or mode again!!!",
     "cancel": "Cancel",
     "save": "Save",
     "helloPlugin": "Hello, this is code-tabs!",

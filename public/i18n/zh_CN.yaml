@@ -5,6 +5,7 @@ updateAllTabs: 更新当前文档所有代码标签页
 initPutFile: 初始化，重新配置样式文件
 codeStyleChange: 监测到代码块背景或样式改变，重新配置code-tabs样式文件
 updateCodeBlock: 更新代码块
+errMsgGetBackground: code-tabs：请打开一个文档后再次调整主题或模式！！！
 cancel: 取消
 save: 保存
 helloPlugin: 你好，这是code-tabs！

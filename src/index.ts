@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {deleteBlock, getBlockAttrs, insertBlock, putFile, setBlockAttrs, updateBlock} from "@/api";
+import {deleteBlock, getBlockAttrs, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 import {marked} from "marked";
@@ -449,6 +449,7 @@ export default class CodeTabs extends Plugin {
         const block = document.querySelector('[data-type*="Node"][data-node-id]') as HTMLElement;
         const id = block?.dataset.nodeId;
         if (id === undefined) {
+            pushErrMsg(this.i18n.errMsgGetBackground).then();
             return "rgb(248, 249, 250)";
         }
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", '', id, '');

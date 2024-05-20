@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {deleteBlock, getBlockAttrs, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
+import {deleteBlock, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
 import {marked} from "marked";
@@ -57,7 +57,6 @@ export default class CodeTabs extends Plugin {
                             debounced();
                         }
                     });
-                    // this.putStyleFile().then();
                 } else if (mutation.type === 'attributes') {
                     if (selector.test(mutation.target.outerHTML)) {
                         debounced();
@@ -120,9 +119,6 @@ export default class CodeTabs extends Plugin {
                 }
             }
         });
-        detail.menu.addItem({
-            iconHTML: "", label: this.i18n.updateAllTabs, click: () => this.updateAllTabs(),
-        });
     }
 
     /**
@@ -140,28 +136,6 @@ export default class CodeTabs extends Plugin {
         if (codeText.split("tab:").length > 1) {
             this.update('dom', htmlBlock, id, codeText);
         }
-    }
-
-    /**
-     * 更新当前文档中所有的代码标签页
-     * @private
-     */
-    private async updateAllTabs() {
-        // 找到当前文档中所有的HTMLBlock
-        const htmlBlocks = document.documentElement.querySelectorAll('.render-node');
-        htmlBlocks.forEach((htmlBlock: HTMLDivElement) => {
-            const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
-            // 找到代码标签页的元素
-            if (shadowRoot.querySelector('.tabs-container')) {
-                // 更新HTMLBlock
-                getBlockAttrs(htmlBlock.dataset.nodeId).then(res => {
-                    const nodeId = htmlBlock.dataset.nodeId;
-                    const codeText = res['custom-plugin-code-tabs-sourcecode'];
-                    const html = this.createHtmlBlock(nodeId, codeText);
-                    this.update('dom', html, nodeId, codeText);
-                });
-            }
-        });
     }
 
     /**

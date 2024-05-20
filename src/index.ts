@@ -133,7 +133,7 @@ export default class CodeTabs extends Plugin {
     private async convertToTabs(item: any) {
         const id = item.dataset.nodeId;
         // codeText 是代码块中的原始文本
-        const codeText = item.querySelector('[contenteditable="true"]').textContent;
+        const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200D/g, '');
         // 生成思源笔记中的HTMLBlock字符串
         const htmlBlock = this.createHtmlBlock(id, codeText);
         // 更新代码块，将它转换为HTMLBlock

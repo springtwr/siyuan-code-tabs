@@ -230,7 +230,7 @@ export default class CodeTabs extends Plugin {
         // tab-contents 包含所有标签页的内容
         const tabContents = document.createElement("div");
         tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
-        tabContents.style.cssText = "word-break: break-all; font-variant-ligatures: none; position: relative;"
+        tabContents.style.cssText = "word-break: break-word; font-variant-ligatures: none; position: relative;"
         // 添加复制按钮
         const iconContainer = document.createElement('span');
         iconContainer.className = 'code-tabs--icon_copy';

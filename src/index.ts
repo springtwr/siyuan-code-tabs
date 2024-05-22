@@ -2,8 +2,9 @@ import {Plugin} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
 import "@/index.scss";
 import hljs from "highlight.js";
-import {marked} from "marked";
+import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
+import {markedHighlight} from "marked-highlight";
 import logger from "@/logger";
 
 export default class CodeTabs extends Plugin {
@@ -286,6 +287,15 @@ export default class CodeTabs extends Plugin {
             // 如果语言被支持，则进行格式处理，否则按纯文本处理，其中markdown单独使用marked处理
             language = hljs.getLanguage(language) ? language : 'plaintext';
             if (language.toLowerCase() === 'markdown') {
+                const marked = new Marked(
+                    markedHighlight({
+                        langPrefix: 'hljs language-',
+                        highlight(code, lang) {
+                            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                            return hljs.highlight(code, {language}).value;
+                        }
+                    })
+                );
                 const options = {
                     throwOnError: false
                 };
@@ -410,7 +420,7 @@ export default class CodeTabs extends Plugin {
         await putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle);
         // 配置代码背景色样式文件
         const bg = await this.getBackgroundColor();
-        const cssContent = `.tab-contents.protyle-wysiwyg .hljs { background-color: ${bg}; }`;
+        const cssContent = `.tab-contents.protyle-wysiwyg > .hljs { background-color: ${bg}; }`;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
         await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);

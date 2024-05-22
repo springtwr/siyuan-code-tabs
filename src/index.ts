@@ -454,9 +454,18 @@ export default class CodeTabs extends Plugin {
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", '', id, '');
         logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
-        const tempElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
-        const bg = window.getComputedStyle(tempElement).backgroundColor;
+        // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
+        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
+        const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
+        logger.info('hljs bg: ' + hljsBg);
+        if (hljsBg !== 'rgba(0, 0, 0, 0)') {
+            deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
+            return hljsBg;
+        }
+        const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
+        const nodeBg = window.getComputedStyle(tempElement).backgroundColor;
+        logger.info('node bg: ' + nodeBg);
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
-        return bg;
+        return nodeBg;
     }
 }

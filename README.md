@@ -6,11 +6,11 @@
 Siyuan plugin that allows you to put code in multiple languages under a set of tabs
 
 ## Known Issues
-- Every time the document is closed, the tab will automatically jump to the first tab.
-- Code highlighting is not supported in markdown, and clicking the copy button will only copy plaintext.
-- There must be at least one open document when changing theme or mode, otherwise the style of the code-tabs won't change with the theme, and you need to open a document and then change theme again.  
-- The background color of the code-tabs will not change until the currently open document is closed and reopened after changing the theme or mode.  
+- Every time the document is closed, the code-tabs will automatically jump to the first tab.
+- Clicking the copy button will only copy plaintext.
+- There must be at least one open document when changing theme or mode, otherwise the style of the code-tabs won't change with the theme, and you need to open a document and then change theme again.
 - When exporting to markdown or html, all the code-tabs styles will be lost, only when exporting pdf or image can the code-tabs be displayed normally.  
+- ***When the code contains angle brackets, an error is displayed. Please wait for Siyuan to release a new version to fix the issue of escaping HTML content. Currently, only Siyuan 3.0.14 can be used normally. For details, see [issue](https://github.com/siyuan-note/siyuan/issues/11499)***
 
 ## Tips
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
@@ -18,7 +18,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Example
 1. Insert a code block in the SiYuan document as follows. Enter the title after `tab:::`, and the language after `lang:::`. If "lang:::language" is omitted, the title is used as the default language for the code. [Example file](./asset/example.md)
-   - When the language is `markdown`, [marked](https://github.com/markedjs/marked) will be used for rendering, and [marked-katex-extension](https://github.com/UziTech/marked-katex-extension) will be used to render [Katex](https://katex.org). Code block highlighting is not currently supported within markdown.
+   - When the language is `markdown`, [marked](https://github.com/markedjs/marked) will be used for rendering. Rendering [Katex formulas](https://katex.org) with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks with [marked-highlight](https://github.com/markedjs/marked-highlight).
    ```
    tab:::this is c
    lang:::c
@@ -34,7 +34,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
    print("Hello World")
    ```
 
-2. Click the block menu in the upper-left corner of the code-block -> Plugin -> Convert code-block to tabs
+2. Click the block menu in the upper-left corner of the code-block -> Plugin -> Convert code-block to tabs, you can also set a shortcut key for this function in Settings -> Keymap.
    ![fig2-1](./asset/2-1.png)
    ![fig2-2](./asset/2-2.png)
    ![fig2-3](./asset/2-3.png)

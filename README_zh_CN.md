@@ -7,10 +7,10 @@
 
 ## 已知问题
 - 每次关闭文档后标签页会自动跳转到第一个标签
-- 渲染markdown时不支持代码高亮，且点击复制按钮只会复制纯文本
-- 切换主题或模式时至少要有一个打开着的文档，否则标签页的样式不会随主题改变，需要打开一个文档后再次切换主题
-- 标签页的背景在更改主题样式后需要关闭当前打开的文档后重新打开才会发生变化
+- 点击复制按钮只会复制纯文本
+- 切换主题或模式时至少要有一个打开着的文档，否则标签页样式不会随主题改变，需要打开一个文档后再次切换主题
 - 导出为markdown或html等格式时所有标签页样式会丢失，只有导出pdf或图片时标签页才能正常显示
+- ***代码中包含尖括号时显示出错的问题请等待思源发布新版本修复HTML块的内容转义问题，目前仅有思源3.0.14能正常使用，详情见[issue](https://github.com/siyuan-note/siyuan/issues/11499)***
 
 ## 提示
 - 思源3.0.14及以上版本需要在 设置 -> 编辑器 中打开 `允许执行HTML块内脚本`
@@ -18,7 +18,7 @@
 
 ## 使用示例
 1. 先在思源文档中插入一个代码块，形式如下。在`tab:::`后输入标题，之后再输入`lang:::语言`，其中`lang:::语言`省略不写时默认将标题作为代码的语言类型。[示例文件](./asset/example.md)  
-   - 语言类型为`markdown`时会使用[marked](https://github.com/markedjs/marked)进行渲染，使用[marked-katex-extension](https://github.com/UziTech/marked-katex-extension)渲染[Katex](https://katex.org/)。`markdown`内暂时不支持代码块高亮。
+   - 语言类型为`markdown`时会使用[marked](https://github.com/markedjs/marked)进行渲染，使用[marked-katex-extension](https://github.com/UziTech/marked-katex-extension)渲染[Katex](https://katex.org/)公式，使用[marked-highlight](https://github.com/markedjs/marked-highlight)渲染代码块。
    ```
    tab:::这是c语言
    lang:::c
@@ -33,7 +33,7 @@
    def hello_world():
       print("Hello World")
    ```
-2. 鼠标点击代码块左上角的块菜单 -> 插件 -> 将代码块转换为标签页，转换后效果如下  
+2. 鼠标点击代码块左上角的块菜单 -> 插件 -> 将代码块转换为标签页，你也可以在设置 -> 快捷键中为该功能设置一个快捷键。转换后效果如下  
    ![图2-1](./asset/2-1.png)
    ![图2-2](./asset/2-2.png)
    ![图2-3](./asset/2-3.png)

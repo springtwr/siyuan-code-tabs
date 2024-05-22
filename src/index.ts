@@ -75,7 +75,19 @@ export default class CodeTabs extends Plugin {
         // 防抖回调
         const putFile = () => {
             logger.info(this.i18n.codeStyleChange);
-            this.putStyleFile().then();
+            this.putStyleFile().then(() => {
+                document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
+                    const shadowRoot = node.querySelector('protyle-html').shadowRoot;
+                    shadowRoot.querySelectorAll('link').forEach(link => {
+                        const currentHref = link.href;
+                        const currentTime = Date.now().toString();
+                        const url = new URL(currentHref);
+                        url.searchParams.set('t', currentTime);
+                        link.href = url.toString();
+                    });
+                });
+            });
+
         }
         const debounced = debounce(putFile, 500);
         const observer = new MutationObserver(callback);
@@ -395,21 +407,21 @@ export default class CodeTabs extends Plugin {
         // 配置代码样式文件
         const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
         const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
-        putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle).then();
+        await putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle);
         // 配置代码背景色样式文件
         const bg = await this.getBackgroundColor();
         const cssContent = `.tab-contents.protyle-wysiwyg .hljs { background-color: ${bg}; }`;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
-        putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle).then();
+        await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
         // 配置代码中markdown的样式文件
         const mode = document.documentElement.getAttribute('data-theme-mode');
         if (mode === 'dark') {
             const darkModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-dark.css', 'github-markdown.css');
-            putFile('/data/plugins/code-tabs/github-markdown.css', false, darkModeFile).then();
+            await putFile('/data/plugins/code-tabs/github-markdown.css', false, darkModeFile);
         } else {
             const lightModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-light.css', 'github-markdown.css');
-            putFile('/data/plugins/code-tabs/github-markdown.css', false, lightModeFile).then();
+            await putFile('/data/plugins/code-tabs/github-markdown.css', false, lightModeFile);
         }
     }
 

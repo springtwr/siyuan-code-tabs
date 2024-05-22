@@ -1,5 +1,5 @@
 function openTag(evt) {
-    const tabContainer = evt.target.parentNode.parentNode;
+    const tabContainer = getTabContainer(evt.target);
     const tabItems = tabContainer.querySelectorAll('.tab-item');
     const tabContents = tabContainer.querySelectorAll('.tab-content');
     tabItems.forEach((tabItem, index) => {
@@ -14,7 +14,7 @@ function openTag(evt) {
 }
 
 function copyCode(evt) {
-    const tabContainer = evt.target.parentNode.parentNode;
+    const tabContainer = getTabContainer(evt.target);
     const tabContent = tabContainer.querySelector('.tab-content--active');
     const textContent = tabContent.textContent;
     if (textContent) {
@@ -28,15 +28,7 @@ function copyCode(evt) {
 }
 
 function toggle(evt) {
-    const findRootParent = (element) => {
-        let parent = element;
-        while (parent.parentNode) {
-            parent = parent.parentNode;
-        }
-        return parent;
-    }
-    const shadowRoot = findRootParent(evt.target);
-    const htmlBlock = shadowRoot.host.parentNode.parentNode;
+    const htmlBlock = getHtmlBlock(evt.target);
     const nodeId = htmlBlock.dataset.nodeId;
     getBlockAttrs(nodeId).then(res => {
         const codeText = res['custom-plugin-code-tabs-sourcecode'];
@@ -46,6 +38,18 @@ function toggle(evt) {
             log('info', '标签页转为代码块');
         });
     });
+}
+
+function getHtmlBlock(element) {
+    let parent = element;
+    while (parent.parentNode) {
+        parent = parent.parentNode;
+    }
+    return parent.host.parentNode.parentNode;
+}
+
+function getTabContainer(element) {
+    return element.parentNode.parentNode;
 }
 
 async function getBlockAttrs(id) {

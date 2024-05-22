@@ -31,10 +31,10 @@ function toggle(evt) {
     const htmlBlock = getHtmlBlock(evt.target);
     const nodeId = htmlBlock.dataset.nodeId;
     getBlockAttrs(nodeId).then(res => {
-        const codeText = res['custom-plugin-code-tabs-sourcecode'];
+        // 切回代码块时要将自定义属性的字符串中的零宽空格还原成换行符
+        const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
         const flag = "```````````````````````````";
         updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
-            const timestamp = new Date().toISOString();
             log('info', '标签页转为代码块');
         });
     });

@@ -141,8 +141,8 @@ export default class CodeTabs extends Plugin {
      */
     private async convertToTabs(item: any) {
         const id = item.dataset.nodeId;
-        // codeText 是代码块中的原始文本
-        const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200D/g, '');
+        // codeText 是代码块中的原始文本，使用前需去除其中的零宽字符
+        const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200d/g, '').replace(/\u200b/g, '');
         // 生成思源笔记中的HTMLBlock字符串
         const htmlBlock = this.createHtmlBlock(id, codeText);
         // 更新代码块，将它转换为HTMLBlock
@@ -162,6 +162,9 @@ export default class CodeTabs extends Plugin {
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
             logger.info(this.i18n.updateCodeBlock);
+            // 使用零宽空格来代替换行实现压缩字符串的效果，由于之前的处理此时可以保证此时字符串里面没有零宽空格
+            const newLineFlag = '\u200b';
+            codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
             setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
                 const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
                 const editButton = node.querySelector('.protyle-action__edit');

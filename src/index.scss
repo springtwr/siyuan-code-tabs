@@ -53,6 +53,7 @@
   margin: 0;
 }
 
+/* 复制按钮的样式 */
 .tabs-container .code-tabs--icon_copy {
   opacity: 0;
   position: absolute; /* 绝对定位 */
@@ -60,8 +61,6 @@
   right: 5px; /* 距离右边的距离 */
   width: 1.5em;
   height: 1.5em;
-  //display: flex; /* 使得SVG和文本可以并排显示 */
-  //align-items: center; /* 垂直居中 */
   border-radius: 5px;
   padding: 5px;
   cursor: pointer; /* 鼠标悬停时显示小手图标 */

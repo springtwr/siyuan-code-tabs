@@ -196,23 +196,14 @@ export default class CodeTabs extends Plugin {
      * @private
      */
     private createHtmlBlock(id: string, codeText: string): string {
-        const html_1 = `
-            <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
-                <div class="protyle-icons">
-                    <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
-                        <svg><use xlink:href="#iconEdit"></use></svg>
-                    </span>
-                    <span aria-label="更多" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-action__menu protyle-icon--last">
-                        <svg><use xlink:href="#iconMore"></use></svg>
-                    </span>
-                </div>
-                <div>`.replace(/>\s+</g, '><').trim();
-        const html_2 = `<protyle-html data-content="${this.createProtyleHtml(codeText)}"></protyle-html>`;
-        const html_3 = `<span style="position: absolute"></span>
-                </div>
-                <div class="protyle-attr" contenteditable="false"></div>
-            </div>`.replace(/>\s+</g, '><').trim();
-        return html_1 + html_2 + html_3;
+        const containerDiv = document.createElement('div');
+        console.log(containerDiv);
+        containerDiv.innerHTML = this.htmlBlockStr;
+        const node = containerDiv.querySelector('.render-node') as HTMLElement;
+        node.dataset.nodeId = id;
+        const protyleHtml = containerDiv.querySelector('protyle-html') as HTMLElement;
+        protyleHtml.dataset.content = this.createProtyleHtml(codeText);
+        return containerDiv.innerHTML;
     }
 
     /**
@@ -222,48 +213,17 @@ export default class CodeTabs extends Plugin {
      * @private
      */
     private createProtyleHtml(codeText: string): string {
-        const html_1 = `  
-            <div> 
-                <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
-                <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
-                <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
-                <link rel="stylesheet" href="/plugins/code-tabs/index.css">
-                <link rel="stylesheet" href="/plugins/code-tabs/background.css">`.replace(/>\s+</g, '><').trim();
-        const html_2 = this.createTabs(codeText);
-        const html_3 = `
-                <script src="/plugins/code-tabs/util/util.js"></script>
-            </div>`.replace(/>\s+</g, '><').trim();
-        const html = html_1 + html_2 + html_3;
-        return this.escapeHtml(html);
-    }
-
-    /**
-     * 生成代码标签页的dom字符串
-     * @param codeText 代码块的原始文本
-     * @return dom字符串
-     * @private
-     */
-    private createTabs(codeText: string): string {
-        // tab-container类用于存放所有的标签和标签内容
-        const tabContainer = document.createElement('div');
-        tabContainer.className = 'tabs-container';
+        const containerDiv = document.createElement('div');
+        console.log(containerDiv);
+        containerDiv.innerHTML = this.protyleHtmlStr;
+        const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;
 
         // tabs 包含所有标签页的标题
-        const tabs = document.createElement("div");
-        tabs.className = "tabs";
+        const tabs = containerDiv.querySelector('.tabs') as HTMLElement;
+        console.log(tabs);
         // tab-contents 包含所有标签页的内容
-        const tabContents = document.createElement("div");
-        tabContents.className = "tab-contents protyle-wysiwyg protyle-wysiwyg--attr";
-        tabContents.style.cssText = "word-break: break-word; font-variant-ligatures: none; position: relative;"
-        // 添加复制按钮
-        const iconContainer = document.createElement('span');
-        iconContainer.className = 'code-tabs--icon_copy';
-        iconContainer.setAttribute('onclick', 'copyCode(event)');
-        const copyImg = document.createElement('img');
-        copyImg.src = '/plugins/code-tabs/asset/copy.png';
-        iconContainer.appendChild(copyImg);
-        tabContents.appendChild(iconContainer);
-
+        const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
+        console.log(tabContents);
         // 解析代码块中的代码，将它们放到对应的标签页中
         // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型
         const codeTagTextArray = codeText.split("tab:::");
@@ -315,7 +275,7 @@ export default class CodeTabs extends Plugin {
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
                 hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
-                hlText = `<div class="language-${language}" style="white-space: pre-wrap;">${hlText}</div></pre>`;
+                hlText = `<div class="language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
                 .replace(/&gt;/g, '&amp;gt;');
@@ -331,9 +291,8 @@ export default class CodeTabs extends Plugin {
 
         tabContainer.appendChild(tabs);
         tabContainer.appendChild(tabContents);
-        return tabContainer.outerHTML;
+        return this.escapeHtml(containerDiv.innerHTML);
     }
-
     /**
      * 转义dom字符串中的特殊字符，这里只转义引号和 &
      * @param input 要转义的字符串
@@ -344,7 +303,9 @@ export default class CodeTabs extends Plugin {
         /* 不转义尖括号刚好能正常运行 */
         return input.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     /**
@@ -432,7 +393,7 @@ export default class CodeTabs extends Plugin {
         // 配置代码背景色样式文件
         const style = await this.getCodeBlockStyle();
         const cssContent = `
-.tab-contents.protyle-wysiwyg > .hljs { 
+.tab-contents > .hljs { 
   background-color: ${style.bg}; 
   font-family: ${style.fontFamily};
   padding: ${style.contentPadding};
@@ -482,7 +443,7 @@ export default class CodeTabs extends Plugin {
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
         logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
-        let bg = 'rgb(248, 249, 250)';
+        let bg: string;
         // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
         const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
         const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
@@ -571,4 +532,39 @@ export default class CodeTabs extends Plugin {
         }
         return true;
     }
+
+    private htmlBlockStr = `
+        <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
+            <div class="protyle-icons">
+                <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
+                    <svg><use xlink:href="#iconEdit"></use></svg>
+                </span>
+                <span aria-label="更多" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-action__menu protyle-icon--last">
+                    <svg><use xlink:href="#iconMore"></use></svg>
+                </span>
+            </div>
+            <div>
+                <protyle-html></protyle-html>
+                <span style="position: absolute"></span>
+            </div>
+            <div class="protyle-attr" contenteditable="false"></div>
+        </div>`.replace(/>\s+</g, '><').trim();
+
+    private protyleHtmlStr = `
+        <div> 
+            <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
+            <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/index.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/background.css">
+            <div class="tabs-container">
+                <div class="tabs"></div>
+                <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
+                    <span class="code-tabs--icon_copy" onclick="copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
+                </div>
+            </div>
+            <script src="/plugins/code-tabs/util/util.js"></script>
+        </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 }
+
+

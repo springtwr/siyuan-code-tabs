@@ -83,16 +83,16 @@ export default class CodeTabs extends Plugin {
             const selector = /<link.*theme/gi;
             for (let mutation of mutationsList) {
                 // 用防抖函数保证head中与主题相关的节点快速变化时只进行一次样式配置
-                if (mutation.type === 'childList' || mutation.type === 'attributes') {
-                    // 系统配置有变化时重新配置插件的样式文件
-                    if (!this.compareConfig(siyuanConfig, this.data)) {
-                        debounced();
-                        break;
-                    } else if (selector.test(mutation.target.outerHTML)) {
-                        // 某些第三方主题配色变化时并不会改变系统配置，因此要单独处理
-                        debounced();
-                        break;
-                    }
+                const configFlag = this.compareConfig(siyuanConfig, this.data)
+                if (!configFlag) {
+                    debounced();
+                    break;
+                }
+                if (mutation.type === 'attributes' && selector.test(mutation.target.outerHTML)) {
+                    // 某些第三方主题配色变化时并不会改变系统配置，因此要单独处理
+                    console.log(mutation.target.outerHTML);
+                    debounced();
+                    break;
                 }
             }
         };

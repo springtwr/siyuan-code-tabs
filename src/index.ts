@@ -426,7 +426,6 @@ export default class CodeTabs extends Plugin {
         const cssContent = `
 .tab-contents.protyle-wysiwyg > .hljs { 
   background-color: ${style.bg}; 
-  font-size: ${style.fontSize};
   font-family: ${style.fontFamily};
   padding: ${style.contentPadding};
 }
@@ -464,7 +463,6 @@ export default class CodeTabs extends Plugin {
             pushErrMsg(this.i18n.errMsgGetBackground).then();
             return {
                 bg: "rgb(248, 249, 250)",
-                fontSize: "85%",
                 fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
                 contentPadding: "2em 16px",
                 border: "none",
@@ -479,7 +477,7 @@ export default class CodeTabs extends Plugin {
         let bg = 'rgb(248, 249, 250)';
         // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
         const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
-        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
+        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]') ;
         const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
         const nodeBg = window.getComputedStyle(tempElement).backgroundColor;
         logger.info('hljs bg: ' + hljsBg);
@@ -489,7 +487,6 @@ export default class CodeTabs extends Plugin {
         } else {
             bg = nodeBg;
         }
-        const fontSize = window.getComputedStyle(hljsElement).fontSize;
         const fontFamily = window.getComputedStyle(hljsElement).fontFamily;
         const contentPadding = window.getComputedStyle(hljsElement).padding;
         const border = window.getComputedStyle(tempElement).border;
@@ -499,7 +496,6 @@ export default class CodeTabs extends Plugin {
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
         return {
             bg: bg,
-            fontSize: fontSize,
             fontFamily: fontFamily,
             contentPadding: contentPadding,
             border: border,

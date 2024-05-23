@@ -189,7 +189,7 @@ export default class CodeTabs extends Plugin {
      */
     private createHtmlBlock(id: string, codeText: string): string {
         const html_1 = `
-            <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
+            <div data-node-id="${id}" data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
                 <div class="protyle-icons">
                     <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
                         <svg><use xlink:href="#iconEdit"></use></svg>
@@ -219,8 +219,8 @@ export default class CodeTabs extends Plugin {
                 <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
                 <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
                 <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
-                <link rel="stylesheet" href="/plugins/code-tabs/background.css">
-                <link rel="stylesheet" href="/plugins/code-tabs/index.css">`.replace(/>\s+</g, '><').trim();
+                <link rel="stylesheet" href="/plugins/code-tabs/index.css">
+                <link rel="stylesheet" href="/plugins/code-tabs/background.css">`.replace(/>\s+</g, '><').trim();
         const html_2 = this.createTabs(codeText);
         const html_3 = `
                 <script src="/plugins/code-tabs/util/util.js"></script>
@@ -307,7 +307,7 @@ export default class CodeTabs extends Plugin {
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
                 hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
-                hlText = `<pre><code class="language-${language}">${hlText}</code></pre>`;
+                hlText = `<div class="language-${language}" style="white-space: pre-wrap;">${hlText}</div></pre>`;
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
                 .replace(/&gt;/g, '&amp;gt;');
@@ -422,8 +422,20 @@ export default class CodeTabs extends Plugin {
         const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
         await putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle);
         // 配置代码背景色样式文件
-        const bg = await this.getBackgroundColor();
-        const cssContent = `.tab-contents.protyle-wysiwyg > .hljs { background-color: ${bg}; }`;
+        const style = await this.getCodeBlockStyle();
+        const cssContent = `
+.tab-contents.protyle-wysiwyg > .hljs { 
+  background-color: ${style.bg}; 
+  font-size: ${style.fontSize};
+  font-family: ${style.fontFamily};
+  padding: ${style.contentPadding};
+}
+.tabs-container {
+  border: ${style.border}; 
+  border-radius: ${style.borderRadius};
+  box-shadow: ${style.boxShadow};
+  margin: ${style.margin};
+}`;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
         await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
@@ -443,29 +455,56 @@ export default class CodeTabs extends Plugin {
      * @return 代码块背景色的rgb代码，如“rgb(0, 0, 0)”
      * @private
      */
-    private async getBackgroundColor() {
+    private async getCodeBlockStyle() {
         /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
         const block = document.querySelector('[data-type*="Node"][data-node-id]') as HTMLElement;
         const id = block?.dataset.nodeId;
         if (id === undefined) {
             pushErrMsg(this.i18n.errMsgGetBackground).then();
-            return "rgb(248, 249, 250)";
+            return {
+                bg: "rgb(248, 249, 250)",
+                fontSize: "85%",
+                fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
+                contentPadding: "2em 16px",
+                border: "none",
+                boxShadow: "none",
+                borderRadius: "5px",
+                margin: "4px, 0"
+            };
         }
-        const result = await insertBlock("markdown", "\`\`\`python\nprint(\"temp block\")\n", '', id, '');
+        const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
         logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
+        let bg = 'rgb(248, 249, 250)';
         // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
+        const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
         const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
         const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
-        logger.info('hljs bg: ' + hljsBg);
-        if (hljsBg !== 'rgba(0, 0, 0, 0)') {
-            deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
-            return hljsBg;
-        }
-        const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
         const nodeBg = window.getComputedStyle(tempElement).backgroundColor;
+        logger.info('hljs bg: ' + hljsBg);
         logger.info('node bg: ' + nodeBg);
+        if (hljsBg !== 'rgba(0, 0, 0, 0)') {
+            bg = hljsBg;
+        } else {
+            bg = nodeBg;
+        }
+        const fontSize = window.getComputedStyle(hljsElement).fontSize;
+        const fontFamily = window.getComputedStyle(hljsElement).fontFamily;
+        const contentPadding = window.getComputedStyle(hljsElement).padding;
+        const border = window.getComputedStyle(tempElement).border;
+        const boxShadow = window.getComputedStyle(tempElement).boxShadow;
+        const borderRadius = window.getComputedStyle(tempElement).borderRadius;
+        const margin = window.getComputedStyle(tempElement).margin;
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
-        return nodeBg;
+        return {
+            bg: bg,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            contentPadding: contentPadding,
+            border: border,
+            boxShadow: boxShadow,
+            borderRadius: borderRadius,
+            margin: margin
+        };
     }
 }

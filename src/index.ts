@@ -39,28 +39,59 @@ export default class CodeTabs extends Plugin {
         if (process.env.DEV_MODE === 'true') {
             (window as any).CODE_TABS_DEV_MODE = 'true';
         }
+        // 读取思源的主题和字体配置，保存到插件中。mode=0表示浅色模式
+        this.syncSiyuanConfig();
+        // 启动时从插件的配置文件中读取配置，和思源的配置对比，不同或配置文件不存在则更改插件配置
+        const configFile = await this.fetchFileFromUrl('/plugins/code-tabs/config.json', 'config.json');
+        if (configFile === undefined || configFile.size === 0) {
+            await this.putStyleFile();
+            await this.saveConfig();
+            this.updateAllTabsStyle();
+        } else {
+            const loadDataFromFile = async function (file: File) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const data = JSON.parse(reader.result as string);
+                            resolve(data as Object);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = () => {
+                        reject(reader.error);
+                    };
+                    reader.readAsText(file);
+                });
+            }
+            const data = await loadDataFromFile(configFile);
+            const configFlag = this.compareConfig(data, this.data);
+            if (!configFlag) {
+                await this.putStyleFile();
+                await this.saveConfig();
+                this.updateAllTabsStyle();
+            }
+        }
+        // 启动后的配置检查完成后this.data保存的就是插件的配置(此时插件配置应该和思源的配置是相同的)，思源的配置从window对象中读取
         // 监听代码主题和系统主题变化
-        const head = document.querySelector('head');
+        const head = document.head;
         const config = {attributes: true, childList: true, subtree: true};
         const callback = (mutationsList: any) => {
             // 遍历所有变动
-            const selector = /<link.*theme|<link.*style/gi;
+            const siyuanConfig = this.getSiyuanConfig();
+            const selector = /<link.*theme/gi;
             for (let mutation of mutationsList) {
                 // 用防抖函数保证head中与主题相关的节点快速变化时只进行一次样式配置
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach((addedNode: any) => {
-                        if (selector.test(addedNode.outerHTML)) {
-                            debounced();
-                        }
-                    });
-                    mutation.removedNodes.forEach((removedNode: any) => {
-                        if (selector.test(removedNode.outerHTML)) {
-                            debounced();
-                        }
-                    });
-                } else if (mutation.type === 'attributes') {
-                    if (selector.test(mutation.target.outerHTML)) {
+                if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                    // 系统配置有变化时重新配置插件的样式文件
+                    if (!this.compareConfig(siyuanConfig, this.data)) {
                         debounced();
+                        break;
+                    } else if (selector.test(mutation.target.outerHTML)) {
+                        // 某些第三方主题配色变化时并不会改变系统配置，因此要单独处理
+                        debounced();
+                        break;
                     }
                 }
             }
@@ -77,43 +108,20 @@ export default class CodeTabs extends Plugin {
         const putFile = () => {
             logger.info(this.i18n.codeStyleChange);
             this.putStyleFile().then(() => {
-                document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
-                    const shadowRoot = node.querySelector('protyle-html').shadowRoot;
-                    shadowRoot.querySelectorAll('link').forEach(link => {
-                        const currentHref = link.href;
-                        const currentTime = Date.now().toString();
-                        const url = new URL(currentHref);
-                        url.searchParams.set('t', currentTime);
-                        link.href = url.toString();
-                    });
-                });
+                this.syncSiyuanConfig();
+                this.saveConfig();
+                this.updateAllTabsStyle();
             });
 
         }
         const debounced = debounce(putFile, 500);
         const observer = new MutationObserver(callback);
         observer.observe(head, config);
-
-        // 加载插件时配置样式文件
-        const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
-        // 思源当前的代码样式
-        const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
-        // code-tabs当前使用的代码样式
-        const fileCodeStylePlugin = await this.fetchFileFromUrl('/plugins/code-tabs/code-style.css', 'code-style.css');
-        // code-tabs目录中不存在样式文件或样式文件与思源使用的不同时重新配置样式文件
-        if (fileCodeStylePlugin === undefined || fileCodeStylePlugin.size === 0) {
-            await this.putStyleFile();
-        } else {
-            const codeStyleContent = await fileCodeStyle.text();
-            const pluginCodeStyleContent = await fileCodeStylePlugin.text();
-            if (codeStyleContent !== pluginCodeStyleContent) {
-                logger.info(this.i18n.initPutFile);
-                await this.putStyleFile();
-            }
-        }
     }
 
     async onunload() {
+        // 关闭插件时先将此时的配置保存到插件的配置文件中，用来在下次启动插件时对比配置是否发生变化
+        await this.saveConfig();
         logger.info(this.i18n.byePlugin)
     }
 
@@ -477,7 +485,7 @@ export default class CodeTabs extends Plugin {
         let bg = 'rgb(248, 249, 250)';
         // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
         const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
-        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]') ;
+        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
         const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
         const nodeBg = window.getComputedStyle(tempElement).backgroundColor;
         logger.info('hljs bg: ' + hljsBg);
@@ -503,5 +511,64 @@ export default class CodeTabs extends Plugin {
             borderRadius: borderRadius,
             margin: margin
         };
+    }
+
+    private updateAllTabsStyle() {
+        document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
+            const shadowRoot = node.querySelector('protyle-html').shadowRoot;
+            shadowRoot.querySelectorAll('link').forEach(link => {
+                const currentHref = link.href;
+                const currentTime = Date.now().toString();
+                const url = new URL(currentHref);
+                url.searchParams.set('t', currentTime);
+                link.href = url.toString();
+            });
+        });
+    }
+
+    private getSiyuanConfig() {
+        return {
+            fontSize: window.siyuan.config.editor.fontSize,
+            mode: window.siyuan.config.appearance.mode,
+            themeLight: window.siyuan.config.appearance.themeLight,
+            themeDark: window.siyuan.config.appearance.themeDark,
+            codeBlockThemeLight: window.siyuan.config.appearance.codeBlockThemeLight,
+            codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark
+        }
+    }
+
+    private syncSiyuanConfig() {
+        const properties = this.getSiyuanConfig();
+        Object.keys(properties).forEach(key => {
+            Object.defineProperty(this.data, key, {
+                value: properties[key],
+                writable: true,
+                enumerable: true
+            });
+        });
+    }
+
+    private async saveConfig() {
+        this.syncSiyuanConfig();
+        const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
+        await putFile('/data/plugins/code-tabs/config.json', false, file);
+    }
+
+    private compareConfig(pluginConfig: Object, siyuanConfig: Object) {
+        // 获取对象的所有属性名
+        const pluginKeys = Object.keys(pluginConfig);
+        const siyuanKeys = Object.keys(siyuanConfig);
+
+        // 比较属性数量是否相同
+        if (pluginKeys.length !== siyuanKeys.length) {
+            return false;
+        }
+        // 比较每个属性的值是否相同
+        for (const key of siyuanKeys) {
+            if (pluginConfig[key] !== siyuanConfig[key]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

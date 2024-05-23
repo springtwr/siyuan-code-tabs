@@ -70,6 +70,8 @@ type doOperation = {
 
 interface Window {
     siyuan: {
+        appearance: any;
+        config: any;
         notebooks: any;
         menus: any;
         dialogs: any;

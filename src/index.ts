@@ -457,7 +457,8 @@ export default class CodeTabs extends Plugin {
      */
     private async getCodeBlockStyle() {
         /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
-        const block = document.querySelector('[data-type*="Node"][data-node-id]') as HTMLElement;
+        const protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
+        const block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]').lastChild as HTMLElement;
         const id = block?.dataset.nodeId;
         if (id === undefined) {
             pushErrMsg(this.i18n.errMsgGetBackground).then();

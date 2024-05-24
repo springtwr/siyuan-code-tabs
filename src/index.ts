@@ -9,6 +9,37 @@ import logger from "@/logger";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
+    private htmlBlockStr = `
+        <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
+            <div class="protyle-icons">
+                <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
+                    <svg><use xlink:href="#iconEdit"></use></svg>
+                </span>
+                <span aria-label="更多" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-action__menu protyle-icon--last">
+                    <svg><use xlink:href="#iconMore"></use></svg>
+                </span>
+            </div>
+            <div>
+                <protyle-html></protyle-html>
+                <span style="position: absolute"></span>
+            </div>
+            <div class="protyle-attr" contenteditable="false"></div>
+        </div>`.replace(/>\s+</g, '><').trim();
+    private protyleHtmlStr = `
+        <div> 
+            <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
+            <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/index.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/background.css">
+            <div class="tabs-container">
+                <div class="tabs"></div>
+                <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
+                    <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
+                </div>
+            </div>
+            <script src="/plugins/code-tabs/util/util.js"></script>
+        </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
@@ -293,6 +324,7 @@ export default class CodeTabs extends Plugin {
         tabContainer.appendChild(tabContents);
         return this.escapeHtml(containerDiv.innerHTML);
     }
+
     /**
      * 转义dom字符串中的特殊字符，这里只转义引号和 &
      * @param input 要转义的字符串
@@ -532,39 +564,6 @@ export default class CodeTabs extends Plugin {
         }
         return true;
     }
-
-    private htmlBlockStr = `
-        <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
-            <div class="protyle-icons">
-                <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
-                    <svg><use xlink:href="#iconEdit"></use></svg>
-                </span>
-                <span aria-label="更多" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-action__menu protyle-icon--last">
-                    <svg><use xlink:href="#iconMore"></use></svg>
-                </span>
-            </div>
-            <div>
-                <protyle-html></protyle-html>
-                <span style="position: absolute"></span>
-            </div>
-            <div class="protyle-attr" contenteditable="false"></div>
-        </div>`.replace(/>\s+</g, '><').trim();
-
-    private protyleHtmlStr = `
-        <div> 
-            <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
-            <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
-            <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
-            <link rel="stylesheet" href="/plugins/code-tabs/index.css">
-            <link rel="stylesheet" href="/plugins/code-tabs/background.css">
-            <div class="tabs-container">
-                <div class="tabs"></div>
-                <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
-                    <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
-                </div>
-            </div>
-            <script src="/plugins/code-tabs/util/util.js"></script>
-        </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 }
 
 

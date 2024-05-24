@@ -1,5 +1,5 @@
 import {Plugin} from "siyuan";
-import {deleteBlock, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
+import {deleteBlock, getBlockAttrs, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
 import hljs from "highlight.js";
 import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
@@ -37,16 +37,16 @@ export default class CodeTabs extends Plugin {
                     <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
                 </div>
             </div>
-            <script src="/plugins/code-tabs/util/util.js"></script>
         </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
         logger.info("loading code-tabs");
         logger.info(this.i18n.helloPlugin);
-        // 用一个全局变量来存放util.js中的函数和对象，避免大量污染全局命名空间
-        // onload()会在util.js加载之前执行
-        window.pluginCodeTabs = {};
+        // 用一个全局变量来存放标签页中使用的的函数和对象，避免大量污染全局命名空间
+        // 直接使用全局变量比在shadow dom中使用模块化脚本要方便一点
+        // 同时也避免了直接在shadow dom中引用外部脚本会因更新HTML块导致的脚本重复执行
+        this.addFunctionForCodeTabs();
 
         // 添加快捷键
         this.addCommand({
@@ -563,6 +563,84 @@ export default class CodeTabs extends Plugin {
         }
         return true;
     }
+
+    private addFunctionForCodeTabs() {
+        window.pluginCodeTabs = {
+            debounce: function (func: Function, wait: number) {
+                let timeout = null;
+                return function (...args: any) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            },
+
+            updateTabPosition: function (clicked: HTMLElement) {
+                logger.info('更新标签位置');
+                const htmlBlock = this.getHtmlBlock(clicked);
+                const nodeId = htmlBlock.dataset.nodeId;
+                const protyle = htmlBlock.querySelector('protyle-html');
+                const shadowRoot = protyle.shadowRoot;
+                protyle.dataset.content = shadowRoot.innerHTML;
+                updateBlock('dom', htmlBlock.outerHTML, nodeId).then();
+            },
+
+            openTag: function (evt: MouseEvent) {
+                const clicked = evt.target as HTMLElement;
+                const tabContainer = this.getTabContainer(clicked);
+                const tabItems = tabContainer.querySelectorAll('.tab-item');
+                const tabContents = tabContainer.querySelectorAll('.tab-content');
+                tabItems.forEach((tabItem: HTMLElement, index: number) => {
+                    if (tabItem === clicked) {
+                        tabItem.classList.add('tab-item--active');
+                        tabContents[index].classList.add('tab-content--active');
+                    } else {
+                        tabItem.classList.remove('tab-item--active');
+                        tabContents[index].classList.remove('tab-content--active');
+                    }
+                });
+                // 使用防抖函数保证在至少1秒内没有切换标签页时才使用api更新HTML块
+                this.Debounced(clicked);
+            },
+
+            copyCode: function (evt: MouseEvent) {
+                const tabContainer = this.getTabContainer(evt.target);
+                const tabContent = tabContainer.querySelector('.tab-content--active');
+                const textContent = tabContent.textContent;
+                if (textContent) {
+                    // 使用 Clipboard API 复制文本内容到剪贴板
+                    navigator.clipboard.writeText(textContent).then(() => {
+                        pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                }
+            },
+
+            toggle: function (evt: MouseEvent) {
+                const htmlBlock = this.getHtmlBlock(evt.target);
+                const nodeId = htmlBlock.dataset.nodeId;
+                getBlockAttrs(nodeId).then(res => {
+                    // 切回代码块时要将自定义属性的字符串中的零宽空格还原成换行符
+                    const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                    const flag = "```````````````````````````";
+                    updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
+                        logger.info('标签页转为代码块');
+                    });
+                });
+            },
+
+            getHtmlBlock: function (element: Node) {
+                let parent = element;
+                while (parent.parentNode) {
+                    parent = parent.parentNode;
+                }
+                return (parent as ShadowRoot).host.parentNode.parentNode;
+            },
+
+            getTabContainer: function (element: Node) {
+                return element.parentNode.parentNode;
+            }
+        }
+        window.pluginCodeTabs.Debounced = window.pluginCodeTabs.debounce(window.pluginCodeTabs.updateTabPosition, 1000);
+    }
 }
-
-

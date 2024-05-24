@@ -305,7 +305,7 @@ export default class CodeTabs extends Plugin {
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
                 hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
-                hlText = `<div class="language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
+                hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
                 .replace(/&gt;/g, '&amp;gt;');
@@ -513,7 +513,7 @@ export default class CodeTabs extends Plugin {
                 const currentTime = Date.now().toString();
                 const url = new URL(currentHref);
                 url.searchParams.set('t', currentTime);
-                link.href = url.toString();
+                link.href = url.pathname + url.search;
             });
         });
     }
@@ -580,8 +580,25 @@ export default class CodeTabs extends Plugin {
                 const nodeId = htmlBlock.dataset.nodeId;
                 const protyle = htmlBlock.querySelector('protyle-html');
                 const shadowRoot = protyle.shadowRoot;
+                // 更新块时只保留css链接中的路径
+                let t: string;
+                shadowRoot.querySelectorAll('link').forEach((link: HTMLLinkElement) => {
+                    const currentHref = link.href;
+                    const url = new URL(currentHref);
+                    t = url.search;
+                    link.href = url.pathname;
+                });
                 protyle.dataset.content = shadowRoot.innerHTML;
-                updateBlock('dom', htmlBlock.outerHTML, nodeId).then();
+                updateBlock('dom', htmlBlock.outerHTML, nodeId).then(() => {
+                    const htmlBlock = document.querySelector(`[data-node-id="${nodeId}"][data-type="NodeHTMLBlock"]`);
+                    const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
+                    // 更新标签位置之后还要还原查询参数
+                    shadowRoot.querySelectorAll('link').forEach((link: HTMLLinkElement) => {
+                        const currentHref = link.href;
+                        const url = new URL(currentHref);
+                        link.href = url.pathname + t;
+                    });
+                });
             },
 
             openTag: function (evt: MouseEvent) {

@@ -566,41 +566,6 @@ export default class CodeTabs extends Plugin {
 
     private addFunctionForCodeTabs() {
         window.pluginCodeTabs = {
-            debounce: function (func: Function, wait: number) {
-                let timeout = null;
-                return function (...args: any) {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => func.apply(this, args), wait);
-                };
-            },
-
-            updateTabPosition: function (clicked: HTMLElement) {
-                logger.info('更新标签位置');
-                const htmlBlock = this.getHtmlBlock(clicked);
-                const nodeId = htmlBlock.dataset.nodeId;
-                const protyle = htmlBlock.querySelector('protyle-html');
-                const shadowRoot = protyle.shadowRoot;
-                // 更新块时只保留css链接中的路径
-                let t: string;
-                shadowRoot.querySelectorAll('link').forEach((link: HTMLLinkElement) => {
-                    const currentHref = link.href;
-                    const url = new URL(currentHref);
-                    t = url.search;
-                    link.href = url.pathname;
-                });
-                protyle.dataset.content = shadowRoot.innerHTML;
-                updateBlock('dom', htmlBlock.outerHTML, nodeId).then(() => {
-                    const htmlBlock = document.querySelector(`[data-node-id="${nodeId}"][data-type="NodeHTMLBlock"]`);
-                    const shadowRoot = htmlBlock.querySelector('protyle-html').shadowRoot;
-                    // 更新标签位置之后还要还原查询参数
-                    shadowRoot.querySelectorAll('link').forEach((link: HTMLLinkElement) => {
-                        const currentHref = link.href;
-                        const url = new URL(currentHref);
-                        link.href = url.pathname + t;
-                    });
-                });
-            },
-
             openTag: function (evt: MouseEvent) {
                 const clicked = evt.target as HTMLElement;
                 const tabContainer = this.getTabContainer(clicked);
@@ -615,8 +580,6 @@ export default class CodeTabs extends Plugin {
                         tabContents[index].classList.remove('tab-content--active');
                     }
                 });
-                // 使用防抖函数保证在至少1秒内没有切换标签页时才使用api更新HTML块
-                this.Debounced(clicked);
             },
 
             copyCode: function (evt: MouseEvent) {
@@ -658,6 +621,5 @@ export default class CodeTabs extends Plugin {
                 return element.parentNode.parentNode;
             }
         }
-        window.pluginCodeTabs.Debounced = window.pluginCodeTabs.debounce(window.pluginCodeTabs.updateTabPosition, 1000);
     }
 }

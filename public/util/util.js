@@ -1,9 +1,30 @@
-function openTag(evt) {
-    const tabContainer = getTabContainer(evt.target);
+window.pluginCodeTabs.debounce = function (func, wait) {
+    let timeout = null;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+window.pluginCodeTabs.updateTabPosition = function (clicked) {
+    window.pluginCodeTabs.log("info", "更新标签位置");
+    const htmlBlock = window.pluginCodeTabs.getHtmlBlock(clicked);
+    const nodeId = htmlBlock.dataset.nodeId;
+    const protyle = htmlBlock.querySelector('protyle-html');
+    const shadowRoot = protyle.shadowRoot;
+    protyle.dataset.content = shadowRoot.innerHTML;
+    window.pluginCodeTabs.updateBlock('dom', htmlBlock.outerHTML, nodeId).then();
+}
+// 使用防抖函数保证在至少1秒内没有切换标签页时才使用api更新HTML块
+window.pluginCodeTabs.Debounced = window.pluginCodeTabs.debounce(window.pluginCodeTabs.updateTabPosition, 1000);
+
+window.pluginCodeTabs.openTag = function (evt) {
+    const clicked = evt.target;
+    const tabContainer = window.pluginCodeTabs.getTabContainer(clicked);
     const tabItems = tabContainer.querySelectorAll('.tab-item');
     const tabContents = tabContainer.querySelectorAll('.tab-content');
     tabItems.forEach((tabItem, index) => {
-        if (tabItem === evt.target) {
+        if (tabItem === clicked) {
             tabItem.classList.add('tab-item--active');
             tabContents[index].classList.add('tab-content--active');
         } else {
@@ -11,36 +32,37 @@ function openTag(evt) {
             tabContents[index].classList.remove('tab-content--active');
         }
     });
+    window.pluginCodeTabs.Debounced(clicked);
 }
 
-function copyCode(evt) {
-    const tabContainer = getTabContainer(evt.target);
+window.pluginCodeTabs.copyCode = function (evt) {
+    const tabContainer = window.pluginCodeTabs.getTabContainer(evt.target);
     const tabContent = tabContainer.querySelector('.tab-content--active');
     const textContent = tabContent.textContent;
     if (textContent) {
         // 使用 Clipboard API 复制文本内容到剪贴板
         navigator.clipboard.writeText(textContent).then(() => {
-            pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
+            window.pluginCodeTabs.pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
         }).catch(err => {
             console.error('Failed to copy text: ', err);
         });
     }
 }
 
-function toggle(evt) {
-    const htmlBlock = getHtmlBlock(evt.target);
+window.pluginCodeTabs.toggle = function (evt) {
+    const htmlBlock = window.pluginCodeTabs.getHtmlBlock(evt.target);
     const nodeId = htmlBlock.dataset.nodeId;
-    getBlockAttrs(nodeId).then(res => {
+    window.pluginCodeTabs.getBlockAttrs(nodeId).then(res => {
         // 切回代码块时要将自定义属性的字符串中的零宽空格还原成换行符
         const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
         const flag = "```````````````````````````";
-        updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
-            log('info', '标签页转为代码块');
+        window.pluginCodeTabs.updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
+            window.pluginCodeTabs.log('info', '标签页转为代码块');
         });
     });
 }
 
-function getHtmlBlock(element) {
+window.pluginCodeTabs.getHtmlBlock = function (element) {
     let parent = element;
     while (parent.parentNode) {
         parent = parent.parentNode;
@@ -48,38 +70,38 @@ function getHtmlBlock(element) {
     return parent.host.parentNode.parentNode;
 }
 
-function getTabContainer(element) {
+window.pluginCodeTabs.getTabContainer = function (element) {
     return element.parentNode.parentNode;
 }
 
-async function getBlockAttrs(id) {
+window.pluginCodeTabs.getBlockAttrs = async function (id) {
     let data = {
         id: id
     }
     let url = '/api/attr/getBlockAttrs';
-    return request(url, data);
+    return window.pluginCodeTabs.request(url, data);
 }
 
-async function updateBlock(dataType, data, id) {
+window.pluginCodeTabs.updateBlock = async function (dataType, data, id) {
     let payload = {
         dataType: dataType,
         data: data,
         id: id
     }
     let url = '/api/block/updateBlock';
-    return request(url, payload);
+    return window.pluginCodeTabs.request(url, payload);
 }
 
-async function pushMsg(msg, timeout = 7000) {
+window.pluginCodeTabs.pushMsg = async function (msg, timeout = 7000) {
     let payload = {
         msg: msg,
         timeout: timeout
     };
     let url = "/api/notification/pushMsg";
-    return request(url, payload);
+    return window.pluginCodeTabs.request(url, payload);
 }
 
-async function request(route, data) {
+window.pluginCodeTabs.request = async function (route, data) {
     const baseUrl = 'http://127.0.0.1:6806';
     const url = baseUrl + route;
     try {
@@ -96,7 +118,7 @@ async function request(route, data) {
     }
 }
 
-function log(level, message) {
+window.pluginCodeTabs.log = function (level, message) {
     if (window.CODE_TABS_DEV_MODE !== 'true') {
         return;
     }

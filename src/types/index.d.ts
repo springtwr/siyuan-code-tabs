@@ -50,8 +50,8 @@ type Block = {
     length: number;
     type: BlockType;
     subtype: BlockSubType;
-    /** string of { [key: string]: string } 
-     * For instance: "{: custom-type=\"query-code\" id=\"20230613234017-zkw3pr0\" updated=\"20230613234509\"}" 
+    /** string of { [key: string]: string }
+     * For instance: "{: custom-type=\"query-code\" id=\"20230613234017-zkw3pr0\" updated=\"20230613234509\"}"
      */
     ial?: string;
     sort: number;
@@ -81,4 +81,5 @@ interface Window {
         ws: any;
         languages: any;
     };
+    pluginCodeTabs: any
 }

@@ -14,6 +14,9 @@ export default class CodeTabs extends Plugin {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
         logger.info("loading code-tabs");
         logger.info(this.i18n.helloPlugin);
+        // 用一个全局变量来存放util.js中的函数和对象，避免大量污染全局命名空间
+        // onload()会在util.js加载之前执行
+        window.pluginCodeTabs = {};
 
         // 添加快捷键
         this.addCommand({
@@ -90,7 +93,6 @@ export default class CodeTabs extends Plugin {
                 }
                 if (mutation.type === 'attributes' && selector.test(mutation.target.outerHTML)) {
                     // 某些第三方主题配色变化时并不会改变系统配置，因此要单独处理
-                    console.log(mutation.target.outerHTML);
                     debounced();
                     break;
                 }
@@ -181,8 +183,10 @@ export default class CodeTabs extends Plugin {
                     'bubbles': true,
                     'cancelable': true
                 });
+                logger.info(editButton);
                 editButton.dispatchEvent(clickEvent);
                 const closeButton = document.querySelector('.block__icon--show[data-type="close"]');
+                logger.info(closeButton);
                 closeButton.dispatchEvent(clickEvent);
             });
         })
@@ -197,7 +201,6 @@ export default class CodeTabs extends Plugin {
      */
     private createHtmlBlock(id: string, codeText: string): string {
         const containerDiv = document.createElement('div');
-        console.log(containerDiv);
         containerDiv.innerHTML = this.htmlBlockStr;
         const node = containerDiv.querySelector('.render-node') as HTMLElement;
         node.dataset.nodeId = id;
@@ -214,16 +217,13 @@ export default class CodeTabs extends Plugin {
      */
     private createProtyleHtml(codeText: string): string {
         const containerDiv = document.createElement('div');
-        console.log(containerDiv);
         containerDiv.innerHTML = this.protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;
 
         // tabs 包含所有标签页的标题
         const tabs = containerDiv.querySelector('.tabs') as HTMLElement;
-        console.log(tabs);
         // tab-contents 包含所有标签页的内容
         const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
-        console.log(tabContents);
         // 解析代码块中的代码，将它们放到对应的标签页中
         // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型
         const codeTagTextArray = codeText.split("tab:::");
@@ -245,7 +245,7 @@ export default class CodeTabs extends Plugin {
             const tab = document.createElement("div");
             tab.className = "tab-item";
             tab.textContent = title;
-            tab.setAttribute('onclick', 'openTag(event)');
+            tab.setAttribute('onclick', 'pluginCodeTabs.openTag(event)');
             if (i === 1) tab.classList.add("tab-item--active");
             tabs.appendChild(tab);
 
@@ -285,7 +285,7 @@ export default class CodeTabs extends Plugin {
         // 切换键，用来将标签页切回代码块
         const tabCustomTag = document.createElement("div");
         tabCustomTag.className = "tab-toggle";
-        tabCustomTag.setAttribute('onclick', 'toggle(event)');
+        tabCustomTag.setAttribute('onclick', 'pluginCodeTabs.toggle(event)');
         tabCustomTag.textContent = this.i18n.toggleToCode;
         tabs.appendChild(tabCustomTag);
 
@@ -560,7 +560,7 @@ export default class CodeTabs extends Plugin {
             <div class="tabs-container">
                 <div class="tabs"></div>
                 <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
-                    <span class="code-tabs--icon_copy" onclick="copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
+                    <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
                 </div>
             </div>
             <script src="/plugins/code-tabs/util/util.js"></script>

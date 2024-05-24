@@ -1,6 +1,5 @@
 import {Plugin} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
-import "@/index.scss";
 import hljs from "highlight.js";
 import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
@@ -30,7 +29,7 @@ export default class CodeTabs extends Plugin {
             <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
             <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
             <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
-            <link rel="stylesheet" href="/plugins/code-tabs/index.css">
+            <link rel="stylesheet" href="/plugins/code-tabs/asset/code-tabs.css">
             <link rel="stylesheet" href="/plugins/code-tabs/background.css">
             <div class="tabs-container">
                 <div class="tabs"></div>

@@ -256,6 +256,7 @@ export default class CodeTabs extends Plugin {
         const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
         // 解析代码块中的代码，将它们放到对应的标签页中
         // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型
+        let activeIndex = 1;
         const codeTagTextArray = codeText.split("tab:::");
         for (let i = 1; i < codeTagTextArray.length; i++) {
             const codeBlockArr = codeTagTextArray[i].split('lang:::');
@@ -270,19 +271,23 @@ export default class CodeTabs extends Plugin {
             if (title === undefined) {
                 title = language;
             }
+            if (title.split(':::active').length > 1) {
+                title = title.split(':::active')[0].trim();
+                activeIndex = i;
+            }
 
             // 填充标签
             const tab = document.createElement("div");
             tab.className = "tab-item";
             tab.textContent = title;
             tab.setAttribute('onclick', 'pluginCodeTabs.openTag(event)');
-            if (i === 1) tab.classList.add("tab-item--active");
+            // if (i === 1) tab.classList.add("tab-item--active");
             tabs.appendChild(tab);
 
             // 填充对应的标签页内容
             const content = document.createElement('div');
             content.className = "tab-content hljs";
-            if (i === 1) content.classList.add("tab-content--active");
+            // if (i === 1) content.classList.add("tab-content--active");
             content.dataset.render = "true";
             let hlText = code;
             // 如果语言被支持，则进行格式处理，否则按纯文本处理，其中markdown单独使用marked处理
@@ -311,6 +316,10 @@ export default class CodeTabs extends Plugin {
                 .replace(/&gt;/g, '&amp;gt;');
             tabContents.appendChild(content);
         }
+        // 设定默认激活的标签
+        tabs.children[activeIndex-1].classList.add('tab-item--active');
+        // tabContents中的第一个元素是复制按钮
+        tabContents.children[activeIndex].classList.add('tab-content--active');
         // 最后添加自定义内容
         // 切换键，用来将标签页切回代码块
         const tabCustomTag = document.createElement("div");

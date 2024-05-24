@@ -1,6 +1,6 @@
 enum LogLevel {
     INFO = 'info',
-    WARN = 'warn',
+    WARNING = 'warning',
     ERROR = 'error',
 }
 
@@ -12,29 +12,38 @@ class Logger {
         this.isDev = process.env.DEV_MODE === 'true';
     }
 
-    public info(message: string): void {
+    public info(message: any): void {
         this.log(LogLevel.INFO, message);
     }
 
-    public warn(message: string): void {
-        this.log(LogLevel.WARN, message);
+    public warn(message: any): void {
+        this.log(LogLevel.WARNING, message);
     }
 
-    public error(message: string): void {
+    public error(message: any): void {
         this.log(LogLevel.ERROR, message);
     }
 
-    private log(level: LogLevel, message: string): void {
+    private log(level: LogLevel = LogLevel.INFO, message: any): void {
         const timestamp = new Date().toISOString();
-        const logMessage = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: ${message}`;
+        let logHeader = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: `;
+        let elementFlag:Boolean = false;
+        if (message instanceof Element) {
+            elementFlag = true;
+        }
         // 生产环境中只输出错误信息，屏蔽 info 和 warn 信息
         if (!this.isDev) {
             if (level === LogLevel.ERROR) {
-                console.log(logMessage);
+                console.error(logHeader + `${message}`);
             }
             return;
         }
-        console.log(logMessage);
+        if (elementFlag) {
+            console.log(logHeader);
+            console.log(message);
+        } else {
+            console.log(logHeader + `${message}`);
+        }
     }
 }
 

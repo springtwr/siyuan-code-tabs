@@ -14,7 +14,7 @@ public class HelloWorld {
     }
 }
 
-tab:::python
+tab:::python:::active
 def hello_world():
     print("Hello World")
 

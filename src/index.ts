@@ -68,10 +68,6 @@ export default class CodeTabs extends Plugin {
 
     async onLayoutReady() {
         logger.info("layout ready");
-        // 在开发环境中向思源注入一个全局变量，用来控制日志输出
-        if (process.env.DEV_MODE === 'true') {
-            (window as any).CODE_TABS_DEV_MODE = 'true';
-        }
         // 读取思源的主题和字体配置，保存到插件中。mode=0表示浅色模式
         this.syncSiyuanConfig();
         // 启动时从插件的配置文件中读取配置，和思源的配置对比，不同或配置文件不存在则更改插件配置
@@ -198,10 +194,10 @@ export default class CodeTabs extends Plugin {
         const id = item.dataset.nodeId;
         // codeText 是代码块中的原始文本，使用前需去除其中的零宽字符
         const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200d/g, '').replace(/\u200b/g, '');
-        // 生成思源笔记中的HTMLBlock字符串
-        const htmlBlock = this.createHtmlBlock(id, codeText);
         // 更新代码块，将它转换为HTMLBlock
-        if (codeText.split("tab:").length > 1) {
+        if (codeText.split("tab:::").length > 1) {
+            // 生成思源笔记中的HTMLBlock字符串
+            const htmlBlock = this.createHtmlBlock(id, codeText);
             this.update('dom', htmlBlock, id, codeText);
         }
     }
@@ -332,7 +328,7 @@ export default class CodeTabs extends Plugin {
             tabContents.appendChild(content);
         }
         // 设定默认激活的标签
-        tabs.children[activeIndex-1].classList.add('tab-item--active');
+        tabs.children[activeIndex - 1].classList.add('tab-item--active');
         // tabContents中的第一个元素是复制按钮
         tabContents.children[activeIndex].classList.add('tab-content--active');
         // 最后添加自定义内容

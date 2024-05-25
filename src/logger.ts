@@ -25,18 +25,18 @@ class Logger {
     }
 
     private log(level: LogLevel = LogLevel.INFO, message: any): void {
-        const timestamp = new Date().toISOString();
-        let logHeader = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: `;
-        let elementFlag:Boolean = false;
-        if (message instanceof Element) {
-            elementFlag = true;
-        }
         // 生产环境中只输出错误信息，屏蔽 info 和 warn 信息
         if (!this.isDev) {
             if (level === LogLevel.ERROR) {
-                console.error(logHeader + `${message}`);
+                console.error(`[${new Date().toISOString()}] [code-tabs] [${level.toUpperCase()}]: ${message}`);
             }
             return;
+        }
+        const timestamp = new Date().toISOString();
+        let logHeader = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: `;
+        let elementFlag:Boolean = false;
+        if (message instanceof Element || message instanceof Object) {
+            elementFlag = true;
         }
         if (elementFlag) {
             console.log(logHeader);

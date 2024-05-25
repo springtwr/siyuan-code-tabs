@@ -172,6 +172,21 @@ export default class CodeTabs extends Plugin {
                 }
             }
         });
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.fixAllTabs, click: () => {
+                document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
+                    const nodeId = (node as HTMLElement).dataset.nodeId;
+                    getBlockAttrs(nodeId).then(res => {
+                        // 从自定义属性中取出原始的代码时要将字符串中的零宽空格还原成换行符
+                        const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                        // 生成思源笔记中的HTMLBlock字符串
+                        const htmlBlock = this.createHtmlBlock(nodeId, codeText);
+                        // 更新代码块，将它转换为HTMLBlock
+                        this.update('dom', htmlBlock, nodeId, codeText);
+                    });
+                });
+            },
+        });
     }
 
     /**

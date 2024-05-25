@@ -345,7 +345,7 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
-     * 转义dom字符串中的特殊字符，这里只转义引号和 &
+     * 转义dom字符串中的特殊字符
      * @param input 要转义的字符串
      * @return 转义后的字符串
      * @private
@@ -470,8 +470,7 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
-     * 简单粗暴的获取当前文档主题下的代码块背景颜色
-     * @return 代码块背景色的rgb代码，如“rgb(0, 0, 0)”
+     * 简单粗暴的获取当前文档主题下的代码块背景颜色和其它样式
      * @private
      */
     private async getCodeBlockStyle() {
@@ -525,6 +524,11 @@ export default class CodeTabs extends Plugin {
         };
     }
 
+    /**
+     * 更新已打开文档中所有代码标签页的css链接，为它们加上查询参数。
+     * 用来避免因缓存导致的样式更新不及时，关闭文档后链接会自动还原
+     * @private
+     */
     private updateAllTabsStyle() {
         document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
             const shadowRoot = node.querySelector('protyle-html').shadowRoot;
@@ -538,6 +542,10 @@ export default class CodeTabs extends Plugin {
         });
     }
 
+    /**
+     * 获取思源的设置
+     * @private
+     */
     private getSiyuanConfig() {
         return {
             fontSize: window.siyuan.config.editor.fontSize,
@@ -549,6 +557,10 @@ export default class CodeTabs extends Plugin {
         }
     }
 
+    /**
+     * 将思源的配置同步到插件的data中
+     * @private
+     */
     private syncSiyuanConfig() {
         const properties = this.getSiyuanConfig();
         Object.keys(properties).forEach(key => {
@@ -560,12 +572,22 @@ export default class CodeTabs extends Plugin {
         });
     }
 
+    /**
+     * 将配置写入到插件根目录的配置文件中
+     * @private
+     */
     private async saveConfig() {
         this.syncSiyuanConfig();
         const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
         await putFile('/data/plugins/code-tabs/config.json', false, file);
     }
 
+    /**
+     * 对比思源的配置和插件的配置是否相同
+     * @param pluginConfig
+     * @param siyuanConfig
+     * @private
+     */
     private compareConfig(pluginConfig: Object, siyuanConfig: Object) {
         // 获取对象的所有属性名
         const pluginKeys = Object.keys(pluginConfig);
@@ -584,6 +606,10 @@ export default class CodeTabs extends Plugin {
         return true;
     }
 
+    /**
+     * 将代码标签页要用到的函数全都绑定到一个全局变量上
+     * @private
+     */
     private addFunctionForCodeTabs() {
         window.pluginCodeTabs = {
             openTag: function (evt: MouseEvent) {

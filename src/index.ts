@@ -175,10 +175,15 @@ export default class CodeTabs extends Plugin {
                     getBlockAttrs(nodeId).then(res => {
                         // 从自定义属性中取出原始的代码时要将字符串中的零宽空格还原成换行符
                         const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
-                        // 生成思源笔记中的HTMLBlock字符串
-                        const htmlBlock = this.createHtmlBlock(nodeId, codeText);
-                        // 更新代码块，将它转换为HTMLBlock
-                        this.update('dom', htmlBlock, nodeId, codeText);
+                        const codeArr = this.checkCodeText(codeText);
+                        if (codeArr.result) {
+                            // 生成思源笔记中的HTMLBlock字符串
+                            const htmlBlock = this.createHtmlBlock(nodeId, codeArr.code);
+                            // 更新代码块，将它转换为HTMLBlock
+                            this.update('dom', htmlBlock, nodeId, codeText);
+                        } else {
+                            pushErrMsg(`${this.i18n.fixAllTabsErrMsg}: ${nodeId}`).then();
+                        }
                     });
                 });
             },
@@ -187,23 +192,24 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 将代码块转换为标签页
-     * @param item
+     * @param item 代码块
      * @private
      */
     private async convertToTabs(item: any) {
         const id = item.dataset.nodeId;
         // codeText 是代码块中的原始文本，使用前需去除其中的零宽字符
         const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200d/g, '').replace(/\u200b/g, '');
+        const checkResult = this.checkCodeText(codeText);
         // 更新代码块，将它转换为HTMLBlock
-        if (codeText.split("tab:::").length > 1) {
+        if (checkResult.result) {
             // 生成思源笔记中的HTMLBlock字符串
-            const htmlBlock = this.createHtmlBlock(id, codeText);
+            const htmlBlock = this.createHtmlBlock(id, checkResult.code);
             this.update('dom', htmlBlock, id, codeText);
         }
     }
 
     /**
-     * 通过思源api更新code-tabs的HTML块
+     * 通过思源api更新code-tabs的HTML块，更新后将原始代码存入自定义属性
      * @param dataType
      * @param data
      * @param id
@@ -234,29 +240,82 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
+     * 标签语法检查
+     * @param codeText 去除了零宽字符的代码
+     * @private
+     */
+    private checkCodeText(codeText: string): { result: boolean, code: codeTab[] } {
+        // 标签需要以tab:::开头，且开头不能有空格
+        codeText = codeText.trim();
+        if (codeText.startsWith('tab:::')) {
+            // 用正则分割代码
+            const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
+            const codeResult: codeTab[] = [];
+            for (let i = 0; i < codeArr.length; i++) {
+                const codeSplitArr = codeArr[i].trim().split('\n');
+                if (codeSplitArr.length === 1 || codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith('lang:::')) {
+                    pushMsg(`${this.i18n.noCodeWhenCheckCode} (${i + 1})`).then();
+                    return {result: false, code: []};
+                }
+                if (codeSplitArr[0].length < 7) {
+                    pushMsg(`${this.i18n.noTitleWhenCheckCode} (${i + 1})`).then();
+                    return {result: false, code: []};
+                }
+                const title = codeSplitArr[0].substring(6).trim();
+                let language = '';
+                if (codeSplitArr[1].trim().startsWith('lang:::')) {
+                    const languageLine = codeSplitArr[1].trim();
+                    if (languageLine.length < 8) {
+                        pushMsg(`${this.i18n.noLangWhenCheckCode} (${i + 1})`).then();
+                        return {result: false, code: []};
+                    }
+                    language = languageLine.substring(7).trim().toLowerCase();
+                    // 获取语言类型后删除该行
+                    codeSplitArr.splice(1, 1);
+                }
+                codeSplitArr.shift();
+                const code = codeSplitArr.join('\n').trim();
+                if (language === '') {
+                    language = title;
+                }
+                language = hljs.getLanguage(language) ? language : 'plaintext';
+                codeResult.push({
+                    title: title,
+                    language: language,
+                    code: code
+                });
+            }
+            return {result: true, code: codeResult}
+        } else {
+            pushMsg(this.i18n.headErrWhenCheckCode).then();
+            return {result: false, code: []}
+        }
+    }
+
+    /**
      * 生成HTMLBlock的dom字符串
      * @param id 要转换的代码块的data-node-id
-     * @param codeText 代码块的原始文本
+     * @param codeArr 包含标签页中标题、语言类型和代码的数组
      * @return dom字符串
      * @private
      */
-    private createHtmlBlock(id: string, codeText: string): string {
+    private createHtmlBlock(id: string, codeArr: codeTab[]): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = this.htmlBlockStr;
         const node = containerDiv.querySelector('.render-node') as HTMLElement;
         node.dataset.nodeId = id;
         const protyleHtml = containerDiv.querySelector('protyle-html') as HTMLElement;
-        protyleHtml.dataset.content = this.createProtyleHtml(codeText);
+        protyleHtml.dataset.content = this.createProtyleHtml(codeArr);
         return containerDiv.innerHTML;
     }
 
     /**
      * 生成HTMLBlock中 protyle-html 元素的data-content的dom字符串，即可直接在思源的HTMLBlock中编辑的dom字符串
-     * @param codeText 代码块的原始文本
+     * @param codeArr 包含标签页中标题、语言类型和代码的数组
      * @return 转义后的dom字符串
      * @private
      */
-    private createProtyleHtml(codeText: string): string {
+    private createProtyleHtml(codeArr: codeTab[]): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = this.protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;
@@ -267,21 +326,12 @@ export default class CodeTabs extends Plugin {
         const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
         // 解析代码块中的代码，将它们放到对应的标签页中
         // 通过tab::：分割不同的语言代码同时指定标题，通过lang:::指定语言类型
-        let activeIndex = 1;
-        const codeTagTextArray = codeText.split("tab:::");
-        for (let i = 1; i < codeTagTextArray.length; i++) {
-            const codeBlockArr = codeTagTextArray[i].split('lang:::');
-            let title: string;
-            // 如果指定了语言类型，则分别设置标题和语言类型，否则标题和语言类型使用同一个值
-            if (codeBlockArr.length > 1) {
-                title = codeBlockArr.shift().trim();
-            }
-            const codeBlock = codeBlockArr[0].split('\n');
-            let language = codeBlock.shift()?.trim();
-            const code = codeBlock.join('\n').trim();
-            if (title === undefined) {
-                title = language;
-            }
+        // 通过前面的trim和startsWith过滤可以保证此时字符串一定以tab:::开头
+        let activeIndex = 0;
+        for (let i = 0; i < codeArr.length; i++) {
+            let title = codeArr[i].title;
+            const language = codeArr[i].language;
+            const code = codeArr[i].code;
             if (title.split(':::active').length > 1) {
                 title = title.split(':::active')[0].trim();
                 activeIndex = i;
@@ -302,8 +352,7 @@ export default class CodeTabs extends Plugin {
             content.dataset.render = "true";
             let hlText = code;
             // 如果语言被支持，则进行格式处理，否则按纯文本处理，其中markdown单独使用marked处理
-            language = hljs.getLanguage(language) ? language : 'plaintext';
-            if (language.toLowerCase() === 'markdown') {
+            if (language === 'markdown') {
                 const marked = new Marked(
                     markedHighlight({
                         langPrefix: 'hljs language-',
@@ -328,9 +377,9 @@ export default class CodeTabs extends Plugin {
             tabContents.appendChild(content);
         }
         // 设定默认激活的标签
-        tabs.children[activeIndex - 1].classList.add('tab-item--active');
+        tabs.children[activeIndex].classList.add('tab-item--active');
         // tabContents中的第一个元素是复制按钮
-        tabContents.children[activeIndex].classList.add('tab-content--active');
+        tabContents.children[activeIndex + 1].classList.add('tab-content--active');
         // 最后添加自定义内容
         // 切换键，用来将标签页切回代码块
         const tabCustomTag = document.createElement("div");
@@ -647,7 +696,10 @@ export default class CodeTabs extends Plugin {
                 const nodeId = htmlBlock.dataset.nodeId;
                 getBlockAttrs(nodeId).then(res => {
                     // 切回代码块时要将自定义属性的字符串中的零宽空格还原成换行符
-                    const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                    let codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                    if (codeText[codeText.length - 1] !== '\n') {
+                        codeText = codeText + '\n';
+                    }
                     const flag = "```````````````````````````";
                     updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
                         logger.info('标签页转为代码块');

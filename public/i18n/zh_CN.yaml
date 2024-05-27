@@ -4,8 +4,13 @@ fixAllTabs: 修复已打开文档中所有代码标签页
 toggleToCode: 切回代码块
 initPutFile: 初始化，重新配置样式文件
 codeStyleChange: 监测到代码块背景或样式改变，重新配置code-tabs样式文件
-updateCodeBlock: 更新代码块
 errMsgGetBackground: code-tabs：请打开一个文档后再次调整主题或模式！！！
+updateCodeBlock: 更新代码块
+headErrWhenCheckCode: 标签请以"tab:::"开头
+noTitleWhenCheckCode: tab:::后没有标题
+noLangWhenCheckCode: lang:::后没有语言类型
+noCodeWhenCheckCode: 标题后没有代码
+fixAllTabsErrMsg: 修复时遇到错误，请检查以下块的自定义属性
 cancel: 取消
 save: 保存
 helloPlugin: 你好，这是code-tabs！

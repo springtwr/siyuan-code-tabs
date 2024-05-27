@@ -68,6 +68,12 @@ type doOperation = {
     retData: null;
 }
 
+type codeTab = {
+    title: string;
+    language: string;
+    code: string;
+}
+
 interface Window {
     siyuan: {
         appearance: any;

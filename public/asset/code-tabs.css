@@ -41,6 +41,9 @@
 .tab-content > .code{
     font-size: 85%;
 }
+.tab-content > .code.language-plaintext{
+    font-size: 100%;
+}
 .tab-content > .markdown-body{
     font-size: 100%;
 }

@@ -503,6 +503,9 @@ export default class CodeTabs extends Plugin {
   border-radius: ${style.borderRadius};
   box-shadow: ${style.boxShadow};
   margin: ${style.margin};
+}
+.tab-toggle {
+  background-color: ${style.protyleBg};
 }`;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
@@ -531,6 +534,7 @@ export default class CodeTabs extends Plugin {
             pushErrMsg(this.i18n.errMsgGetBackground).then();
             return {
                 bg: "rgb(248, 249, 250)",
+                protyleBg: "transparent",
                 fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
                 contentPadding: "2em 16px",
                 border: "none",
@@ -555,6 +559,7 @@ export default class CodeTabs extends Plugin {
         } else {
             bg = nodeBg;
         }
+        const protyleBg = window.getComputedStyle(protyle).backgroundColor;
         const fontFamily = window.getComputedStyle(hljsElement).fontFamily;
         const contentPadding = window.getComputedStyle(hljsElement).padding;
         const border = window.getComputedStyle(tempElement).border;
@@ -564,6 +569,7 @@ export default class CodeTabs extends Plugin {
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
         return {
             bg: bg,
+            protyleBg: protyleBg,
             fontFamily: fontFamily,
             contentPadding: contentPadding,
             border: border,

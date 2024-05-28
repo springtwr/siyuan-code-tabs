@@ -14,7 +14,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
   - change theme
   - Close document and reopen it
   - Try the above method again after restarting SiYuan Notes
-- ***When the code contains angle brackets, an error is displayed. Please wait for Siyuan to release a new version to fix the issue of escaping HTML content. Currently, only Siyuan 3.0.14 can be used normally. For details, see [issue](https://github.com/siyuan-note/siyuan/issues/11499)***
+- ***The problem of displaying errors when the code contains pointed brackets has been fixed in SiYuan 3.0.16, and currently only 3.0.16 can be used normally***
 
 ## Tips
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
@@ -53,8 +53,14 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ## Comment
 - Essentially, this plugin was written with the help of Wenxin Yiyan  and ChatGPT.  
 - This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
+- The version of SiYuan Notes at the time of testing: 3.0.16
 
 ## Changelog
+### v0.4.0
+- Fix the problem of escaping pointed brackets.
+- Limit the length of tab title and add horizontal scroll bar automatically when there are too many tabs.
+- Adjust the font size of plaintext and code blocks in markdown.
+
 ### v0.3.0
 - Optimize CSS display effects.
 - Adapt the code-tabs to support more themes.

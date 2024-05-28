@@ -372,8 +372,7 @@ export default class CodeTabs extends Plugin {
                 hlText = hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
-            content.innerHTML = hlText.replace(/&lt;/g, '&amp;lt;')
-                .replace(/&gt;/g, '&amp;gt;');
+            content.innerHTML = hlText;
             tabContents.appendChild(content);
         }
         // 设定默认激活的标签

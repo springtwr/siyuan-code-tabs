@@ -60,3 +60,4 @@ jobs:
           artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
+          generateReleaseNotes: true

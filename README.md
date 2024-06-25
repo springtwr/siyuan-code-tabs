@@ -14,7 +14,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
   - change theme
   - Close document and reopen it
   - Try the above method again after restarting SiYuan Notes
-- ***The problem of displaying errors when the code contains pointed brackets has been fixed in SiYuan 3.0.16, and currently only 3.0.16 can be used normally***
+- ***The problem of displaying errors when the code contains pointed brackets has been fixed in SiYuan 3.0.16, and currently only 3.0.16 and above can be used normally***
 
 ## Tips
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.

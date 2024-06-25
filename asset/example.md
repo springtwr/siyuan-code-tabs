@@ -51,7 +51,7 @@ lang:::markdown
 $$
 c = \pm\sqrt{a^2 + b^2}
 $$
-不支持代码块高亮
+支持代码块高亮
 
 ```c
 #include<stdio.h>

@@ -56,6 +56,9 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 - The version of SiYuan Notes at the time of testing: 3.0.16
 
 ## Changelog
+### v0.4.1
+- The plugin checks if the Allow execution of scripts within HTML blocks is turned on when it loads.
+
 ### v0.4.0
 - Fix the problem of escaping pointed brackets.
 - Limit the length of tab title and add horizontal scroll bar automatically when there are too many tabs.

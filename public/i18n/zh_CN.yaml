@@ -1,5 +1,6 @@
 ---
 codeToTabs: 将代码块转换为标签页
+notAllowHtmlBlockScript: (code-tabs)请打开编辑器选项：允许执行HTML块内脚本，否则标签页将无法正常显示
 fixAllTabs: 修复已打开文档中所有代码标签页
 toggleToCode: 切回代码块
 initPutFile: 初始化，重新配置样式文件

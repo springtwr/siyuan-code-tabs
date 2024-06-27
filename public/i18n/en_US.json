@@ -1,5 +1,6 @@
 {
     "codeToTabs": "Convert code-block to tabs",
+    "notAllowHtmlBlockScript": "(code-tabs) please turn on: Allow execution of scripts within HTML blocks,  otherwise tabs will not be displayed properly",
     "fixAllTabs": "Fix all code-tabs in opened documents",
     "toggleToCode": "Toggle to code-block",
     "initPutFile": "Initialization, reconfiguring stylesheet",

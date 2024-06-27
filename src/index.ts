@@ -43,6 +43,10 @@ export default class CodeTabs extends Plugin {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
         logger.info("loading code-tabs");
         logger.info(this.i18n.helloPlugin);
+        // 检查是否开启了允许块内脚本执行开关
+        if (!window.siyuan.config.editor.allowHTMLBLockScript) {
+            pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();
+        }
         // 用一个全局变量来存放标签页中使用的的函数和对象，避免大量污染全局命名空间
         // 直接使用全局变量比在shadow dom中使用模块化脚本要方便一点
         // 同时也避免了直接在shadow dom中引用外部脚本会因更新HTML块导致的脚本重复执行

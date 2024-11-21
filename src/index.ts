@@ -108,6 +108,8 @@ export default class CodeTabs extends Plugin {
         }
         // 启动后的配置检查完成后this.data保存的就是插件的配置(此时插件配置应该和思源的配置是相同的)，思源的配置从window对象中读取
         // 监听代码主题和系统主题变化
+        const html = document.documentElement;
+        const htmlConfig = {attributes: true, childList: false, subtree: false};
         const head = document.head;
         const config = {attributes: true, childList: true, subtree: true};
         const callback = (mutationsList: any) => {
@@ -148,6 +150,7 @@ export default class CodeTabs extends Plugin {
         }
         const debounced = debounce(putFile, 500);
         const observer = new MutationObserver(callback);
+        observer.observe(html, htmlConfig);
         observer.observe(head, config);
     }
 

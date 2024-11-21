@@ -565,7 +565,10 @@ export default class CodeTabs extends Plugin {
         }
         const protyleBg = window.getComputedStyle(protyle).backgroundColor;
         const fontFamily = window.getComputedStyle(hljsElement).fontFamily;
-        const contentPadding = window.getComputedStyle(hljsElement).padding;
+        const nodePadding = window.getComputedStyle(tempElement).padding;
+        let contentPadding = window.getComputedStyle(hljsElement).padding;
+        contentPadding = contentPadding == '0px' ? nodePadding : contentPadding;
+        logger.info('contentPadding: ' + contentPadding);
         const border = window.getComputedStyle(tempElement).border;
         const boxShadow = window.getComputedStyle(tempElement).boxShadow;
         const borderRadius = window.getComputedStyle(tempElement).borderRadius;

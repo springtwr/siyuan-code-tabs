@@ -455,7 +455,8 @@ export default class CodeTabs extends Plugin {
     private async fetchWithRetry(route: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                const baseUrl = "http://127.0.0.1:6806";
+                const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
+                // const baseUrl = "http://127.0.0.1:6806";
                 const url = baseUrl + route;
                 logger.info(`fetching: ${url}`);
                 const response = await fetch(url, options);

@@ -9,17 +9,15 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 - Unable to adapt to all third-party themes.
 - There must be at least one open document when changing theme or mode, otherwise the style of the code-tabs won't change with the theme, and you need to open a document and then change theme again.
 - When exporting to markdown or html, all the code-tabs styles will be lost, only when exporting pdf or image can the code-tabs be displayed normally.  
-- In rare cases, the style of code-tabs may not change with the theme and mode. In such cases, please try this:
-  - change mode
+- The style of the code-tabs may appear abnormally when updating the plugin version or switching themes, then please try the following methods: 
+  - change appearance mode
   - change theme
   - Close document and reopen it
   - Try the above method again after restarting SiYuan Notes
-- ***The problem of displaying errors when the code contains pointed brackets has been fixed in SiYuan 3.0.16, and currently only 3.0.16 and above can be used normally***
+- ***Only SiYuan 3.0.16 and above can be used normally***
 
 ## Tips
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
-- v0.2.0 is not compatible with previous versions and the writing format has changed, previously generated code-tabs need to be  deleted.
-- The code of v0.3.0 has been changed significantly, you need to  click ***Any block*** upper left corner of the block menu -> Plugins -> Fix all code-tabs in opened documents before it works properly.
 - Since version 0.3.0, all functions have basically achieved the expected goals (temporarily not considering the implementation of the `Code block line number`). Future updates will mainly focus on bug fixes and style optimizations.
 
 ## Example
@@ -53,9 +51,13 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ## Comment
 - Essentially, this plugin was written with the help of Wenxin Yiyan  and ChatGPT.  
 - This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- The version of SiYuan Notes at the time of testing: 3.0.16
+- The version of SiYuan Notes at the time of testing: 3.1.13
 
 ## Changelog
+### v0.4.3
+- Fix display anomalies when using docker that may be caused by CORS issues
+- Fix padding being too small
+
 ### v0.4.2
 - Support for docker.
 

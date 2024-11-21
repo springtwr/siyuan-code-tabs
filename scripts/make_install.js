@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'node:http';
-import readline  from 'node:readline';
+import readline from 'node:readline';
 
 
 //************************************ Write you dir here ************************************
@@ -77,7 +77,7 @@ async function chooseTarget(workspaces) {
             output: process.stdout
         });
         let index = await new Promise((resolve, reject) => {
-            rl.question(`\tPlease select a workspace[0-${count-1}]: `, (answer) => {
+            rl.question(`\tPlease select a workspace[0-${count - 1}]: `, (answer) => {
                 resolve(answer);
             });
         });
@@ -91,7 +91,7 @@ log('>>> Try to visit constant "targetDir" in make_install.js...')
 if (targetDir === '') {
     log('>>> Constant "targetDir" is empty, try to get SiYuan directory automatically....')
     let res = await getSiYuanDir();
-    
+
     if (res === null || res === undefined || res.length === 0) {
         error('>>> Can not get SiYuan directory automatically');
 
@@ -157,7 +157,7 @@ function copyDirectory(srcDir, dstDir) {
         log(`Created directory ${dstDir}`);
     }
     //将 distDir 下的所有文件复制到 targetPath
-    fs.readdir(srcDir, { withFileTypes: true }, (err, files) => {
+    fs.readdir(srcDir, {withFileTypes: true}, (err, files) => {
         if (err) {
             error('Error reading source directory:', err);
             return;
@@ -175,17 +175,18 @@ function copyDirectory(srcDir, dstDir) {
             } else {
                 // 如果是文件，则复制文件到目标目录
                 fs.copyFile(src, dst, (err) => {
-                if (err) {
-                    error('Error copying file:' + err);
-                } else {
-                    log(`Copied file: ${src} --> ${dst}`);
-                }
+                    if (err) {
+                        error('Error copying file:' + err);
+                    } else {
+                        log(`Copied file: ${src} --> ${dst}`);
+                    }
                 });
             }
         });
         log(`Copied ${distDir} to ${targetPath}`);
     });
 }
+
 copyDirectory(distDir, targetPath);
 
 

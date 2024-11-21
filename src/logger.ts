@@ -34,7 +34,7 @@ class Logger {
         }
         const timestamp = new Date().toISOString();
         let logHeader = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: `;
-        let elementFlag:Boolean = false;
+        let elementFlag: Boolean = false;
         if (message instanceof Element || message instanceof Object) {
             elementFlag = true;
         }

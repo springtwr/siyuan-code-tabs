@@ -4,12 +4,11 @@
  * @Date         : 2024-04-05 21:27:55
  * @FilePath     : /yaml-plugin.js
  * @LastEditTime : 2024-04-05 22:53:34
- * @Description  : 去妮玛的 json 格式，我就是要用 yaml 写 i18n
  */
 // plugins/vite-plugin-parse-yaml.js
 import fs from 'fs';
 import yaml from 'js-yaml';
-import { resolve } from 'path';
+import {resolve} from 'path';
 
 export default function vitePluginYamlI18n(options = {}) {
     // Default options with a fallback
@@ -18,7 +17,7 @@ export default function vitePluginYamlI18n(options = {}) {
         outDir: 'dist/i18n',
     };
 
-    const finalOptions = { ...DefaultOptions, ...options };
+    const finalOptions = {...DefaultOptions, ...options};
 
     return {
         name: 'vite-plugin-yaml-i18n',
@@ -28,7 +27,7 @@ export default function vitePluginYamlI18n(options = {}) {
             const outDir = finalOptions.outDir
 
             if (!fs.existsSync(outDir)) {
-                fs.mkdirSync(outDir, { recursive: true });
+                fs.mkdirSync(outDir, {recursive: true});
             }
 
             //Parse yaml file, output to json

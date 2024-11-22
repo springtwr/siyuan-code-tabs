@@ -32,7 +32,10 @@ export default class CodeTabs extends Plugin {
             <link rel="stylesheet" href="/plugins/code-tabs/asset/code-tabs.css">
             <link rel="stylesheet" href="/plugins/code-tabs/background.css">
             <div class="tabs-container" style="display: block; position: relative; will-change: background-color">
-                <div class="tabs" style="position: absolute; top:0;left: 0; right: 0; display: flex; overflow-x: auto; white-space: nowrap"></div>
+                <div class="tabs-outer" style="position: absolute; display: flex; top:0; left: 0; right: 0; justify-content: space-between; align-items: baseline;">
+                    <div class="tabs" style="order: 0; display: flex; width: calc(100% - 6em); height: 100%; align-items: center; overflow-x: auto;"></div>
+                    <div class="tab-toggle" style="order: 1; width: 6em; height: 100%; text-align: center; font-weight: bold; padding: 5px;"></div>
+                </div>
                 <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
                     <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
                 </div>
@@ -327,6 +330,8 @@ export default class CodeTabs extends Plugin {
         containerDiv.innerHTML = this.protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;
 
+        // tabs-outer 作为包含tabs和切换按钮的容器
+        const tabsOuter = containerDiv.querySelector('.tabs-outer') as HTMLElement;
         // tabs 包含所有标签页的标题
         const tabs = containerDiv.querySelector('.tabs') as HTMLElement;
         // tab-contents 包含所有标签页的内容
@@ -388,13 +393,13 @@ export default class CodeTabs extends Plugin {
         tabContents.children[activeIndex + 1].classList.add('tab-content--active');
         // 最后添加自定义内容
         // 切换键，用来将标签页切回代码块
-        const tabCustomTag = document.createElement("div");
-        tabCustomTag.className = "tab-toggle";
-        tabCustomTag.setAttribute('onclick', 'pluginCodeTabs.toggle(event)');
-        tabCustomTag.textContent = this.i18n.toggleToCode;
-        tabs.appendChild(tabCustomTag);
+        const tabToggle = containerDiv.querySelector('.tab-toggle') as HTMLElement
+        tabToggle.setAttribute('onclick', 'pluginCodeTabs.toggle(event)');
+        tabToggle.textContent = this.i18n.toggleToCode;        // 将tabs和tabToggle装入tabsOuter
+        tabsOuter.appendChild(tabs);
+        tabsOuter.appendChild(tabToggle);
 
-        tabContainer.appendChild(tabs);
+        tabContainer.appendChild(tabsOuter);
         tabContainer.appendChild(tabContents);
         return this.escapeHtml(containerDiv.innerHTML);
     }
@@ -511,6 +516,9 @@ export default class CodeTabs extends Plugin {
 .tabs {
   background-color: ${style.protyleActionBg};
 }
+.tab-toggle {
+  background-color: ${style.protyleActionBg};
+}
 .tab-contents > .hljs { 
   padding: ${style.hljsPadding};
   margin: ${style.hljsMargin};
@@ -564,21 +572,20 @@ export default class CodeTabs extends Plugin {
         if (id === undefined) {
             pushErrMsg(this.i18n.errMsgGetBackground).then();
             return {
-                protyleBg: "transparent",
                 blockBg: "rgb(248, 249, 250)",
                 protyleActionBg: "transparent",
                 hljsBg: "rgb(248, 249, 250)",
                 editableBg: "rgb(248, 249, 250)",
                 fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
-                blockPadding: "0px",
-                hljsPadding: "2em 16px",
-                editablePadding: "0px",
-                blockMargin: "4px, 0",
-                hljsMargin: "0px",
-                editableMargin: "0px",
+                blockPadding: "2em 1em",
+                hljsPadding: "0",
+                editablePadding: "0",
+                blockMargin: "1em, 0",
+                hljsMargin: "0",
+                editableMargin: "0",
                 border: "none",
                 boxShadow: "none",
-                borderRadius: "5px"
+                borderRadius: "6px"
             };
         }
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
@@ -607,7 +614,7 @@ export default class CodeTabs extends Plugin {
         let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
         let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
         const lineHeight = parseFloat(window.getComputedStyle(blockElement).lineHeight);
-        blockTop = lineHeight + 18;
+        blockTop = lineHeight + 20;
         logger.info('blockTop: ' + blockTop);
         blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
         hljsTop = hljsTop == 0 ? 8 : hljsTop;
@@ -622,7 +629,6 @@ export default class CodeTabs extends Plugin {
         const borderRadius = window.getComputedStyle(blockElement).borderRadius;
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
         return {
-            protyleBg: protyleBg,
             blockBg: blockBg,
             protyleActionBg: protyleActionBg,
             hljsBg: hljsBg,
@@ -829,7 +835,7 @@ export default class CodeTabs extends Plugin {
             },
 
             getTabContainer: function (element: Node) {
-                return element.parentNode.parentNode;
+                return element.parentNode.parentNode.parentNode;
             }
         }
     }

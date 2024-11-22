@@ -355,6 +355,7 @@ export default class CodeTabs extends Plugin {
             const tab = document.createElement("div");
             tab.className = "tab-item";
             tab.textContent = title;
+            tab.title = title;
             tab.setAttribute('onclick', 'pluginCodeTabs.openTag(event)');
             // if (i === 1) tab.classList.add("tab-item--active");
             tabs.appendChild(tab);

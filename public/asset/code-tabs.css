@@ -1,37 +1,40 @@
-.tabs {
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    position: relative;
-    margin-bottom: 0;
-    padding: 0;
-}
 .tab-item--active {
-    border-bottom-color: #7f6df2 !important;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    color: #7f6df2;
+    position: relative;
 }
+
+.tab-item--active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 4px;
+    height: 3px;
+    right: 4px;
+    background-color: #7f6df2;
+}
+
 .tab-toggle,
 .tab-item {
     flex: 0 0 auto;
     white-space: nowrap;
     text-overflow: ellipsis;
-    border-bottom: 3px solid #0000;
+    /*border-bottom: 3px solid #0000;*/
     cursor: pointer;
     padding: 5px 16px 5px 16px;
     font-size: 100%;
     font-weight: bold;
 }
+
 .tab-item {
     max-width: 20em;
     overflow: hidden;
 }
+
 .tab-toggle {
     margin-left: auto;
     position: sticky;
     right: 0;
 }
+
 .tab-content--active {
     display: block !important;
     border-radius: 5px;
@@ -39,22 +42,28 @@
     line-height: 1.625;
     font-family: "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
+
 .tab-content {
     display: none;
 }
-.tab-content > .code{
+
+.tab-content > .code {
     font-size: 85%;
 }
-.tab-content > .code.language-plaintext{
+
+.tab-content > .code.language-plaintext {
     font-size: 100%;
 }
-.tab-content > .markdown-body{
+
+.tab-content > .markdown-body {
     font-size: 100%;
 }
+
 .tab-content > div {
     padding: 0;
     margin: 0;
 }
+
 .code-tabs--icon_copy {
     opacity: 0;
     position: absolute;
@@ -67,12 +76,15 @@
     cursor: pointer;
     transition: all .2s cubic-bezier(0, 0, .2, 1) 0ms;
 }
+
 .tabs-container:hover .code-tabs--icon_copy {
     opacity: 1;
 }
+
 .code-tabs--icon_copy:hover {
     background-color: #949ba3a0;
 }
+
 .code-tabs--icon_copy img {
     width: 100%;
     height: 100%;

@@ -1,6 +1,6 @@
 {
   "name": "code-tabs",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "module",
   "description": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
   "repository": "https://github.com/springtwr/siyuan-code-tabs",

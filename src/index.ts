@@ -31,8 +31,8 @@ export default class CodeTabs extends Plugin {
             <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
             <link rel="stylesheet" href="/plugins/code-tabs/asset/code-tabs.css">
             <link rel="stylesheet" href="/plugins/code-tabs/background.css">
-            <div class="tabs-container">
-                <div class="tabs"></div>
+            <div class="tabs-container" style="display: block; position: relative; will-change: background-color">
+                <div class="tabs" style="position: absolute; top:0;left: 0; right: 0; display: flex; overflow-x: auto; white-space: nowrap"></div>
                 <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
                     <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
                 </div>
@@ -500,20 +500,29 @@ export default class CodeTabs extends Plugin {
         // 配置代码背景色样式文件
         const style = await this.getCodeBlockStyle();
         const cssContent = `
-.tab-contents > .hljs { 
-  background-color: ${style.bg}; 
-  font-family: ${style.fontFamily};
-  padding: ${style.contentPadding};
-}
 .tabs-container {
   border: ${style.border}; 
   border-radius: ${style.borderRadius};
   box-shadow: ${style.boxShadow};
-  margin: ${style.margin};
+  padding: ${style.blockPadding};
+  margin: ${style.blockMargin};
+  background-color: ${style.blockBg};
 }
-.tab-toggle {
-  background-color: ${style.protyleBg};
-}`;
+.tabs {
+  background-color: ${style.protyleActionBg};
+}
+.tab-contents > .hljs { 
+  padding: ${style.hljsPadding};
+  margin: ${style.hljsMargin};
+  background-color: ${style.hljsBg}; 
+  font-family: ${style.fontFamily};
+}
+.tab-contents > .hljs > .tab-content {
+  padding: ${style.editablePadding};
+  margin: ${style.editableMargin};
+  background-color: ${style.editableBg};
+}
+`;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
         await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
@@ -534,59 +543,147 @@ export default class CodeTabs extends Plugin {
      */
     private async getCodeBlockStyle() {
         /* 先插入一个新的临时代码块，获取代码块的背景颜色后再删除它 */
-        const protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
-        const block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]').lastChild as HTMLElement;
+        let protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
+        logger.info(protyle);
+        let block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]') as HTMLElement;
+        logger.info(block);
+        let i = 0;
+        while (block == undefined || block.childElementCount === 0) {
+            // 有时切换主题时速度太快会导致代码运行到这里时文档还没有加载完成，需要再等待一会重试
+            await new Promise(resolve => setTimeout(resolve, 300));
+            protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
+            block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]') as HTMLElement;
+            // 重试7次之后不管成功与否都直接退出
+            i++;
+            if (i > 6) {
+                break;
+            }
+        }
+        block = block?.lastChild as HTMLElement;
         const id = block?.dataset.nodeId;
         if (id === undefined) {
             pushErrMsg(this.i18n.errMsgGetBackground).then();
             return {
-                bg: "rgb(248, 249, 250)",
                 protyleBg: "transparent",
+                blockBg: "rgb(248, 249, 250)",
+                protyleActionBg: "transparent",
+                hljsBg: "rgb(248, 249, 250)",
+                editableBg: "rgb(248, 249, 250)",
                 fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
-                contentPadding: "2em 16px",
+                blockPadding: "0px",
+                hljsPadding: "2em 16px",
+                editablePadding: "0px",
+                blockMargin: "4px, 0",
+                hljsMargin: "0px",
+                editableMargin: "0px",
                 border: "none",
                 boxShadow: "none",
-                borderRadius: "5px",
-                margin: "4px, 0"
+                borderRadius: "5px"
             };
         }
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
         logger.info("insert a temp code-block");
         const tempId = result[0].doOperations[0].id;
-        let bg: string;
         // 背景色一般就在NodeCodeBlock这个元素或者包含hljs类的那个子元素上，官方主题在hljs类上，一些第三方主题在NodeCodeBlock这个元素上
-        const tempElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
-        const hljsElement = document.querySelector(`[data-node-id="${tempId}"]`).querySelector('[contenteditable="true"]');
-        const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
-        const nodeBg = window.getComputedStyle(tempElement).backgroundColor;
-        logger.info('hljs bg: ' + hljsBg);
-        logger.info('node bg: ' + nodeBg);
-        if (hljsBg !== 'rgba(0, 0, 0, 0)') {
-            bg = hljsBg;
-        } else {
-            bg = nodeBg;
-        }
+        const blockElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
+        const protyleActionElement = blockElement.querySelector('.protyle-action');
+        const hljsElement = blockElement.querySelector('.hljs');
+        const editableElement = blockElement.querySelector('[contenteditable="true"]');
+
         const protyleBg = window.getComputedStyle(protyle).backgroundColor;
-        const fontFamily = window.getComputedStyle(hljsElement).fontFamily;
-        const nodePadding = window.getComputedStyle(tempElement).padding;
-        let contentPadding = window.getComputedStyle(hljsElement).padding;
-        contentPadding = contentPadding == '0px' ? nodePadding : contentPadding;
-        logger.info('contentPadding: ' + contentPadding);
-        const border = window.getComputedStyle(tempElement).border;
-        const boxShadow = window.getComputedStyle(tempElement).boxShadow;
-        const borderRadius = window.getComputedStyle(tempElement).borderRadius;
-        const margin = window.getComputedStyle(tempElement).margin;
+        const blockBg = window.getComputedStyle(blockElement).backgroundColor;
+        const protyleActionBg = window.getComputedStyle(protyleActionElement).backgroundColor;
+        const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
+        const editableBg = window.getComputedStyle(editableElement).backgroundColor;
+        logger.info('protyle bg: ' + protyleBg);
+        logger.info('node bg: ' + blockBg);
+        logger.info('protyle-action bg: ' + protyleActionBg);
+        logger.info('hljs bg: ' + hljsBg);
+        logger.info('editable bg: ' + editableBg);
+        const fontFamily = window.getComputedStyle(editableElement).fontFamily;
+        let blockPadding = window.getComputedStyle(blockElement).padding;
+        let hljsPadding = window.getComputedStyle(hljsElement).padding;
+        const editablePadding = window.getComputedStyle(editableElement).padding;
+        let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
+        let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
+        const lineHeight = parseFloat(window.getComputedStyle(blockElement).lineHeight);
+        blockTop = lineHeight + 18;
+        logger.info('blockTop: ' + blockTop);
+        blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
+        hljsTop = hljsTop == 0 ? 8 : hljsTop;
+        logger.info('hljsTop: ' + hljsTop);
+        hljsPadding = `${hljsTop}px ${hljsRight}px ${hljsBottom}px ${hljsLeft}px`;
+        const blockMargin = window.getComputedStyle(blockElement).margin;
+        const hljsMargin = window.getComputedStyle(hljsElement).margin;
+        const editableMargin = window.getComputedStyle(editableElement).margin;
+
+        const border = window.getComputedStyle(blockElement).border;
+        const boxShadow = window.getComputedStyle(blockElement).boxShadow;
+        const borderRadius = window.getComputedStyle(blockElement).borderRadius;
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
         return {
-            bg: bg,
             protyleBg: protyleBg,
+            blockBg: blockBg,
+            protyleActionBg: protyleActionBg,
+            hljsBg: hljsBg,
+            editableBg: editableBg,
             fontFamily: fontFamily,
-            contentPadding: contentPadding,
+            blockPadding: blockPadding,
+            hljsPadding: hljsPadding,
+            editablePadding: editablePadding,
+            blockMargin: blockMargin,
+            hljsMargin: hljsMargin,
+            editableMargin: editableMargin,
             border: border,
             boxShadow: boxShadow,
-            borderRadius: borderRadius,
-            margin: margin
+            borderRadius: borderRadius
         };
+    }
+
+    /**
+     * 用来解析padding的值
+     * @param padding 通过getComputedStyle()获取的padding值
+     * @private
+     */
+    private parsePadding(padding: string) {
+        const paddings = padding.split(' ').map(value => parseInt(value, 10));
+
+        let paddingTop = 0;
+        let paddingRight = 0;
+        let paddingBottom = 0;
+        let paddingLeft = 0;
+
+        switch (paddings.length) {
+            case 1:
+                // padding: 10px
+                paddingTop = paddings[0];
+                paddingRight = paddings[0];
+                paddingBottom = paddings[0];
+                paddingLeft = paddings[0];
+                break;
+            case 2:
+                // padding: 10px 20px
+                paddingTop = paddings[0];
+                paddingRight = paddings[1];
+                paddingBottom = paddings[0];
+                paddingLeft = paddings[1];
+                break;
+            case 3:
+                // padding: 10px 20px 30px
+                paddingTop = paddings[0];
+                paddingRight = paddings[1];
+                paddingBottom = paddings[2];
+                paddingLeft = paddings[1];
+                break;
+            case 4:
+                // padding: 10px 20px 30px 40px
+                [paddingTop, paddingRight, paddingBottom, paddingLeft] = paddings;
+                break;
+            default:
+                [paddingTop, paddingRight, paddingBottom, paddingLeft] = [0, 0, 0, 0];
+        }
+
+        return [paddingTop, paddingRight, paddingBottom, paddingLeft];
     }
 
     /**

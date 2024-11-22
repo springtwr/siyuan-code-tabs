@@ -54,7 +54,8 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 - The version of SiYuan Notes at the time of testing: 3.1.13
 
 ## Changelog
-### v0.4.3
+### v0.5.0
+- Optimize the display effect and adapt more themes
 - Fix display anomalies when using docker that may be caused by CORS issues
 - Fix padding being too small
 

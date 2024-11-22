@@ -33,7 +33,7 @@ export default class CodeTabs extends Plugin {
             <link rel="stylesheet" href="/plugins/code-tabs/background.css">
             <div class="tabs-container" style="display: block; position: relative; will-change: background-color">
                 <div class="tabs-outer" style="position: absolute; display: flex; top:0; left: 0; right: 0; justify-content: space-between; align-items: baseline;">
-                    <div class="tabs" style="order: 0; display: flex; width: calc(100% - 6em); height: 100%; align-items: center; overflow-x: auto;"></div>
+                    <div class="tabs" style="order: 0; display: flex; width: calc(100% - 6em); height: 100%; align-items: center; overflow: hidden; scroll-behavior: smooth"></div>
                     <div class="tab-toggle" style="order: 1; width: 6em; height: 100%; text-align: center; font-weight: bold; padding: 5px;"></div>
                 </div>
                 <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
@@ -334,6 +334,8 @@ export default class CodeTabs extends Plugin {
         const tabsOuter = containerDiv.querySelector('.tabs-outer') as HTMLElement;
         // tabs 包含所有标签页的标题
         const tabs = containerDiv.querySelector('.tabs') as HTMLElement;
+        // 为tabs设置滚动监听
+        tabs.setAttribute('onwheel', 'pluginCodeTabs.wheelTag(event)')
         // tab-contents 包含所有标签页的内容
         const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
         // 解析代码块中的代码，将它们放到对应的标签页中
@@ -824,6 +826,18 @@ export default class CodeTabs extends Plugin {
                         logger.info('标签页转为代码块');
                     });
                 });
+            },
+
+            wheelTag: function (evt: WheelEvent) {
+                let target = evt.target as HTMLElement;
+                if(target.classList.contains('tab-item')) {
+                    target = target.parentElement;
+                }
+                evt.preventDefault(); // 阻止默认滚动行为
+                const hasHorizontalScroll = target.scrollWidth > target.clientWidth;
+                if(hasHorizontalScroll) {
+                    target.scrollLeft += evt.deltaY; // 横向滚动
+                }
             },
 
             getHtmlBlock: function (element: Node) {

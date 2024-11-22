@@ -19,6 +19,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ## Tips
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
 - Since version 0.3.0, all functions have basically achieved the expected goals (temporarily not considering the implementation of the `Code block line number`). Future updates will mainly focus on bug fixes and style optimizations.
+- After updating the plugin, if there is a display exception, you can use `Plugins -> Fix all code-tabs in opened documents` to fix it.
 
 ## Example
 1. Insert a code block in the SiYuan document as follows. Enter the title after `tab:::`, and then add `:::active` to indicate that this tab is activated by default when the document is opened. If this flag(`:::active`) is not added, the first tab is activated by default. Enter the language after `lang:::`. If "lang:::language" is omitted, the title is used as the default language for the code. [Example file](./asset/example.md)

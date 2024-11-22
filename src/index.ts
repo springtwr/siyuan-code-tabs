@@ -158,8 +158,6 @@ export default class CodeTabs extends Plugin {
     }
 
     async onunload() {
-        // 关闭插件时先将此时的配置保存到插件的配置文件中，用来在下次启动插件时对比配置是否发生变化
-        await this.saveConfig();
         logger.info(this.i18n.byePlugin)
     }
 

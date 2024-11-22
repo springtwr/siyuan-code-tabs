@@ -614,7 +614,7 @@ export default class CodeTabs extends Plugin {
         let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
         let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
         const lineHeight = parseFloat(window.getComputedStyle(blockElement).lineHeight);
-        blockTop = lineHeight + 20;
+        blockTop = lineHeight + 22;
         logger.info('blockTop: ' + blockTop);
         blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
         hljsTop = hljsTop == 0 ? 8 : hljsTop;
@@ -654,10 +654,10 @@ export default class CodeTabs extends Plugin {
     private parsePadding(padding: string) {
         const paddings = padding.split(' ').map(value => parseInt(value, 10));
 
-        let paddingTop = 0;
-        let paddingRight = 0;
-        let paddingBottom = 0;
-        let paddingLeft = 0;
+        let paddingTop: number;
+        let paddingRight: number;
+        let paddingBottom: number;
+        let paddingLeft: number;
 
         switch (paddings.length) {
             case 1:

@@ -938,12 +938,12 @@ export default class CodeTabs extends Plugin {
                 return (parent as ShadowRoot).host.parentNode.parentNode;
             },
 
-            getTabContainer: function (element: Node) {
-                return element.parentNode.parentNode.parentNode;
+            getTabContainer: function (element: HTMLElement) {
+                return element.closest('.tabs-container');
             },
 
             getTabs: function (element: HTMLElement) {
-                return element.classList.contains('tab-item') ? element.parentNode : element;
+                return element.closest('.tabs');
             },
 
             isScrollable: function (element: HTMLElement) {

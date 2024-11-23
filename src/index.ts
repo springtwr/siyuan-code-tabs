@@ -337,8 +337,7 @@ export default class CodeTabs extends Plugin {
         // 为tabs设置滚动监听和触摸监听
         tabs.setAttribute('onwheel', 'pluginCodeTabs.wheelTag(event)');
         tabs.setAttribute('ontouchstart', 'pluginCodeTabs.touchStart(event)');
-        tabs.setAttribute('ontouchmove', 'pluginCodeTabs.touchMove(event)');
-        tabs.setAttribute('ontouchend', 'pluginCodeTabs.touchEnd()');
+        tabs.setAttribute('ontouchend', 'pluginCodeTabs.touchEnd(event)');
         // tab-contents 包含所有标签页的内容
         const tabContents = containerDiv.querySelector('.tab-contents') as HTMLElement;
         // 解析代码块中的代码，将它们放到对应的标签页中
@@ -844,8 +843,9 @@ export default class CodeTabs extends Plugin {
             startX: 0,
             scrollLeft: 0,
             isDragging: false,
-            // rafId: null,
+            rafId: null,
             touchStart: function (evt: TouchEvent) {
+                evt.stopPropagation();
                 const tabs = this.getTabs(evt.target);
                 logger.info(tabs);
                 if (!this.isScrollable(tabs)) {
@@ -855,6 +855,7 @@ export default class CodeTabs extends Plugin {
                 this.startX = touch.pageX; // 记录触摸的 X 坐标
                 this.scrollLeft = tabs.scrollLeft; // 记录当前滚动位置
                 this.isDragging = true;
+                tabs.addEventListener('touchmove', this.touchMove, {passive: true});
             },
 
             touchMove: function (evt: TouchEvent) {
@@ -864,17 +865,17 @@ export default class CodeTabs extends Plugin {
                 }
                 const touch = evt.touches[0];
                 const deltaX = touch.pageX - this.startX;
-                // if (this.rafId) {
-                //     cancelAnimationFrame(this.rafId);
-                // }
-                // this.rafId = requestAnimationFrame(() => {
-                //     tabs.scrollLeft = this.scrollLeft - deltaX;
-                // });
-                tabs.scrollLeft = this.scrollLeft - deltaX;
-                evt.preventDefault();
+                if (this.rafId) {
+                    cancelAnimationFrame(this.rafId);
+                }
+                this.rafId = requestAnimationFrame(() => {
+                    tabs.scrollLeft = this.scrollLeft - deltaX;
+                });
             },
 
-            touchEnd: function () {
+            touchEnd: function (evt: TouchEvent) {
+                const tabs = this.getTabs(evt.target);
+                tabs.removeEventListener('touchmove', this.touchMove);
                 this.isDragging = false;
             },
 

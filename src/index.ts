@@ -31,13 +31,15 @@ export default class CodeTabs extends Plugin {
             <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
             <link rel="stylesheet" href="/plugins/code-tabs/asset/code-tabs.css">
             <link rel="stylesheet" href="/plugins/code-tabs/background.css">
-            <div class="tabs-container" style="display: block; position: relative; will-change: background-color">
-                <div class="tabs-outer" style="position: absolute; display: flex; top:0; left: 0; right: 0; justify-content: space-between; align-items: baseline;">
-                    <div class="tabs" style="order: 0; display: flex; width: calc(100% - 6em); height: 100%; align-items: center; overflow: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch"></div>
-                    <div class="tab-toggle" style="order: 1; width: 6em; height: 100%; text-align: center; font-weight: bold; padding: 5px;"></div>
+            <div class="tabs-container">
+                <div class="tabs-outer">
+                    <div class="tabs"></div>
+                    <div class="tab-toggle"></div>
                 </div>
-                <div class="tab-contents" style="word-break: break-word; font-variant-ligatures: none; position: relative;">
-                    <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)"><img src="/plugins/code-tabs/asset/copy.png" alt="复制"></span>
+                <div class="tab-contents">
+                    <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)">
+                        <img src="/plugins/code-tabs/asset/copy.png" alt="复制">
+                    </span>
                 </div>
             </div>
         </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();

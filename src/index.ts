@@ -1,6 +1,7 @@
 import {Plugin} from "siyuan";
 import {deleteBlock, getBlockAttrs, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, updateBlock} from "@/api";
 import hljs from "highlight.js";
+import ClipboardJS from "clipboard";
 import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
 import {markedHighlight} from "marked-highlight";
@@ -855,14 +856,53 @@ export default class CodeTabs extends Plugin {
             copyCode: function (evt: MouseEvent) {
                 const tabContainer = this.getTabContainer(evt.target);
                 const tabContent = tabContainer.querySelector('.tab-content--active');
-                const textContent = tabContent.textContent;
-                if (textContent) {
-                    // 使用 Clipboard API 复制文本内容到剪贴板
-                    navigator.clipboard.writeText(textContent).then(() => {
-                        pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
-                    }).catch(err => {
-                        console.error('Failed to copy text: ', err);
+                let textContent = tabContent.textContent;
+                if (tabContent.firstChild.className.includes('markdown')) {
+                    // 当复制的代码块是markdown时直接从保存的自定义属性中获取代码
+                    const tabContents = tabContent.parentNode;
+                    const childElements = Array.from(tabContents.children);
+                    // 先确定当前要复制的代码是第几个标签，然后去获取自定义属性中对应的代码就可以了
+                    const index = childElements.indexOf(tabContent) - 1;
+                    const htmlBlock = this.getHtmlBlock(evt.target);
+                    const nodeId = htmlBlock.dataset.nodeId;
+                    getBlockAttrs(nodeId).then(res => {
+                        // 将自定义属性的字符串中的零宽空格还原成换行符
+                        let codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                        if (codeText[codeText.length - 1] !== '\n') {
+                            codeText = codeText + '\n';
+                        }
+                        const codeArr = codeText.trim().match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
+                        textContent = codeArr[index];
+                        // 去除tab:::和lang:::这两行就可以得到markdown文本了
+                        const lines = textContent.split('\n');
+                        lines.shift();
+                        if (lines[0] && lines[0].startsWith('lang:::')) {
+                            lines.shift();
+                        }
+                        textContent = lines.join('\n');
+                        copyTextToClipboard(textContent);
+
                     });
+                } else {
+                    copyTextToClipboard(textContent);
+                }
+
+                function copyTextToClipboard(text: string) {
+                    const btn = evt.target as HTMLElement;
+                    const clipboard = new ClipboardJS(btn, {
+                        text: function () {
+                            return text;
+                        }
+                    });
+                    clipboard.on('success', (e) => {
+                        e.clearSelection();
+                        pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
+                    })
+                    clipboard.on('error', (e) => {
+                        logger.error(e);
+                    })
+                    btn.click();
+                    clipboard.destroy();
                 }
             },
 

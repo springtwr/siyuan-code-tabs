@@ -338,7 +338,7 @@ export default class CodeTabs extends Plugin {
                 codeSplitArr.shift();
                 const code = codeSplitArr.join('\n').trim();
                 if (language === '') {
-                    language = title;
+                    language = title.split(':::active')[0].trim();
                 }
                 language = hljs.getLanguage(language) ? language : 'plaintext';
                 codeResult.push({

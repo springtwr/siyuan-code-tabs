@@ -3,34 +3,33 @@ tab:::这是c语言
 lang:::c
 #include<stdio.h>
 int main(){
-    printf("hello world\n");
+   printf("hello\n");
+   return 0;
+}
+
+tab:::这是c++
+lang:::cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    cout << "Hello, world!" << endl;
     return 0;
 }
 
-tab:::java
+tab:::python
+def hello_world():
+   print("Hello World")
+
+tab:::这是java
+lang:::java
 public class HelloWorld {
     public static void main(String[] args) {
         System.out.println("Hello World");
     }
 }
 
-tab:::python:::active
-def hello_world():
-    print("Hello World")
-
-tab:::这是html
-lang:::html
-<html>
-    <head>
-        <title>test</title>
-    </head>
-    <body>
-        <h1> this is a test </h1>
-    </body>
-</html>
-
-tab:::这是markdown
-lang:::markdown
+tab:::markdown:::active
 # 标题1
 ## 标题2 
 这是**粗体**，这是*斜体*，这是行内代码`code`， 这是行内公式 $a=\sqrt{b^2+c^2}$，这是~~删除线~~，这是[链接](https://github.com)。  
@@ -60,4 +59,62 @@ int main(){
     return 0;
 }
 ``` 
+
+tab:::这是go
+lang:::go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+
+tab:::这是c#
+lang:::c#
+using System;
+namespace HelloWorldApplication
+{
+    class HelloWorld
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Hello World!");
+            Console.ReadKey();
+        }
+    }
+}
+
+tab:::rust
+fn main() {
+    println!("Hello World!");
+}
+
+tab:::typescript
+function greeter(person) {
+    return "Hello, " + person;
+}
+
+let user = "Jane User";
+
+document.body.innerHTML = greeter(user);
+
+tab:::fortran
+program hello
+  ! This is a comment line; it is ignored by the compiler
+  print *, 'Hello, World!'
+end program hello
+
+tab:::这是php
+lang:::php
+<!DOCTYPE html>
+<html>
+<body>
+
+<?php
+echo "Hello World!";
+?>
+
+</body>
+</html>
 ``````

@@ -3,6 +3,7 @@
     font-weight: bold;
     flex-shrink: 0;
     max-width: 12em;
+    min-width: 2em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

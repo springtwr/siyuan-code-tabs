@@ -77,6 +77,10 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Changelog
 
+### v0.6.1
+
+- Adjust the minimum width of the tag
+
 ### v0.6.0
 
 - Copy button can now copy markdown

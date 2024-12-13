@@ -77,22 +77,27 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Changelog
 
+### v0.6.2
+
+- Fix missing line breaks when "Toggle to code-block".
+- Adjust spacing between tags and code in some themes.
+
 ### v0.6.1
 
-- Adjust the minimum width of the tag
+- Adjust the minimum width of the tag.
 
 ### v0.6.0
 
-- Copy button can now copy markdown
+- Copy button can now copy markdown.
 - Swipe left or right to view tags when there are too many tags on mobile.
 - Fixed the problem that the copy button doesn't work when using docker.
-- Optimize tag style
+- Optimize tag style.
 
 ### v0.5.0
 
-- Optimize the display effect and adapt more themes
-- Fix display anomalies when using docker that may be caused by CORS issues
-- Fix padding being too small
+- Optimize the display effect and adapt more themes.
+- Fix display anomalies when using docker that may be caused by CORS issues.
+- Fix padding being too small.
 
 ### v0.4.2
 

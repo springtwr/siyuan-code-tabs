@@ -7,6 +7,8 @@ import markedKatex from "marked-katex-extension";
 import {markedHighlight} from "marked-highlight";
 import logger from "@/logger";
 
+const customAttr = 'custom-plugin-code-tabs-sourcecode';
+const newLineFlag = '\u2935\u21A9';
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private htmlBlockStr = `
@@ -232,11 +234,11 @@ export default class CodeTabs extends Plugin {
         });
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.fixAllTabs, click: () => {
-                document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
+                document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
                     const nodeId = (node as HTMLElement).dataset.nodeId;
                     getBlockAttrs(nodeId).then(res => {
                         // 从自定义属性中取出原始的代码时要将字符串中的零宽空格还原成换行符
-                        const codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                        const codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
                         const codeArr = this.checkCodeText(codeText);
                         if (codeArr.result) {
                             // 生成思源笔记中的HTMLBlock字符串
@@ -281,10 +283,9 @@ export default class CodeTabs extends Plugin {
     private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         updateBlock(dataType, data, id).then(() => {
             logger.info(this.i18n.updateCodeBlock);
-            // 使用零宽空格来代替换行实现压缩字符串的效果，由于之前的处理此时可以保证此时字符串里面没有零宽空格
-            const newLineFlag = '\u200b';
+            // 使用特殊的unicode字符来代替换行实现压缩字符串的效果，同时避免换行符在使用api时被思源去除
             codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
-            setBlockAttrs(id, {['custom-plugin-code-tabs-sourcecode']: codeText}).then(() => {
+            setBlockAttrs(id, {[`${customAttr}`]: codeText}).then(() => {
                 const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
                 const editButton = node.querySelector('.protyle-action__edit');
                 const clickEvent = new MouseEvent('click', {
@@ -755,7 +756,7 @@ export default class CodeTabs extends Plugin {
      * @private
      */
     private updateAllTabsStyle() {
-        document.querySelectorAll('[data-type="NodeHTMLBlock"][custom-plugin-code-tabs-sourcecode]').forEach(node => {
+        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
             const shadowRoot = node.querySelector('protyle-html').shadowRoot;
             shadowRoot.querySelectorAll('link').forEach(link => {
                 const currentHref = link.href;
@@ -867,7 +868,7 @@ export default class CodeTabs extends Plugin {
                     const nodeId = htmlBlock.dataset.nodeId;
                     getBlockAttrs(nodeId).then(res => {
                         // 将自定义属性的字符串中的零宽空格还原成换行符
-                        let codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                        let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
                         if (codeText[codeText.length - 1] !== '\n') {
                             codeText = codeText + '\n';
                         }
@@ -910,8 +911,8 @@ export default class CodeTabs extends Plugin {
                 const htmlBlock = this.getHtmlBlock(evt.target);
                 const nodeId = htmlBlock.dataset.nodeId;
                 getBlockAttrs(nodeId).then(res => {
-                    // 切回代码块时要将自定义属性的字符串中的零宽空格还原成换行符
-                    let codeText = res['custom-plugin-code-tabs-sourcecode'].replace(/\u200b/g, '\n');
+                    // 切回代码块时要将自定义属性的字符串中的特殊字符还原成换行符
+                    let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
                     if (codeText[codeText.length - 1] !== '\n') {
                         codeText = codeText + '\n';
                     }

@@ -22,7 +22,7 @@ body:
       value: |
         - 思源版本: 
         - 操作系统: 
-        - 外观模式:
+        - 外观模式: 
         - 主题：
       render: markdown
     validations:

@@ -22,8 +22,8 @@ body:
       value: |
         - Version: 
         - Operating System: 
-        - Appearance mode:
-        - Theme:
+        - Appearance mode: 
+        - Theme: 
       render: markdown
     validations:
       required: true

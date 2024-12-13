@@ -1,0 +1,36 @@
+name: Bug report
+description: Report defects to help us improve
+title: "Please enter the title of the bug report"
+body:
+  - type: textarea
+    attributes:
+      label: Describe the problem
+      description: |
+        Please describe the problem you are experiencing as clearly as possible.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshot or screen recording presentation
+      description: |
+        Please try to attach screenshots or videos to describe the problem you are experiencing.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Version environment
+      value: |
+        - Version: 
+        - Operating System: 
+        - Appearance mode:
+        - Theme:
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: More information
+      description: |
+        Please provide other additional information to help us diagnose the problem.
+    validations:
+      required: false

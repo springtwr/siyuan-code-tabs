@@ -1,0 +1,36 @@
+name: 错误报告
+description: 报告一个错误
+title: "请输入标题"
+body:
+  - type: textarea
+    attributes:
+      label: 描述问题
+      description: |
+        请详细描述你遇到的问题。
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 问题截图或录屏
+      description: |
+        请尽可能附上问题发生时的截图或录屏。
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: 版本信息
+      value: |
+        - 思源版本: 
+        - 操作系统: 
+        - 外观模式:
+        - 主题：
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 更多信息
+      description: |
+        如有可能请提供更多信息。
+    validations:
+      required: false

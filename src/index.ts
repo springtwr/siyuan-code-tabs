@@ -74,7 +74,7 @@ const protyleHtmlStr = `
                     height: 100%;
                     text-align: center;
                     font-weight: bold;
-                    padding: 5px;
+                    padding: 2px 5px;
                 }
                 
                 .tab-contents {
@@ -672,14 +672,18 @@ export default class CodeTabs extends Plugin {
         let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
         let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
         const lineHeight = parseFloat(window.getComputedStyle(blockElement).lineHeight);
-        blockTop = lineHeight + 22;
+        blockTop = Math.max(blockTop, lineHeight + 4);
         logger.info('blockTop: ' + blockTop);
         blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
-        hljsTop = hljsTop == 0 ? 8 : hljsTop;
+        hljsTop = hljsBottom == 0 ? 5 : hljsBottom;
         logger.info('hljsTop: ' + hljsTop);
         hljsPadding = `${hljsTop}px ${hljsRight}px ${hljsBottom}px ${hljsLeft}px`;
         const blockMargin = window.getComputedStyle(blockElement).margin;
-        const hljsMargin = window.getComputedStyle(hljsElement).margin;
+        let hljsMargin = window.getComputedStyle(hljsElement).margin;
+        let [hljsMarginTop, hljsMarginRight, hljsMarginBottom, hljsMarginLeft] = this.parsePadding(hljsMargin);
+        hljsMarginTop = Math.max(0, hljsMarginTop);
+        logger.info('hljsMarginTop: ' + hljsMarginTop);
+        hljsMargin = `${hljsMarginTop}px ${hljsMarginRight}px ${hljsMarginBottom}px ${hljsMarginLeft}px`;
         const editableMargin = window.getComputedStyle(editableElement).margin;
 
         const border = window.getComputedStyle(blockElement).border;

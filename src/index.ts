@@ -9,9 +9,7 @@ import logger from "@/logger";
 
 const customAttr = 'custom-plugin-code-tabs-sourcecode';
 const newLineFlag = '\u2935\u21A9';
-export default class CodeTabs extends Plugin {
-    private blockIconEventBindThis = this.blockIconEvent.bind(this);
-    private htmlBlockStr = `
+const htmlBlockStr = `
         <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
             <div class="protyle-icons">
                 <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
@@ -27,7 +25,7 @@ export default class CodeTabs extends Plugin {
             </div>
             <div class="protyle-attr" contenteditable="false"></div>
         </div>`.replace(/>\s+</g, '><').trim();
-    private protyleHtmlStr = `
+const protyleHtmlStr = `
         <div> 
             <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
             <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
@@ -97,6 +95,8 @@ export default class CodeTabs extends Plugin {
                 </div>
             </div>
         </div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+export default class CodeTabs extends Plugin {
+    private blockIconEventBindThis = this.blockIconEvent.bind(this);
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
@@ -364,7 +364,7 @@ export default class CodeTabs extends Plugin {
      */
     private createHtmlBlock(id: string, codeArr: codeTab[]): string {
         const containerDiv = document.createElement('div');
-        containerDiv.innerHTML = this.htmlBlockStr;
+        containerDiv.innerHTML = htmlBlockStr;
         const node = containerDiv.querySelector('.render-node') as HTMLElement;
         node.dataset.nodeId = id;
         const protyleHtml = containerDiv.querySelector('protyle-html') as HTMLElement;
@@ -380,7 +380,7 @@ export default class CodeTabs extends Plugin {
      */
     private createProtyleHtml(codeArr: codeTab[]): string {
         const containerDiv = document.createElement('div');
-        containerDiv.innerHTML = this.protyleHtmlStr;
+        containerDiv.innerHTML = protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;
 
         // tabs-outer 作为包含tabs和切换按钮的容器

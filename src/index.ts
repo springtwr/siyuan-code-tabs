@@ -237,8 +237,13 @@ export default class CodeTabs extends Plugin {
                 document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
                     const nodeId = (node as HTMLElement).dataset.nodeId;
                     getBlockAttrs(nodeId).then(res => {
-                        // 从自定义属性中取出原始的代码时要将字符串中的零宽空格还原成换行符
-                        const codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
+                        // 从自定义属性中取出原始的代码时要将字符串中的特殊字符还原成换行符
+                        let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
+                        // 转换后的代码如果不包含换行，则使用html元素中保存的代码进行校验，防止换行符意外丢失
+                        // 用于兼容老版本的代码标签页
+                        if (!/[\r\n]+/.test(codeText) && !/[\r\n]+/.test(codeText)) {
+                            codeText = node.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                        }
                         const codeArr = this.checkCodeText(codeText);
                         if (codeArr.result) {
                             // 生成思源笔记中的HTMLBlock字符串
@@ -917,6 +922,12 @@ export default class CodeTabs extends Plugin {
                 getBlockAttrs(nodeId).then(res => {
                     // 切回代码块时要将自定义属性的字符串中的特殊字符还原成换行符
                     let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
+                    // 转换后的代码如果不包含换行，则使用html元素中保存的代码进行校验，防止换行符意外丢失
+                    // 用于兼容老版本的代码标签页
+                    if (!/[\r\n]+/.test(codeText) && !/[\r\n]+/.test(codeText)) {
+                        logger.info("旧标签页");
+                        codeText = htmlBlock.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                    }
                     if (codeText[codeText.length - 1] !== '\n') {
                         codeText = codeText + '\n';
                     }

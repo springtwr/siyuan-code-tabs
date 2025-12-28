@@ -63,16 +63,35 @@ export default class CodeTabs extends Plugin {
         const head = document.head;
         const callback = (mutationsList: any) => {
             const siyuanConfig = this.getSiyuanConfig();
-            const selector = /<link.*theme/gi;
             for (let mutation of mutationsList) {
-                const configFlag = this.compareConfig(siyuanConfig, this.data)
-                if (!configFlag) {
+                // 1. 检查思源基础配置是否有变动
+                if (!this.compareConfig(siyuanConfig, this.data)) {
                     debounced();
                     break;
                 }
-                if (mutation.type === 'attributes' && selector.test(mutation.target.outerHTML)) {
+
+                // 2. 检查 html 元素和 head 中主题相关的变动
+                const isThemeLink = (node: Node) => {
+                    return node instanceof HTMLLinkElement && node.href.includes('/appearance/themes/');
+                };
+
+                if (mutation.target === document.documentElement && mutation.type === 'attributes') {
+                    // html 元素的任何属性变动 (如 data-theme-mode, savor-theme 等)
                     debounced();
                     break;
+                }
+
+                if (mutation.type === 'childList') {
+                    const nodes = [...Array.from(mutation.addedNodes as NodeList), ...Array.from(mutation.removedNodes as NodeList)];
+                    if (nodes.some((node: Node) => isThemeLink(node))) {
+                        debounced();
+                        break;
+                    }
+                } else if (mutation.type === 'attributes') {
+                    if (isThemeLink(mutation.target as Node)) {
+                        debounced();
+                        break;
+                    }
                 }
             }
         };

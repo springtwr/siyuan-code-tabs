@@ -1,0 +1,223 @@
+import { Plugin } from "siyuan";
+import { getBlockAttrs, setBlockAttrs, updateBlock, pushErrMsg, putFile } from "@/api";
+import logger from "@/utils/logger";
+import { customAttr, newLineFlag } from "@/assets/constants";
+import { TabParser } from "@/modules/parser/TabParser";
+import { TabRenderer } from "@/modules/renderer/TabRenderer";
+import { ThemeManager } from "@/modules/theme/ThemeManager";
+import { TabManager } from "@/modules/tab-manager/TabManager";
+
+export default class CodeTabs extends Plugin {
+    private blockIconEventBindThis = this.blockIconEvent.bind(this);
+
+    async onload() {
+        this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
+        logger.info("loading code-tabs");
+
+        if (!window.siyuan.config.editor.allowHTMLBLockScript) {
+            pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();
+        }
+
+        TabManager.initGlobalFunctions();
+
+        this.addCommand({
+            langKey: "codeToTabs",
+            hotkey: "",
+            callback: () => {
+                const selection = document.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const currentNode = range.startContainer.parentNode?.parentNode as any;
+                    const editElement = currentNode?.querySelector('[contenteditable="true"]');
+                    if (editElement && currentNode.dataset?.type === "NodeCodeBlock") {
+                        this.convertToTabs(currentNode);
+                    }
+                }
+            }
+        });
+    }
+
+    async onLayoutReady() {
+        logger.info("layout ready");
+        this.syncSiyuanConfig();
+
+        const configFile = await this.fetchFileFromUrl('/plugins/code-tabs/config.json', 'config.json');
+        if (configFile === undefined || configFile.size === 0) {
+            await ThemeManager.putStyleFile(this);
+            await this.saveConfig();
+            ThemeManager.updateAllTabsStyle();
+        } else {
+            const data = await this.loadDataFromFile(configFile);
+            const configFlag = this.compareConfig(data, this.data);
+            if (!configFlag) {
+                await ThemeManager.putStyleFile(this);
+                await this.saveConfig();
+                ThemeManager.updateAllTabsStyle();
+            }
+        }
+
+        const html = document.documentElement;
+        const head = document.head;
+        const callback = (mutationsList: any) => {
+            const siyuanConfig = this.getSiyuanConfig();
+            const selector = /<link.*theme/gi;
+            for (let mutation of mutationsList) {
+                const configFlag = this.compareConfig(siyuanConfig, this.data)
+                if (!configFlag) {
+                    debounced();
+                    break;
+                }
+                if (mutation.type === 'attributes' && selector.test(mutation.target.outerHTML)) {
+                    debounced();
+                    break;
+                }
+            }
+        };
+
+        const debounce = <T extends Function>(func: T, wait: number) => {
+            let timeout: any = null;
+            return function (...args: any) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const putFileHandler = () => {
+            logger.info(this.i18n.codeStyleChange);
+            ThemeManager.putStyleFile(this).then(() => {
+                this.syncSiyuanConfig();
+                this.saveConfig();
+                ThemeManager.updateAllTabsStyle();
+            });
+        }
+
+        const debounced = debounce(putFileHandler, 500);
+        const observer = new MutationObserver(callback);
+        observer.observe(html, { attributes: true, childList: false, subtree: false });
+        observer.observe(head, { attributes: true, childList: true, subtree: true });
+    }
+
+    private blockIconEvent({ detail }: any) {
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.codeToTabs, click: () => {
+                for (const item of detail.blockElements) {
+                    const editElement = item.querySelector('[contenteditable="true"]');
+                    if (editElement && item.dataset?.type === "NodeCodeBlock") {
+                        this.convertToTabs(item);
+                    }
+                }
+            }
+        });
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.fixAllTabs, click: () => {
+                document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
+                    const nodeId = (node as HTMLElement).dataset.nodeId;
+                    getBlockAttrs(nodeId).then(res => {
+                        let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
+                        if (!/[\r\n]+/.test(codeText)) {
+                            codeText = node.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                        }
+                        const codeArr = TabParser.checkCodeText(codeText, this.i18n);
+                        if (codeArr.result) {
+                            const htmlBlock = TabRenderer.createHtmlBlock(nodeId, codeArr.code, this.i18n, this.i18n.toggleToCode);
+                            this.update('dom', htmlBlock, nodeId, codeText);
+                        } else {
+                            pushErrMsg(`${this.i18n.fixAllTabsErrMsg}: ${nodeId}`).then();
+                        }
+                    });
+                });
+            },
+        });
+    }
+
+    private async convertToTabs(item: any) {
+        const id = item.dataset.nodeId;
+        const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200d/g, '').replace(/\u200b/g, '');
+        const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+        if (checkResult.result) {
+            const htmlBlock = TabRenderer.createHtmlBlock(id, checkResult.code, this.i18n, this.i18n.toggleToCode);
+            this.update('dom', htmlBlock, id, codeText);
+        }
+    }
+
+    private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
+        updateBlock(dataType, data, id).then(() => {
+            logger.info(this.i18n.updateCodeBlock);
+            codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
+            setBlockAttrs(id, { [`${customAttr}`]: codeText }).then(() => {
+                const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
+                const editButton = node.querySelector('.protyle-action__edit');
+                const clickEvent = new MouseEvent('click', { 'view': window, 'bubbles': true, 'cancelable': true });
+                editButton.dispatchEvent(clickEvent);
+                const closeButton = document.querySelector('.block__icon--show[data-type="close"]');
+                closeButton.dispatchEvent(clickEvent);
+            });
+        })
+    }
+
+    private async loadDataFromFile(file: File): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    resolve(JSON.parse(reader.result as string));
+                } catch (e) {
+                    reject(e);
+                }
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+        });
+    }
+
+    private getSiyuanConfig() {
+        return {
+            fontSize: window.siyuan.config.editor.fontSize,
+            mode: window.siyuan.config.appearance.mode,
+            themeLight: window.siyuan.config.appearance.themeLight,
+            themeDark: window.siyuan.config.appearance.themeDark,
+            codeBlockThemeLight: window.siyuan.config.appearance.codeBlockThemeLight,
+            codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark
+        }
+    }
+
+    private syncSiyuanConfig() {
+        const properties = this.getSiyuanConfig();
+        Object.keys(properties).forEach(key => {
+            Object.defineProperty(this.data, key, {
+                value: properties[key],
+                writable: true,
+                enumerable: true
+            });
+        });
+    }
+
+    private async saveConfig() {
+        this.syncSiyuanConfig();
+        const file = new File([JSON.stringify(this.data)], 'config.json', { type: 'application/json' });
+        await putFile('/data/plugins/code-tabs/config.json', false, file);
+    }
+
+    private compareConfig(pluginConfig: any, siyuanConfig: any) {
+        const pluginKeys = Object.keys(pluginConfig);
+        const siyuanKeys = Object.keys(siyuanConfig);
+        if (pluginKeys.length !== siyuanKeys.length) return false;
+        for (const key of siyuanKeys) {
+            if (pluginConfig[key] !== siyuanConfig[key]) return false;
+        }
+        return true;
+    }
+
+    private async fetchFileFromUrl(route: string, fileName: string): Promise<File> {
+        try {
+            const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
+            const url = baseUrl + route;
+            const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
+            if (!response.ok) return undefined;
+            const blob = await response.blob();
+            return new File([blob], fileName, { type: blob.type });
+        } catch (e) {
+            return undefined;
+        }
+    }
+}

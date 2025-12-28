@@ -1,7 +1,7 @@
-import {resolve} from "path"
-import {defineConfig} from "vite"
+import { resolve } from "path"
+import { defineConfig } from "vite"
 import minimist from "minimist"
-import {viteStaticCopy} from "vite-plugin-static-copy"
+import { viteStaticCopy } from "vite-plugin-static-copy"
 import livereload from "rollup-plugin-livereload"
 import zipPack from "vite-plugin-zip-pack";
 import fg from 'fast-glob';
@@ -76,7 +76,7 @@ export default defineConfig({
 
         lib: {
             // Could also be a dictionary or array of multiple entry points
-            entry: resolve(__dirname, "src/index.ts"),
+            entry: resolve(__dirname, "src/core/index.ts"),
             // the proper extensions will be added
             fileName: "index",
             formats: ["cjs"],

@@ -1,5 +1,5 @@
 import { Plugin } from "siyuan";
-import { getBlockAttrs, setBlockAttrs, updateBlock, pushErrMsg, putFile } from "@/api";
+import { getBlockAttrs, setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
 import logger from "@/utils/logger";
 import { customAttr, newLineFlag } from "@/assets/constants";
 import { TabParser } from "@/modules/parser/TabParser";
@@ -148,8 +148,8 @@ export default class CodeTabs extends Plugin {
                 }
                 const codeArr = TabParser.checkCodeText(codeText, this.i18n);
                 if (codeArr.result) {
-                    const htmlBlock = TabRenderer.createHtmlBlock(nodeId, codeArr.code, this.i18n, this.i18n.toggleToCode);
-                    this.update('dom', htmlBlock, nodeId, codeText);
+                    // const htmlBlock = TabRenderer.createHtmlBlock(codeArr.code, this.i18n.toggleToCode);
+                    // this.update('dom', htmlBlock, nodeId, codeText);
                 } else {
                     pushErrMsg(`${this.i18n.fixAllTabsErrMsg}: ${nodeId}`).then();
                 }
@@ -162,24 +162,18 @@ export default class CodeTabs extends Plugin {
         const codeText = item.querySelector('[contenteditable="true"]').textContent.replace(/\u200d/g, '').replace(/\u200b/g, '');
         const checkResult = TabParser.checkCodeText(codeText, this.i18n);
         if (checkResult.result) {
-            const htmlBlock = TabRenderer.createHtmlBlock(id, checkResult.code, this.i18n, this.i18n.toggleToCode);
+            const htmlBlock = TabRenderer.createHtmlBlock(checkResult.code, this.i18n.toggleToCode);
             this.update('dom', htmlBlock, id, codeText);
         }
     }
 
-    private update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
-        updateBlock(dataType, data, id).then(() => {
-            logger.info(this.i18n.updateCodeBlock);
-            codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
-            setBlockAttrs(id, { [`${customAttr}`]: codeText }).then(() => {
-                const node = document.querySelector(`[data-node-id="${id}"][data-type="NodeHTMLBlock"]`);
-                const editButton = node.querySelector('.protyle-action__edit');
-                const clickEvent = new MouseEvent('click', { 'view': window, 'bubbles': true, 'cancelable': true });
-                editButton.dispatchEvent(clickEvent);
-                const closeButton = document.querySelector('.block__icon--show[data-type="close"]');
-                closeButton.dispatchEvent(clickEvent);
-            });
-        })
+    private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
+        const new_block = await insertBlock(dataType, data, "", id, "");
+        logger.info(`插入新块, id ${id}`);
+        const new_id = new_block[0].doOperations[0].id;
+        codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
+        setBlockAttrs(new_id, { [`${customAttr}`]: codeText })
+        deleteBlock(id).then(() => logger.info("delete code-block"));
     }
 
     private async loadDataFromFile(file: File): Promise<any> {

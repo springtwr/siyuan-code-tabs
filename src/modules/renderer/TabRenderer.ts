@@ -6,17 +6,15 @@ import { codeTab } from "@/types";
 import { htmlBlockStr, protyleHtmlStr } from "@/assets/constants";
 
 export class TabRenderer {
-    static createHtmlBlock(id: string, codeArr: codeTab[], i18n: any, toggleToCode: string): string {
+    static createHtmlBlock(codeArr: codeTab[], toggleToCode: string): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = htmlBlockStr;
-        const node = containerDiv.querySelector('.render-node') as HTMLElement;
-        node.dataset.nodeId = id;
         const protyleHtml = containerDiv.querySelector('protyle-html') as HTMLElement;
-        protyleHtml.dataset.content = this.createProtyleHtml(codeArr, i18n, toggleToCode);
+        protyleHtml.dataset.content = this.createProtyleHtml(codeArr, toggleToCode);
         return containerDiv.innerHTML;
     }
 
-    private static createProtyleHtml(codeArr: codeTab[], i18n: any, toggleToCode: string): string {
+    private static createProtyleHtml(codeArr: codeTab[], toggleToCode: string): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;

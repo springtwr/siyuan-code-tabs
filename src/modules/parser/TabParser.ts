@@ -1,5 +1,4 @@
 import { pushMsg } from "@/api";
-import hljs from "highlight.js";
 import { codeTab } from "@/types";
 
 export class TabParser {
@@ -39,7 +38,7 @@ export class TabParser {
                 if (language === '') {
                     language = title.split(':::active')[0].trim();
                 }
-                language = hljs.getLanguage(language) ? language : 'plaintext';
+                language = window.hljs.getLanguage(language) ? language : 'plaintext';
                 codeResult.push({
                     title: title,
                     language: language,

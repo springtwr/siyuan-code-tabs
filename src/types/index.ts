@@ -152,5 +152,6 @@ declare global {
             languages: any;
         };
         pluginCodeTabs: any;
+        hljs: any;
     }
 }

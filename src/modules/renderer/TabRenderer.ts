@@ -1,4 +1,3 @@
-import hljs from "highlight.js";
 import { Marked } from "marked";
 import markedKatex from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
@@ -53,19 +52,19 @@ export class TabRenderer {
                     markedHighlight({
                         langPrefix: 'hljs language-',
                         highlight(code, lang) {
-                            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                            return hljs.highlight(code, { language }).value;
+                            const language = window.hljs.getLanguage(lang) ? lang : 'plaintext';
+                            return window.hljs.highlight(code, { language }).value;
                         }
                     })
                 );
                 const options = {
                     throwOnError: false
                 };
-                marked.use(markedKatex(options));
+                marked.use(markedKatex(options as any));
                 hlText = marked.parse(code) as string;
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
-                hlText = hljs.highlight(code, { language: language, ignoreIllegals: true }).value;
+                hlText = window.hljs.highlight(code, { language: language, ignoreIllegals: true }).value;
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText;

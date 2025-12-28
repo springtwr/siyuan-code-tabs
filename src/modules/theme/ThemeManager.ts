@@ -1,6 +1,7 @@
 import { pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
 import logger from "@/utils/logger";
 import { customAttr } from "@/assets/constants";
+import { ThemePatch, ThemeStyle } from "@/assets/theme-adaption";
 
 export class ThemeManager {
     static async putStyleFile(plugin: any) {
@@ -8,8 +9,32 @@ export class ThemeManager {
         const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
         const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
         await putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle);
-        // 配置代码背景色样式文件
-        const style = await this.getCodeBlockStyle(plugin.i18n);
+
+        // 获取当前主题 ID
+        const html = document.documentElement;
+        const mode = html.getAttribute('data-theme-mode'); // "light" or "dark"
+        const currentThemeId = mode === 'dark'
+            ? html.getAttribute('data-dark-theme')
+            : html.getAttribute('data-light-theme');
+
+        // 加载外部主题适配配置
+        const themePatches = await this.loadThemeConfig();
+        const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
+
+        let style: ThemeStyle;
+        let extraCss = "";
+
+        if (patch && patch.fullStyle) {
+            // 如果有完整补丁，直接使用，跳过 getCodeBlockStyle
+            logger.info(`使用外部主题适配: ${patch.name}`);
+            style = patch.fullStyle;
+            extraCss = patch.extraCss || "";
+        } else {
+            // 否则回退到自动采集逻辑
+            style = await this.getCodeBlockStyle(plugin.i18n);
+            extraCss = patch?.extraCss || "";
+        }
+
         const cssContent = `
 .tabs-container {
   border: ${style.border}; 
@@ -36,12 +61,12 @@ export class ThemeManager {
   margin: ${style.editableMargin};
   background-color: ${style.editableBg};
 }
+${extraCss}
 `;
         const blob = new Blob([cssContent], { type: 'text/css' });
         const fileBackgroundStyle = new File([blob], 'styles.css', { type: 'text/css' });
         await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
         // 配置代码中markdown的样式文件
-        const mode = document.documentElement.getAttribute('data-theme-mode');
         if (mode === 'dark') {
             const darkModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-dark.css', 'github-markdown.css');
             await putFile('/data/plugins/code-tabs/github-markdown.css', false, darkModeFile);
@@ -193,7 +218,12 @@ export class ThemeManager {
                 const response = await fetch(url, options);
                 if (!response.ok) {
                     if (response.status === 404) {
-                        if (route === '/plugins/code-tabs/code-style.css' || route === '/plugins/code-tabs/background.css') {
+                        const passThroughPaths = [
+                            '/plugins/code-tabs/code-style.css',
+                            '/plugins/code-tabs/background.css',
+                            '/plugins/code-tabs/theme-adaption.json'
+                        ];
+                        if (passThroughPaths.includes(route)) {
                             return response;
                         }
                     }
@@ -221,5 +251,39 @@ export class ThemeManager {
                 link.href = url.pathname + url.search;
             });
         });
+    }
+
+    private static async loadThemeConfig(): Promise<ThemePatch[]> {
+        const fetchPath = '/plugins/code-tabs/theme-adaption.json';
+        const storagePath = '/data/plugins/code-tabs/theme-adaption.json';
+
+        try {
+            logger.info("尝试从数据目录加载主题配置...");
+            const file = await this.fetchFileFromUrl(fetchPath, 'theme-adaption.json');
+            if (file && file.size > 0) {
+                const content = await file.text();
+                return JSON.parse(content);
+            }
+        } catch (e) {
+            logger.info("未检测到有效的主题配置，准备初始化...");
+        }
+
+        // 如果文件不存在或加载失败，从插件 asset 目录加载默认配置并写入到数据目录
+        const defaultAssetPath = '/plugins/code-tabs/asset/theme-adaption.json';
+        try {
+            const defaultFile = await this.fetchFileFromUrl(defaultAssetPath, 'theme-adaption.json');
+            if (defaultFile) {
+                const content = await defaultFile.text();
+                const defaultJson = JSON.parse(content);
+                // 写入到数据目录 (storagePath)
+                await putFile(storagePath, false, defaultFile);
+                logger.info("已初始化默认主题适配文件: theme-adaption.json");
+                return defaultJson;
+            }
+        } catch (e) {
+            logger.error(`加载默认配置失败: ${e}`);
+        }
+
+        return [];
     }
 }

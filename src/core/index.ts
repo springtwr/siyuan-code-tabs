@@ -12,6 +12,9 @@ export default class CodeTabs extends Plugin {
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
+        this.eventBus.on("switch-protyle", (event) => {
+            this.fixAllTabsInDocument(event.detail.protyle.element);
+        });
         logger.info("loading code-tabs");
 
         if (!window.siyuan.config.editor.allowHTMLBLockScript) {
@@ -110,23 +113,28 @@ export default class CodeTabs extends Plugin {
         });
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.fixAllTabs, click: () => {
-                document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
-                    const nodeId = (node as HTMLElement).dataset.nodeId;
-                    getBlockAttrs(nodeId).then(res => {
-                        let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
-                        if (!/[\r\n]+/.test(codeText)) {
-                            codeText = node.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
-                        }
-                        const codeArr = TabParser.checkCodeText(codeText, this.i18n);
-                        if (codeArr.result) {
-                            const htmlBlock = TabRenderer.createHtmlBlock(nodeId, codeArr.code, this.i18n, this.i18n.toggleToCode);
-                            this.update('dom', htmlBlock, nodeId, codeText);
-                        } else {
-                            pushErrMsg(`${this.i18n.fixAllTabsErrMsg}: ${nodeId}`).then();
-                        }
-                    });
-                });
+                this.fixAllTabsInDocument();
             },
+        });
+    }
+
+    private fixAllTabsInDocument(element: HTMLElement | Document = document) {
+        element.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
+            const nodeId = (node as HTMLElement).dataset.nodeId;
+            getBlockAttrs(nodeId).then(res => {
+                if (!res) return;
+                let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
+                if (!/[\r\n]+/.test(codeText)) {
+                    codeText = node.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                }
+                const codeArr = TabParser.checkCodeText(codeText, this.i18n);
+                if (codeArr.result) {
+                    const htmlBlock = TabRenderer.createHtmlBlock(nodeId, codeArr.code, this.i18n, this.i18n.toggleToCode);
+                    this.update('dom', htmlBlock, nodeId, codeText);
+                } else {
+                    pushErrMsg(`${this.i18n.fixAllTabsErrMsg}: ${nodeId}`).then();
+                }
+            });
         });
     }
 

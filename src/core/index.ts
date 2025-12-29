@@ -1,11 +1,12 @@
 import { Plugin, getActiveEditor } from "siyuan";
 import { getBlockAttrs, setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
 import logger from "@/utils/logger";
-import { customAttr, newLineFlag } from "@/assets/constants";
+import { customAttr } from "@/assets/constants";
 import { TabParser } from "@/modules/parser/TabParser";
 import { TabRenderer } from "@/modules/renderer/TabRenderer";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tab-manager/TabManager";
+import { encodeSource, decodeSource } from "@/utils/encoding";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -147,9 +148,11 @@ export default class CodeTabs extends Plugin {
             const nodeId = (node as HTMLElement).dataset.nodeId;
             getBlockAttrs(nodeId).then(res => {
                 if (!res) return;
-                let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
-                if (!/[\r\n]+/.test(codeText)) {
-                    codeText = node.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                // 使用 decodeSource 解码，兼容旧格式
+                let codeText = decodeSource(res[`${customAttr}`]);
+                if (!codeText) {
+                    // Fallback to DOM attribute if API returns nothing (rare case or during glitches)
+                    codeText = decodeSource(node.getAttribute(`${customAttr}`));
                 }
                 const codeArr = TabParser.checkCodeText(codeText, this.i18n);
                 if (codeArr.result) {
@@ -176,8 +179,9 @@ export default class CodeTabs extends Plugin {
         const new_block = await insertBlock(dataType, data, "", id, "");
         logger.info(`插入新块, id ${id}`);
         const new_id = new_block[0].doOperations[0].id;
-        codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
-        await setBlockAttrs(new_id, { [`${customAttr}`]: codeText });
+        // 使用 Base64 编码保存源码
+        const encodedCodeText = encodeSource(codeText);
+        await setBlockAttrs(new_id, { [`${customAttr}`]: encodedCodeText });
         deleteBlock(id).then(() => {
             logger.info("delete code-block");
             const activeEditor = getActiveEditor(true);

@@ -1,6 +1,7 @@
 import ClipboardJS from "clipboard";
 import { getBlockAttrs, updateBlock, pushMsg } from "@/api";
-import { customAttr, newLineFlag } from "@/assets/constants";
+import { customAttr } from "@/assets/constants";
+import { decodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 
 export class TabManager {
@@ -44,8 +45,10 @@ export class TabManager {
 
                     getBlockAttrs(nodeId).then(res => {
                         if (!res) return;
-                        let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
-                        if (codeText[codeText.length - 1] !== '\n') {
+                        let codeText = decodeSource(res[`${customAttr}`]);
+                        // Fallback check if needed, though decodeSource handles it.
+                        // Ensure strict string type if necessary, or just proceed.
+                        if (codeText && codeText[codeText.length - 1] !== '\n') {
                             codeText = codeText + '\n';
                         }
                         const codeArr = codeText.trim().match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
@@ -92,9 +95,9 @@ export class TabManager {
 
                 getBlockAttrs(nodeId).then(res => {
                     if (!res) return;
-                    let codeText = res[`${customAttr}`].replace(new RegExp(newLineFlag, 'g'), '\n');
-                    if (!/[\r\n]+/.test(codeText)) {
-                        codeText = htmlBlock.getAttribute(`${customAttr}`).replace(/\u200b/g, '\n');
+                    let codeText = decodeSource(res[`${customAttr}`]);
+                    if (!codeText) {
+                        codeText = decodeSource(htmlBlock.getAttribute(`${customAttr}`));
                     }
                     if (codeText[codeText.length - 1] !== '\n') {
                         codeText = codeText + '\n';

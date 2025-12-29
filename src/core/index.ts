@@ -1,4 +1,4 @@
-import { Plugin } from "siyuan";
+import { Plugin, getActiveEditor } from "siyuan";
 import { getBlockAttrs, setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
 import logger from "@/utils/logger";
 import { customAttr, newLineFlag } from "@/assets/constants";
@@ -172,8 +172,14 @@ export default class CodeTabs extends Plugin {
         logger.info(`插入新块, id ${id}`);
         const new_id = new_block[0].doOperations[0].id;
         codeText = codeText.replace(/[\r\n]/g, `${newLineFlag}`);
-        setBlockAttrs(new_id, { [`${customAttr}`]: codeText })
-        deleteBlock(id).then(() => logger.info("delete code-block"));
+        await setBlockAttrs(new_id, { [`${customAttr}`]: codeText });
+        deleteBlock(id).then(() => {
+            logger.info("delete code-block");
+            const activeEditor = getActiveEditor(true);
+            if (activeEditor) {
+                activeEditor.reload(true);
+            }
+        });
     }
 
     private async loadDataFromFile(file: File): Promise<any> {

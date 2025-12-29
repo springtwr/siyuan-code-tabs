@@ -2,7 +2,7 @@ export const customAttr = 'custom-plugin-code-tabs-sourcecode';
 export const newLineFlag = '\u2935\u21A9';
 
 export const htmlBlockStr = `
-<div data-type="NodeHTMLBlock" class="render-node" data-subtype="block" style="padding: 0; margin: 0">
+<div data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
     <div class="protyle-icons">
         <span aria-label="编辑" class="b3-tooltips__nw b3-tooltips protyle-icon protyle-icon--first protyle-action__edit">
             <svg><use xlink:href="#iconEdit"></use></svg>

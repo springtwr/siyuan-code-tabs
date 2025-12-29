@@ -21,6 +21,11 @@ export default class CodeTabs extends Plugin {
             pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();
         }
 
+        // 注入全局样式，移除 html 块默认的 padding
+        const style = document.createElement('style');
+        style.innerHTML = `div[data-type="NodeHTMLBlock"][${customAttr}] { padding: 0 !important; }`;
+        document.head.appendChild(style);
+
         TabManager.initGlobalFunctions();
 
         this.addCommand({

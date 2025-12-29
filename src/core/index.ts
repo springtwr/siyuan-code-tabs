@@ -1,5 +1,5 @@
 import { Plugin, getActiveEditor } from "siyuan";
-import { getBlockAttrs, setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
+import { getBlockAttrs, setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock, pushMsg } from "@/api";
 import logger from "@/utils/logger";
 import { customAttr } from "@/assets/constants";
 import { TabParser } from "@/modules/parser/TabParser";
@@ -141,6 +141,11 @@ export default class CodeTabs extends Plugin {
                 this.fixAllTabsInDocument();
             },
         });
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.upgradeAllTabsInDocument, click: () => {
+                this.upgradeAllTabsInDocument();
+            },
+        });
     }
 
     private fixAllTabsInDocument(element: HTMLElement | Document = document) {
@@ -242,6 +247,37 @@ export default class CodeTabs extends Plugin {
             if (pluginConfig[key] !== siyuanConfig[key]) return false;
         }
         return true;
+    }
+
+    private async upgradeAllTabsInDocument() {
+        const elements = Array.from(document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`));
+        let count = 0;
+        for (const node of elements) {
+            const nodeId = (node as HTMLElement).dataset.nodeId;
+            const res = await getBlockAttrs(nodeId);
+            if (!res) continue;
+
+            const rawAttr = res[`${customAttr}`];
+            const codeText = decodeSource(rawAttr);
+
+            if (codeText.trim().startsWith('tab:::')) {
+                const parsed = TabParser.checkCodeText(codeText, this.i18n);
+                if (parsed.result) {
+                    const newSyntax = TabParser.generateNewSyntax(parsed.code);
+                    const encoded = encodeSource(newSyntax);
+                    await setBlockAttrs(nodeId, { [`${customAttr}`]: encoded });
+                    count++;
+                }
+            }
+        }
+
+        if (count > 0) {
+            pushMsg(this.i18n.upgradeSuccess + count);
+            const activeEditor = getActiveEditor(true);
+            if (activeEditor) activeEditor.reload(true);
+        } else {
+            pushMsg(this.i18n.noTabsToUpgrade);
+        }
     }
 
     private async fetchFileFromUrl(route: string, fileName: string): Promise<File> {

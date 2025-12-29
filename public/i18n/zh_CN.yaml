@@ -7,11 +7,14 @@ initPutFile: 初始化，重新配置样式文件
 codeStyleChange: 监测到代码块背景或样式改变，重新配置code-tabs样式文件
 errMsgGetBackground: code-tabs：请打开一个文档后再次调整主题或模式！！！
 updateCodeBlock: 更新代码块
-headErrWhenCheckCode: 标签请以"tab:::"开头
-noTitleWhenCheckCode: tab:::后没有标题
-noLangWhenCheckCode: lang:::后没有语言类型
-noCodeWhenCheckCode: 标题后没有代码
+headErrWhenCheckCode: "标签请以 ::: 开头，如 ::: 标题 | 语言 | active"
+noTitleWhenCheckCode: :::后没有标题
+noLangWhenCheckCode: :::后没有语言类型
+noCodeWhenCheckCode: 没有代码
 fixAllTabsErrMsg: 修复时遇到错误，请检查以下块的自定义属性
+upgradeAllTabsInDocument: 升级当前文档中的所有代码标签页
+noTabsToUpgrade: 没有需要升级的旧版代码标签页
+upgradeSuccess: 共升级旧版代码标签页：
 cancel: 取消
 save: 保存
 helloPlugin: 你好，这是code-tabs！

@@ -1,27 +1,35 @@
-[
-    {
-        "id": "Vlook",
-        "name": "Vlook",
-        "extraCss": "\n/* Vlook 主题适配：增加左侧装饰条 */\n.tabs-container {\n    border-left: 5px solid var(--b3-theme-primary);\n}\n"
-    },
-    {
-        "id": "Asri",
-        "name": "Asri",
-        "fullStyle": {
-            "blockBg": "var(--b3-theme-surface-light)",
-            "protyleActionBg": "transparent",
-            "hljsBg": "transparent",
-            "editableBg": "transparent",
-            "fontFamily": "var(--b3-font-family-code)",
-            "blockPadding": "4px",
-            "hljsPadding": "0",
-            "editablePadding": "0",
-            "blockMargin": "2px 0",
-            "hljsMargin": "0",
-            "editableMargin": "0",
-            "border": "1px solid var(--b3-theme-divider)",
-            "boxShadow": "var(--b3-scroll-color)",
-            "borderRadius": "10px"
+{
+    "version": "0.6.2",
+    "themes": [
+        {
+            "id": "Whisper",
+            "name": "浅吟",
+            "extraCss": "\n.tabs {\n  background-color: transparent;\n}\n.tab-toggle {\n  background-color: transparent;\n}"
+        },
+        {
+            "id": "ttt",
+            "name": "ttt",
+            "fullStyle": {
+                "blockBg": "var(--b3-theme-surface-light)",
+                "protyleActionBg": "transparent",
+                "hljsBg": "transparent",
+                "editableBg": "transparent",
+                "fontFamily": "var(--b3-font-family-code)",
+                "blockPadding": "4px",
+                "hljsPadding": "0",
+                "editablePadding": "0",
+                "blockMargin": "2px 0",
+                "hljsMargin": "0",
+                "editableMargin": "0",
+                "border": "1px solid var(--b3-theme-divider)",
+                "boxShadow": "var(--b3-scroll-color)",
+                "borderRadius": "10px"
+            }
+        },
+        {
+            "id": "siyuan-theme-darkside",
+            "name": "PureColor",
+            "extraCss": "\n.tabs-container {\n  border-left:var(--quote-border-width) solid var(--code-border-color);\n}"
         }
-    }
-]
+    ]
+}

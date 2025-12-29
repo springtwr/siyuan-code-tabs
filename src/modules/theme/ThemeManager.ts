@@ -56,7 +56,7 @@ export class ThemeManager {
   background-color: ${style.hljsBg}; 
   font-family: ${style.fontFamily};
 }
-.tab-contents > .hljs > .tab-content {
+.hljs > div:is(.markdown-body, .code) {
   padding: ${style.editablePadding};
   margin: ${style.editableMargin};
   background-color: ${style.editableBg};
@@ -253,37 +253,126 @@ ${extraCss}
         });
     }
 
+
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = '/plugins/code-tabs/theme-adaption.json';
         const storagePath = '/data/plugins/code-tabs/theme-adaption.json';
-
-        try {
-            logger.info("尝试从数据目录加载主题配置...");
-            const file = await this.fetchFileFromUrl(fetchPath, 'theme-adaption.json');
-            if (file && file.size > 0) {
-                const content = await file.text();
-                return JSON.parse(content);
-            }
-        } catch (e) {
-            logger.info("未检测到有效的主题配置，准备初始化...");
-        }
-
-        // 如果文件不存在或加载失败，从插件 asset 目录加载默认配置并写入到数据目录
         const defaultAssetPath = '/plugins/code-tabs/asset/theme-adaption.json';
+
+        // 1. 加载默认配置 (获取最新版本和主题列表)
+        let defaultConfig: { version: string, themes: ThemePatch[] } | null = null;
         try {
             const defaultFile = await this.fetchFileFromUrl(defaultAssetPath, 'theme-adaption.json');
             if (defaultFile) {
                 const content = await defaultFile.text();
-                const defaultJson = JSON.parse(content);
-                // 写入到数据目录 (storagePath)
-                await putFile(storagePath, false, defaultFile);
-                logger.info("已初始化默认主题适配文件: theme-adaption.json");
-                return defaultJson;
+                defaultConfig = JSON.parse(content);
             }
         } catch (e) {
             logger.error(`加载默认配置失败: ${e}`);
+            return [];
         }
 
-        return [];
+        if (!defaultConfig) {
+            logger.error("默认配置为空");
+            return [];
+        }
+
+        // 2. 尝试加载用户配置
+        try {
+            logger.info("尝试从数据目录加载主题配置...");
+            const userFile = await this.fetchFileFromUrl(fetchPath, 'theme-adaption.json');
+
+            if (userFile && userFile.size > 0) {
+                const content = await userFile.text();
+                const userConfig = JSON.parse(content);
+
+                // 2.1 检查用户配置格式
+                let userThemes: ThemePatch[] = [];
+                let userVersion: string | undefined;
+
+                userThemes = userConfig.themes || [];
+                userVersion = userConfig.version;
+
+                // 2.2 版本检测:如果用户版本低于插件版本,进行合并
+                if (!userVersion || userVersion !== defaultConfig.version) {
+                    logger.info(`检测到版本变化: ${userVersion || '旧版本'} → ${defaultConfig.version}`);
+                    logger.info("自动合并新主题配置...");
+
+                    const mergedThemes = this.mergeThemeConfigs(userThemes, defaultConfig.themes);
+
+                    if (mergedThemes.hasChanges) {
+                        logger.info("发现新主题,已合并到配置");
+                    }
+
+                    // 保存合并后的配置 (更新版本号)
+                    const newConfig = {
+                        version: defaultConfig.version,
+                        themes: mergedThemes.config
+                    };
+                    await this.saveThemeConfig(newConfig, storagePath);
+                    logger.info("已更新用户配置到最新版本");
+
+                    return mergedThemes.config;
+                }
+
+                // 2.3 版本一致,直接使用用户配置
+                logger.info("配置版本一致,使用用户配置");
+                return userThemes;
+            }
+        } catch (e) {
+            logger.info("未检测到用户配置文件");
+        }
+
+        // 3. 用户配置不存在,首次安装,初始化配置
+        logger.info("首次安装,初始化配置文件...");
+        await this.saveThemeConfig(defaultConfig, storagePath);
+        logger.info("已初始化用户主题配置");
+
+        return defaultConfig.themes;
+    }
+
+    /**
+     * 智能合并配置
+     * 保留用户自定义 + 添加新主题
+     */
+    private static mergeThemeConfigs(
+        userThemes: ThemePatch[],
+        defaultThemes: ThemePatch[]
+    ): { config: ThemePatch[], hasChanges: boolean } {
+        const merged = new Map<string, ThemePatch>();
+        let hasChanges = false;
+
+        // 1. 添加所有用户配置
+        userThemes.forEach(theme => {
+            merged.set(theme.id, theme);
+        });
+
+        // 2. 添加默认配置中的新主题
+        defaultThemes.forEach(defaultTheme => {
+            if (!merged.has(defaultTheme.id)) {
+                merged.set(defaultTheme.id, defaultTheme);
+                hasChanges = true;
+                logger.info(`新增主题: ${defaultTheme.name} (${defaultTheme.id})`);
+            }
+        });
+
+        // 3. 按 id 排序
+        const result = Array.from(merged.values())
+            .sort((a, b) => a.id.localeCompare(b.id));
+
+        return { config: result, hasChanges };
+    }
+
+    /**
+     * 保存主题配置
+     */
+    private static async saveThemeConfig(
+        config: { version: string, themes: ThemePatch[] },
+        path: string
+    ) {
+        const content = JSON.stringify(config, null, 4);
+        const blob = new Blob([content], { type: 'application/json' });
+        const file = new File([blob], 'theme-adaption.json', { type: 'application/json' });
+        await putFile(path, false, file);
     }
 }

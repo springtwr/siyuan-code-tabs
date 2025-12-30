@@ -1,4 +1,4 @@
-import { newLineFlag } from "@/assets/constants";
+import {newLineFlag} from "@/assets/constants";
 
 /**
  * 将源码字符串编码为 Base64（用于安全存储）
@@ -12,12 +12,12 @@ export function encodeSource(code: string): string {
 
     const encoder = new TextEncoder();
     const bytes = encoder.encode(code);
-    
+
     // 构建 binary string（避免低效的 += 拼接）
     let binary = '';
     const len = bytes.length;
     for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+        binary += String.fromCharCode(bytes[i]);
     }
 
     return window.btoa(binary);
@@ -37,7 +37,7 @@ export function decodeSource(stored: string): string {
 
     // 向后兼容：旧格式使用 [[newLineFlag]] 标记换行
     if (stored.includes(newLineFlag)) {
-    return stored.replace(new RegExp(newLineFlag, 'g'), '\n');
+        return stored.replace(new RegExp(newLineFlag, 'g'), '\n');
     }
 
     // 尝试 Base64 解码
@@ -50,8 +50,8 @@ export function decodeSource(stored: string): string {
         const decoder = new TextDecoder();
         return decoder.decode(bytes);
     } catch (error) {
-    // 解码失败：可能是未编码的明文（如用户直接输入的文本）
-    // 或损坏数据，此时直接返回原字符串（不 strip）
+        // 解码失败：可能是未编码的明文（如用户直接输入的文本）
+        // 或损坏数据，此时直接返回原字符串（不 strip）
         return stored;
     }
 }

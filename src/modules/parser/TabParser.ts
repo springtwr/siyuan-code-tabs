@@ -1,5 +1,5 @@
-import { pushMsg } from "@/api";
-import { codeTab } from "@/types";
+import {pushMsg} from "@/api";
+import {codeTab} from "@/types";
 
 export class TabParser {
     static checkCodeText(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
@@ -13,7 +13,36 @@ export class TabParser {
             return this.parseNew(codeText, i18n);
         }
         pushMsg(i18n.headErrWhenCheckCode).then();
-        return { result: false, code: [] };
+        return {result: false, code: []};
+    }
+
+    static generateNewSyntax(tabs: codeTab[]): string {
+        let result = '';
+        for (const tab of tabs) {
+            let title = tab.title;
+            let active = '';
+
+            // Extract active flag if present in title
+            if (title.includes(':::active')) {
+                title = title.replace(':::active', '').trim();
+                active = ' | active';
+            }
+
+            let lang = tab.language;
+            let header = `::: ${title}`;
+
+            // Intelligent reconstruction: omit lang if it matches title inference
+            const inferredLang = window.hljs.getLanguage(title) ? title.toLowerCase() : 'plaintext';
+            // Only add lang if it's different from what would be inferred, OR if it's strictly different from plaintext/title match
+            // To be safe and explicit, let's include it unless it perfectly matches inferred.
+            if (lang !== inferredLang) {
+                header += ` | ${lang}`;
+            }
+
+            header += active;
+            result += `${header}\n${tab.code}\n\n`;
+        }
+        return result.trim();
     }
 
     private static parseNew(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
@@ -44,7 +73,7 @@ export class TabParser {
 
             if (!title) {
                 pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
-                return { result: false, code: [] };
+                return {result: false, code: []};
             }
 
             let language = '';
@@ -75,7 +104,7 @@ export class TabParser {
             if (isActive) {
                 // 为了兼容旧的渲染逻辑，将 active 标记拼接到标题后（Renderer 会解析这个 magic string）
                 // 也可以修改 Renderer，但为了最小改动，这里保持一致
-                // createProtyleHtml 中：if (title.split(':::active').length > 1) 
+                // createProtyleHtml 中：if (title.split(':::active').length > 1)
                 // 所以我们这里构造格式
                 codeResult.push({
                     title: `${title} :::active`,
@@ -90,24 +119,24 @@ export class TabParser {
                 });
             }
         }
-        return { result: true, code: codeResult };
+        return {result: true, code: codeResult};
     }
 
     private static parseLegacy(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
         // ... Original Logic ...
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
-        if (!codeArr) return { result: false, code: [] };
+        if (!codeArr) return {result: false, code: []};
 
         const codeResult: codeTab[] = [];
         for (let i = 0; i < codeArr.length; i++) {
             const codeSplitArr = codeArr[i].trim().split('\n');
             if (codeSplitArr.length === 1 || (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith('lang:::'))) {
                 pushMsg(`${i18n.noCodeWhenCheckCode} (${i + 1})`).then();
-                return { result: false, code: [] };
+                return {result: false, code: []};
             }
             if (codeSplitArr[0].length < 7) {
                 pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
-                return { result: false, code: [] };
+                return {result: false, code: []};
             }
             const title = codeSplitArr[0].substring(6).trim();
             let language = '';
@@ -115,7 +144,7 @@ export class TabParser {
                 const languageLine = codeSplitArr[1].trim();
                 if (languageLine.length < 8) {
                     pushMsg(`${i18n.noLangWhenCheckCode} (${i + 1})`).then();
-                    return { result: false, code: [] };
+                    return {result: false, code: []};
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
                 // 获取语言类型后删除该行
@@ -133,35 +162,6 @@ export class TabParser {
                 code: code
             });
         }
-        return { result: true, code: codeResult };
-    }
-
-    static generateNewSyntax(tabs: codeTab[]): string {
-        let result = '';
-        for (const tab of tabs) {
-            let title = tab.title;
-            let active = '';
-
-            // Extract active flag if present in title
-            if (title.includes(':::active')) {
-                title = title.replace(':::active', '').trim();
-                active = ' | active';
-            }
-
-            let lang = tab.language;
-            let header = `::: ${title}`;
-
-            // Intelligent reconstruction: omit lang if it matches title inference
-            const inferredLang = window.hljs.getLanguage(title) ? title.toLowerCase() : 'plaintext';
-            // Only add lang if it's different from what would be inferred, OR if it's strictly different from plaintext/title match
-            // To be safe and explicit, let's include it unless it perfectly matches inferred.
-            if (lang !== inferredLang) {
-                header += ` | ${lang}`;
-            }
-
-            header += active;
-            result += `${header}\n${tab.code}\n\n`;
-        }
-        return result.trim();
+        return {result: true, code: codeResult};
     }
 }

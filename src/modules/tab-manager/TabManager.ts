@@ -1,10 +1,10 @@
 import ClipboardJS from "clipboard";
-import { getBlockAttrs, updateBlock, pushMsg, pushErrMsg } from "@/api";
-import { customAttr } from "@/assets/constants";
-import { decodeSource } from "@/utils/encoding";
+import {getBlockAttrs, pushErrMsg, pushMsg, updateBlock} from "@/api";
+import {customAttr} from "@/assets/constants";
+import {decodeSource} from "@/utils/encoding";
 import logger from "@/utils/logger";
-import { TabParser } from "../parser/TabParser";
-import { IObject } from "siyuan";
+import {TabParser} from "../parser/TabParser";
+import {IObject} from "siyuan";
 
 export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
     let codeText = decodeSource(customAttribute);
@@ -147,7 +147,7 @@ export class TabManager {
                 this.startX = touch.pageX;
                 this.scrollLeft = tabs.scrollLeft;
                 this.isDragging = true;
-                tabs.addEventListener('touchmove', this.touchMove, { passive: true });
+                tabs.addEventListener('touchmove', this.touchMove, {passive: true});
             },
 
             touchMove: function (evt: TouchEvent) {

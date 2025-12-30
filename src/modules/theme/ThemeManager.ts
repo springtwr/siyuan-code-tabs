@@ -1,7 +1,7 @@
-import { pushErrMsg, putFile, insertBlock, deleteBlock } from "@/api";
+import {deleteBlock, insertBlock, pushErrMsg, putFile} from "@/api";
 import logger from "@/utils/logger";
-import { customAttr } from "@/assets/constants";
-import { ThemePatch, ThemeStyle } from "@/assets/theme-adaption";
+import {customAttr} from "@/assets/constants";
+import {ThemePatch, ThemeStyle} from "@/assets/theme-adaption";
 
 export class ThemeManager {
     static async putStyleFile(plugin: any) {
@@ -63,8 +63,8 @@ export class ThemeManager {
 }
 ${extraCss}
 `;
-        const blob = new Blob([cssContent], { type: 'text/css' });
-        const fileBackgroundStyle = new File([blob], 'styles.css', { type: 'text/css' });
+        const blob = new Blob([cssContent], {type: 'text/css'});
+        const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
         await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
         // 配置代码中markdown的样式文件
         if (mode === 'dark') {
@@ -74,6 +74,19 @@ ${extraCss}
             const lightModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-light.css', 'github-markdown.css');
             await putFile('/data/plugins/code-tabs/github-markdown.css', false, lightModeFile);
         }
+    }
+
+    static updateAllTabsStyle() {
+        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
+            const shadowRoot = node.querySelector('protyle-html').shadowRoot;
+            shadowRoot.querySelectorAll('link').forEach(link => {
+                const currentHref = link.href;
+                const currentTime = Date.now().toString();
+                const url = new URL(currentHref);
+                url.searchParams.set('t', currentTime);
+                link.href = url.pathname + url.search;
+            });
+        });
     }
 
     private static async getCodeBlockStyle(i18n: any) {
@@ -194,15 +207,15 @@ ${extraCss}
             let file: File;
             if (route === undefined) {
                 const emptyContent = new Uint8Array(0);
-                const blob = new Blob([emptyContent], { type: 'text/css' });
-                file = new File([blob], fileName, { type: 'text/css' });
+                const blob = new Blob([emptyContent], {type: 'text/css'});
+                file = new File([blob], fileName, {type: 'text/css'});
             } else {
                 const response = await this.fetchWithRetry(route, {
-                    headers: { 'Cache-Control': 'no-cache' }
+                    headers: {'Cache-Control': 'no-cache'}
                 });
                 if (!response.ok) return undefined;
                 const blob = await response.blob();
-                file = new File([blob], fileName, { type: blob.type });
+                file = new File([blob], fileName, {type: blob.type});
             }
             return file;
         } catch (error) {
@@ -239,20 +252,6 @@ ${extraCss}
             }
         }
     }
-
-    static updateAllTabsStyle() {
-        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
-            const shadowRoot = node.querySelector('protyle-html').shadowRoot;
-            shadowRoot.querySelectorAll('link').forEach(link => {
-                const currentHref = link.href;
-                const currentTime = Date.now().toString();
-                const url = new URL(currentHref);
-                url.searchParams.set('t', currentTime);
-                link.href = url.pathname + url.search;
-            });
-        });
-    }
-
 
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = '/plugins/code-tabs/theme-adaption.json';
@@ -360,7 +359,7 @@ ${extraCss}
         const result = Array.from(merged.values())
             .sort((a, b) => a.id.localeCompare(b.id));
 
-        return { config: result, hasChanges };
+        return {config: result, hasChanges};
     }
 
     /**
@@ -371,8 +370,8 @@ ${extraCss}
         path: string
     ) {
         const content = JSON.stringify(config, null, 4);
-        const blob = new Blob([content], { type: 'application/json' });
-        const file = new File([blob], 'theme-adaption.json', { type: 'application/json' });
+        const blob = new Blob([content], {type: 'application/json'});
+        const file = new File([blob], 'theme-adaption.json', {type: 'application/json'});
         await putFile(path, false, file);
     }
 }

@@ -1,12 +1,12 @@
-import { Plugin, getActiveEditor } from "siyuan";
-import { setBlockAttrs, pushErrMsg, putFile, insertBlock, deleteBlock, pushMsg, sql, updateBlock } from "@/api";
+import {getActiveEditor, Plugin} from "siyuan";
+import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
-import { customAttr } from "@/assets/constants";
-import { TabParser } from "@/modules/parser/TabParser";
-import { TabRenderer } from "@/modules/renderer/TabRenderer";
-import { ThemeManager } from "@/modules/theme/ThemeManager";
-import { getCodeFromAttribute, TabManager } from "@/modules/tab-manager/TabManager";
-import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
+import {customAttr} from "@/assets/constants";
+import {TabParser} from "@/modules/parser/TabParser";
+import {TabRenderer} from "@/modules/renderer/TabRenderer";
+import {ThemeManager} from "@/modules/theme/ThemeManager";
+import {getCodeFromAttribute, TabManager} from "@/modules/tab-manager/TabManager";
+import {encodeSource, stripInvisibleChars} from "@/utils/encoding";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -50,10 +50,10 @@ export default class CodeTabs extends Plugin {
                 const currentNode = startEl?.closest<HTMLElement>('[data-type]');
 
                 if (currentNode && currentNode.dataset.type === 'NodeCodeBlock') {
-                const editElement = currentNode.querySelector('[contenteditable="true"]');
-                if (editElement) {
-                    this.codeToTabs(currentNode).then(() => this.reloadActivateDocument());
-                }
+                    const editElement = currentNode.querySelector('[contenteditable="true"]');
+                    if (editElement) {
+                        this.codeToTabs(currentNode).then(() => this.reloadActivateDocument());
+                    }
                 }
             }
         });
@@ -134,11 +134,11 @@ export default class CodeTabs extends Plugin {
 
         const debounced = debounce(putFileHandler, 500);
         const observer = new MutationObserver(callback);
-        observer.observe(html, { attributes: true, childList: false, subtree: false });
-        observer.observe(head, { attributes: true, childList: true, subtree: true });
+        observer.observe(html, {attributes: true, childList: false, subtree: false});
+        observer.observe(head, {attributes: true, childList: true, subtree: true});
     }
 
-    private blockIconEvent({ detail }: any) {
+    private blockIconEvent({detail}: any) {
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabs, click: () => {
                 for (const item of detail.blockElements) {
@@ -177,11 +177,11 @@ export default class CodeTabs extends Plugin {
         const id = item.dataset.nodeId;
         const contentEl = item.querySelector<HTMLElement>('[contenteditable="true"]');
         // 防御性检查
-        if(!id) {
+        if (!id) {
             logger.warn(`codeToTabs: 节点缺少 nodeId: &{item}`);
             return;
         }
-        if(!contentEl) {
+        if (!contentEl) {
             logger.warn(`codeToTabs: 未找到 contenteditable 元素 (nodeId: ${id})`);
             return;
         }
@@ -192,7 +192,7 @@ export default class CodeTabs extends Plugin {
 
         // 检查是否符合 Tab 格式
         const checkResult = TabParser.checkCodeText(codeText, this.i18n);
-        if(!checkResult.result) {
+        if (!checkResult.result) {
             logger.info(`codeToTabs: 代码块不符合 Tab 格式, 跳过 (nodeId: ${id})`)
             return; // 不符合，跳过
         }
@@ -208,7 +208,7 @@ export default class CodeTabs extends Plugin {
         logger.info(`插入新块, id ${new_id}`);
         // 使用 Base64 编码保存源码
         const encodedCodeText = encodeSource(codeText);
-        await setBlockAttrs(new_id, { [`${customAttr}`]: encodedCodeText });
+        await setBlockAttrs(new_id, {[`${customAttr}`]: encodedCodeText});
         await deleteBlock(id)
         logger.info(`删除旧的代码块, id ${id}`);
     }
@@ -218,7 +218,7 @@ export default class CodeTabs extends Plugin {
         const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>('[data-type="NodeCodeBlock"]');
         const codeBlocks = Array.from(nodeList);
 
-        if(codeBlocks.length === 0) {
+        if (codeBlocks.length === 0) {
             return;
         }
 
@@ -238,7 +238,7 @@ export default class CodeTabs extends Plugin {
         const failures = results
             .map((result, index) =>
                 result.status === 'rejected'
-                    ? { nodeId: blockList[index]?.dataset.nodeId || 'unknown', error: result.reason }
+                    ? {nodeId: blockList[index]?.dataset.nodeId || 'unknown', error: result.reason}
                     : null
             )
             .filter((item): item is { nodeId: string; error: unknown } => item !== null);
@@ -246,7 +246,7 @@ export default class CodeTabs extends Plugin {
         logger.info(`转换完成：${successes} 成功，${failures.length} 失败`);
 
         if (failures.length > 0) {
-            failures.forEach(({ nodeId, error }) => {
+            failures.forEach(({nodeId, error}) => {
                 logger.warn(`节点 ${nodeId} 转换失败: ${error}`);
             });
         }
@@ -265,7 +265,7 @@ export default class CodeTabs extends Plugin {
                 let customAttribute = "";
                 let block_id = "";
                 // 用sql语句查询的结果使用block.ial,用Dom查询的结果使用block.attributes
-                if(block.ial){
+                if (block.ial) {
                     block_id = block.id;
                     customAttribute = block.ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1];
                 } else {
@@ -343,7 +343,7 @@ export default class CodeTabs extends Plugin {
 
     private async saveConfig() {
         this.syncSiyuanConfig();
-        const file = new File([JSON.stringify(this.data)], 'config.json', { type: 'application/json' });
+        const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
         await putFile('/data/plugins/code-tabs/config.json', false, file);
     }
 
@@ -362,10 +362,10 @@ export default class CodeTabs extends Plugin {
         try {
             const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
             const url = baseUrl + route;
-            const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
+            const response = await fetch(url, {headers: {'Cache-Control': 'no-cache'}});
             if (!response.ok) return undefined;
             const blob = await response.blob();
-            return new File([blob], fileName, { type: blob.type });
+            return new File([blob], fileName, {type: blob.type});
         } catch (e) {
             return undefined;
         }

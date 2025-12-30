@@ -1,8 +1,8 @@
-import { Marked } from "marked";
+import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
-import { markedHighlight } from "marked-highlight";
-import { codeTab } from "@/types";
-import { htmlBlockStr, protyleHtmlStr } from "@/assets/constants";
+import {markedHighlight} from "marked-highlight";
+import {codeTab} from "@/types";
+import {htmlBlockStr, protyleHtmlStr} from "@/assets/constants";
 
 export class TabRenderer {
     static createHtmlBlock(codeArr: codeTab[], toggleToCode: string): string {
@@ -53,7 +53,7 @@ export class TabRenderer {
                         langPrefix: 'hljs language-',
                         highlight(code, lang) {
                             const language = window.hljs.getLanguage(lang) ? lang : 'plaintext';
-                            return window.hljs.highlight(code, { language }).value;
+                            return window.hljs.highlight(code, {language}).value;
                         }
                     })
                 );
@@ -64,7 +64,7 @@ export class TabRenderer {
                 hlText = marked.parse(code) as string;
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
-                hlText = window.hljs.highlight(code, { language: language, ignoreIllegals: true }).value;
+                hlText = window.hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText;

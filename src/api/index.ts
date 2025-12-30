@@ -30,10 +30,13 @@ import {
     PreviousID
 } from "@/types";
 
-export async function request(url: string, data: any) {
+export async function request<T = any>(url: string, data: any): Promise<T> {
     let response: IWebSocketData = await fetchSyncPost(url, data);
-    let res = response.code === 0 ? response.data : null;
-    return res;
+    if (response.code !== 0) {
+        const errorMsg = response.msg || 'Unknown API error';
+        throw new Error(`[API ${url}] ${errorMsg} (code: ${response.code})`);
+    }
+    return response.data;
 }
 
 

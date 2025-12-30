@@ -1,11 +1,33 @@
 import ClipboardJS from "clipboard";
-import { getBlockAttrs, updateBlock, pushMsg } from "@/api";
+import { getBlockAttrs, updateBlock, pushMsg, pushErrMsg } from "@/api";
 import { customAttr } from "@/assets/constants";
 import { decodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
+import { TabParser } from "../parser/TabParser";
+import { IObject } from "siyuan";
+
+export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
+    let codeText = decodeSource(customAttribute);
+    if (!codeText) {
+        logger.info('标签页转为代码块失败，未找到源码');
+        pushErrMsg(`${i18n.allTabsToCodeFailed}: ${block_id}`);
+        return;
+    }
+    // 转换时顺带自动更新语法格式
+    if (codeText.trim().startsWith('tab:::')) {
+        const parsed = TabParser.checkCodeText(codeText, i18n);
+        if (parsed.result) {
+            codeText = TabParser.generateNewSyntax(parsed.code);
+        }
+    }
+    if (codeText[codeText.length - 1] !== '\n') {
+        codeText = codeText + '\n';
+    }
+    return codeText;
+}
 
 export class TabManager {
-    static initGlobalFunctions() {
+    static initGlobalFunctions(i18n: IObject) {
         window.pluginCodeTabs = {
             openTag: (evt: MouseEvent) => {
                 const clicked = evt.target as HTMLElement;
@@ -95,13 +117,7 @@ export class TabManager {
 
                 getBlockAttrs(nodeId).then(res => {
                     if (!res) return;
-                    let codeText = decodeSource(res[`${customAttr}`]);
-                    if (!codeText) {
-                        codeText = decodeSource(htmlBlock.getAttribute(`${customAttr}`));
-                    }
-                    if (codeText[codeText.length - 1] !== '\n') {
-                        codeText = codeText + '\n';
-                    }
+                    const codeText = getCodeFromAttribute(nodeId, res[`${customAttr}`], i18n);
                     const flag = "```````````````````````````";
                     updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
                         logger.info('标签页转为代码块');

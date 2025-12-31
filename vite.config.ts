@@ -2,11 +2,12 @@ import {resolve} from "path"
 import {defineConfig} from "vite"
 import minimist from "minimist"
 import {viteStaticCopy} from "vite-plugin-static-copy"
-import livereload from "rollup-plugin-livereload"
 import zipPack from "vite-plugin-zip-pack";
 import fg from 'fast-glob';
 
 import vitePluginYamlI18n from './yaml-plugin';
+
+import siyuanReloadPlugin from './scripts/hot-reload.js';
 
 const args = minimist(process.argv.slice(2))
 const isWatch = args.watch || args.w || false
@@ -49,6 +50,16 @@ export default defineConfig({
                 }
             ],
         }),
+
+        // 使用提取出来的插件，在这里配置参数
+        siyuanReloadPlugin({
+            isWatch: isWatch,
+            packageName: 'code-tabs', // ⚠️请修改为你的实际包名
+            token: process.env.SIYUAN_TOKEN || '', // ⚠️如果设置了鉴权，请在 .env 中填入 token
+            frontend: 'desktop',
+            // port: 6806,   // 默认 6806，一般不用改
+            // host: '127.0.0.1' // 默认本地，一般不用改
+        }),
     ],
 
     // https://github.com/vitejs/vite/issues/1930
@@ -85,7 +96,6 @@ export default defineConfig({
             plugins: [
                 ...(
                     isWatch ? [
-                        livereload(devDistDir),
                         {
                             //监听静态资源文件
                             name: 'watch-external',

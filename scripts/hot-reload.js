@@ -81,6 +81,10 @@ export default function siyuanReloadPlugin(options) {
                 frontend
             }).then(() => {
                 console.log(`\x1b[32m[SiYuan Reload]\x1b[0m 插件 [${packageName}] 重载完成！`);
+                // 重载插件后重载UI
+                sendSiyuanRequest({token: process.env.SIYUAN_TOKEN || ''}, '/api/ui/reloadUI', {}).then(() => {
+                    console.log(`\x1b[32m[SiYuan Reload]\x1b[0m UI 重载完成！`);
+                })
             });
         }
     };

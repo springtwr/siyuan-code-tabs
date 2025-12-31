@@ -22,7 +22,7 @@ export class TabParser {
             let title = tab.title;
             let active = '';
 
-            // Extract active flag if present in title
+            // 提取标题中的激活标记
             if (title.includes(':::active')) {
                 title = title.replace(':::active', '').trim();
                 active = ' | active';
@@ -31,10 +31,8 @@ export class TabParser {
             let lang = tab.language;
             let header = `::: ${title}`;
 
-            // Intelligent reconstruction: omit lang if it matches title inference
+            // 智能重建：如果语言与标题推断匹配则省略语言标记
             const inferredLang = window.hljs.getLanguage(title) ? title.toLowerCase() : 'plaintext';
-            // Only add lang if it's different from what would be inferred, OR if it's strictly different from plaintext/title match
-            // To be safe and explicit, let's include it unless it perfectly matches inferred.
             if (lang !== inferredLang) {
                 header += ` | ${lang}`;
             }
@@ -48,7 +46,6 @@ export class TabParser {
     private static parseNew(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
-        // 第一部分通常是空的（如果字符串以 ::: 开头），去掉
         if (parts[0].trim() === '') parts.shift();
 
         const codeResult: codeTab[] = [];
@@ -67,7 +64,6 @@ export class TabParser {
                 codeContent = part.substring(firstLineBreak + 1).trim();
             }
 
-            // 解析头部 ::: Title | Lang | active
             const headerParts = headerLine.split('|').map(item => item.trim());
             const title = headerParts[0];
 
@@ -85,11 +81,11 @@ export class TabParser {
                 if (p === 'active') {
                     isActive = true;
                 } else if (!language) {
-                    language = p; // 第一个非 active 的参数视为语言
+                    language = p;
                 }
             }
 
-            // 智能推断：如果没有指定语言，且标题是有效语言名，则使用标题作为语言
+            // 智能推断语言
             if (!language) {
                 if (window.hljs.getLanguage(title)) {
                     language = title.toLowerCase();
@@ -97,15 +93,11 @@ export class TabParser {
                     language = 'plaintext';
                 }
             } else {
-                // 校验指定语言是否有效，无效则回退 plaintext
+                // 校验语言有效性
                 language = window.hljs.getLanguage(language) ? language : 'plaintext';
             }
 
             if (isActive) {
-                // 为了兼容旧的渲染逻辑，将 active 标记拼接到标题后（Renderer 会解析这个 magic string）
-                // 也可以修改 Renderer，但为了最小改动，这里保持一致
-                // createProtyleHtml 中：if (title.split(':::active').length > 1)
-                // 所以我们这里构造格式
                 codeResult.push({
                     title: `${title} :::active`,
                     language: language,
@@ -123,7 +115,6 @@ export class TabParser {
     }
 
     private static parseLegacy(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
-        // ... Original Logic ...
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
         if (!codeArr) return {result: false, code: []};
 
@@ -147,7 +138,7 @@ export class TabParser {
                     return {result: false, code: []};
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
-                // 获取语言类型后删除该行
+
                 codeSplitArr.splice(1, 1);
             }
             codeSplitArr.shift();

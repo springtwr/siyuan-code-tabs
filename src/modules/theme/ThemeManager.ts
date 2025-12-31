@@ -203,10 +203,6 @@ ${extraCss}
         return [paddingTop, paddingRight, paddingBottom, paddingLeft];
     }
 
-    // fetchFileFromUrl 已提取到公共工具函数，不再需要此方法
-
-    // fetchWithRetry 已提取到公共工具函数，不再需要此方法
-
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = THEME_ADAPTION_JSON.replace('/data', '');
         const storagePath = THEME_ADAPTION_JSON;

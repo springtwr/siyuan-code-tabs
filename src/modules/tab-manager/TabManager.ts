@@ -71,8 +71,7 @@ export class TabManager {
                     getBlockAttrs(nodeId).then(res => {
                         if (!res) return;
                         let codeText = decodeSource(res[`${CUSTOM_ATTR}`]);
-                        // Fallback check if needed, though decodeSource handles it.
-                        // Ensure strict string type if necessary, or just proceed.
+                        // 如需要回退检查，尽管 decodeSource 已处理
                         if (codeText && codeText[codeText.length - 1] !== '\n') {
                             codeText = codeText + '\n';
                         }

@@ -118,8 +118,6 @@ export default class CodeTabs extends Plugin {
             }
         };
 
-        // debounce 已提取到公共工具函数，不再需要此方法
-
         const putFileHandler = () => {
             logger.info(this.i18n.codeStyleChange);
             ThemeManager.putStyleFile(this).then(() => {
@@ -301,20 +299,11 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    // loadDataFromFile 已提取到公共工具函数，不再需要此方法
-
-    // getSiyuanConfig 已提取到公共工具函数，不再需要此方法
-
-    // syncSiyuanConfig 已提取到公共工具函数，不再需要此方法
-
     private async saveConfig() {
         syncSiyuanConfig(this.data);
         const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
         await putFile(CONFIG_JSON, false, file);
     }
 
-    // compareConfig 已提取到公共工具函数，不再需要此方法
 
-
-    // fetchFileFromUrl 已提取到公共工具函数，不再需要此方法
 }

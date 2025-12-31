@@ -1,5 +1,27 @@
-export const customAttr = 'custom-plugin-code-tabs-sourcecode';
-export const newLineFlag = '\u2935\u21A9';
+export const CUSTOM_ATTR = 'custom-plugin-code-tabs-sourcecode';
+export const NEWLINE_FLAG = '⤵↩';
+export const TAB_SEPARATOR = '```````````````````````````';
+
+// URL 常量
+export const PLUGIN_PATH = '/plugins/code-tabs';
+export const DATA_PATH = '/data/plugins/code-tabs';
+
+// 配置文件路径
+export const CONFIG_JSON = `${DATA_PATH}/custom/config.json`;
+export const THEME_ADAPTION_JSON = `${DATA_PATH}/custom/theme-adaption.json`;
+export const THEME_ADAPTION_ASSET_JSON = `${PLUGIN_PATH}/asset/theme-adaption.json`;
+
+// 样式文件路径
+export const CODE_STYLE_CSS = `${DATA_PATH}/custom/code-style.css`;
+export const BACKGROUND_CSS = `${DATA_PATH}/custom/background.css`;
+export const GITHUB_MARKDOWN_CSS = `${DATA_PATH}/custom/github-markdown.css`;
+export const GITHUB_MARKDOWN_DARK_CSS = `${PLUGIN_PATH}/asset/github-markdown-dark.css`;
+export const GITHUB_MARKDOWN_LIGHT_CSS = `${PLUGIN_PATH}/asset/github-markdown-light.css`;
+
+// 其他资源路径
+export const KATEX_CSS = `${PLUGIN_PATH}/asset/katex.min.css`;
+export const CODE_TABS_CSS = `${PLUGIN_PATH}/asset/code-tabs.css`;
+export const COPY_PNG = `${PLUGIN_PATH}/asset/copy.png`;
 
 export const htmlBlockStr = `
 <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
@@ -20,11 +42,11 @@ export const htmlBlockStr = `
 
 export const protyleHtmlStr = `
 <div> 
-    <link rel="stylesheet" href="/plugins/code-tabs/code-style.css">  
-    <link rel="stylesheet" href="/plugins/code-tabs/github-markdown.css">
-    <link rel="stylesheet" href="/plugins/code-tabs/asset/katex.min.css">
-    <link rel="stylesheet" href="/plugins/code-tabs/asset/code-tabs.css">
-    <link rel="stylesheet" href="/plugins/code-tabs/background.css">
+    <link rel="stylesheet" href="${CODE_STYLE_CSS.replace(DATA_PATH, PLUGIN_PATH)}">  
+    <link rel="stylesheet" href="${GITHUB_MARKDOWN_CSS.replace(DATA_PATH, PLUGIN_PATH)}">
+    <link rel="stylesheet" href="${KATEX_CSS}">
+    <link rel="stylesheet" href="${CODE_TABS_CSS}">
+    <link rel="stylesheet" href="${BACKGROUND_CSS.replace(DATA_PATH, PLUGIN_PATH)}">
     <div class="tabs-container">
         <div class="tabs-outer">
             <div class="tabs"></div>
@@ -32,7 +54,7 @@ export const protyleHtmlStr = `
         </div>
         <div class="tab-contents">
             <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)">
-                <img src="/plugins/code-tabs/asset/copy.png" alt="复制">
+                <img src="${COPY_PNG}" alt="复制">
             </span>
         </div>
     </div>

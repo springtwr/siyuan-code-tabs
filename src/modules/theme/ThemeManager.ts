@@ -1,14 +1,15 @@
 import {deleteBlock, insertBlock, pushErrMsg, putFile} from "@/api";
 import logger from "@/utils/logger";
-import {customAttr} from "@/assets/constants";
+import {CUSTOM_ATTR, CODE_STYLE_CSS, BACKGROUND_CSS, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_JSON, THEME_ADAPTION_ASSET_JSON} from "@/assets/constants";
 import {ThemePatch, ThemeStyle} from "@/assets/theme-adaption";
+import {fetchFileFromUrl} from "@/utils/network";
 
 export class ThemeManager {
     static async putStyleFile(plugin: any) {
         // 配置代码样式文件
         const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
-        const fileCodeStyle = await this.fetchFileFromUrl(codeStyle, 'code-style.css');
-        await putFile('/data/plugins/code-tabs/code-style.css', false, fileCodeStyle);
+        const fileCodeStyle = await fetchFileFromUrl(codeStyle, 'code-style.css');
+        await putFile(CODE_STYLE_CSS, false, fileCodeStyle);
 
         // 获取当前主题 ID
         const html = document.documentElement;
@@ -65,19 +66,19 @@ ${extraCss}
 `;
         const blob = new Blob([cssContent], {type: 'text/css'});
         const fileBackgroundStyle = new File([blob], 'styles.css', {type: 'text/css'});
-        await putFile('/data/plugins/code-tabs/background.css', false, fileBackgroundStyle);
+        await putFile(BACKGROUND_CSS, false, fileBackgroundStyle);
         // 配置代码中markdown的样式文件
         if (mode === 'dark') {
-            const darkModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-dark.css', 'github-markdown.css');
-            await putFile('/data/plugins/code-tabs/github-markdown.css', false, darkModeFile);
+            const darkModeFile = await fetchFileFromUrl(GITHUB_MARKDOWN_DARK_CSS, 'github-markdown.css');
+            await putFile(GITHUB_MARKDOWN_CSS, false, darkModeFile);
         } else {
-            const lightModeFile = await this.fetchFileFromUrl('/plugins/code-tabs/asset/github-markdown-light.css', 'github-markdown.css');
-            await putFile('/data/plugins/code-tabs/github-markdown.css', false, lightModeFile);
+            const lightModeFile = await fetchFileFromUrl(GITHUB_MARKDOWN_LIGHT_CSS, 'github-markdown.css');
+            await putFile(GITHUB_MARKDOWN_CSS, false, lightModeFile);
         }
     }
 
     static updateAllTabsStyle() {
-        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${customAttr}]`).forEach(node => {
+        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`).forEach(node => {
             const shadowRoot = node.querySelector('protyle-html').shadowRoot;
             shadowRoot.querySelectorAll('link').forEach(link => {
                 const currentHref = link.href;
@@ -202,66 +203,19 @@ ${extraCss}
         return [paddingTop, paddingRight, paddingBottom, paddingLeft];
     }
 
-    private static async fetchFileFromUrl(route: string, fileName: string): Promise<File> {
-        try {
-            let file: File;
-            if (route === undefined) {
-                const emptyContent = new Uint8Array(0);
-                const blob = new Blob([emptyContent], {type: 'text/css'});
-                file = new File([blob], fileName, {type: 'text/css'});
-            } else {
-                const response = await this.fetchWithRetry(route, {
-                    headers: {'Cache-Control': 'no-cache'}
-                });
-                if (!response.ok) return undefined;
-                const blob = await response.blob();
-                file = new File([blob], fileName, {type: blob.type});
-            }
-            return file;
-        } catch (error) {
-            logger.error(`fetchFileFromUrl: ${route}, error: ${error}`);
-        }
-    }
+    // fetchFileFromUrl 已提取到公共工具函数，不再需要此方法
 
-    private static async fetchWithRetry(route: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
-        for (let attempt = 0; attempt < retries; attempt++) {
-            try {
-                const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
-                const url = baseUrl + route;
-                const response = await fetch(url, options);
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        const passThroughPaths = [
-                            '/plugins/code-tabs/code-style.css',
-                            '/plugins/code-tabs/background.css',
-                            '/plugins/code-tabs/theme-adaption.json'
-                        ];
-                        if (passThroughPaths.includes(route)) {
-                            return response;
-                        }
-                    }
-                    throw new Error(`http error: ${response.status}`);
-                }
-                return response;
-            } catch (error) {
-                if (attempt < retries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                } else {
-                    throw error;
-                }
-            }
-        }
-    }
+    // fetchWithRetry 已提取到公共工具函数，不再需要此方法
 
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
-        const fetchPath = '/plugins/code-tabs/theme-adaption.json';
-        const storagePath = '/data/plugins/code-tabs/theme-adaption.json';
-        const defaultAssetPath = '/plugins/code-tabs/asset/theme-adaption.json';
+        const fetchPath = THEME_ADAPTION_JSON.replace('/data', '');
+        const storagePath = THEME_ADAPTION_JSON;
+        const defaultAssetPath = THEME_ADAPTION_ASSET_JSON;
 
         // 1. 加载默认配置 (获取最新版本和主题列表)
         let defaultConfig: { version: string, themes: ThemePatch[] } | null = null;
         try {
-            const defaultFile = await this.fetchFileFromUrl(defaultAssetPath, 'theme-adaption.json');
+            const defaultFile = await fetchFileFromUrl(defaultAssetPath, 'theme-adaption.json');
             if (defaultFile) {
                 const content = await defaultFile.text();
                 defaultConfig = JSON.parse(content);
@@ -279,7 +233,7 @@ ${extraCss}
         // 2. 尝试加载用户配置
         try {
             logger.info("尝试从数据目录加载主题配置...");
-            const userFile = await this.fetchFileFromUrl(fetchPath, 'theme-adaption.json');
+            const userFile = await fetchFileFromUrl(fetchPath, 'theme-adaption.json');
 
             if (userFile && userFile.size > 0) {
                 const content = await userFile.text();

@@ -1,12 +1,15 @@
 import {getActiveEditor, Plugin} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
-import {customAttr} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON} from "@/assets/constants";
 import {TabParser} from "@/modules/parser/TabParser";
 import {TabRenderer} from "@/modules/renderer/TabRenderer";
 import {ThemeManager} from "@/modules/theme/ThemeManager";
 import {getCodeFromAttribute, TabManager} from "@/modules/tab-manager/TabManager";
 import {encodeSource, stripInvisibleChars} from "@/utils/encoding";
+import {fetchFileFromUrlSimple, loadJsonFromFile} from "@/utils/network";
+import {compareConfig, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
+import {debounce} from "@/utils/common";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -21,7 +24,7 @@ export default class CodeTabs extends Plugin {
 
         // 注入全局样式，移除 html 块默认的 padding
         const style = document.createElement('style');
-        style.innerHTML = `div[data-type="NodeHTMLBlock"][${customAttr}] { padding: 0 !important; }`;
+        style.innerHTML = `div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { padding: 0 !important; }`;
         document.head.appendChild(style);
 
         TabManager.initGlobalFunctions(this.i18n);
@@ -61,16 +64,16 @@ export default class CodeTabs extends Plugin {
 
     async onLayoutReady() {
         logger.info("layout ready");
-        this.syncSiyuanConfig();
+        syncSiyuanConfig(this.data);
 
-        const configFile = await this.fetchFileFromUrl('/plugins/code-tabs/config.json', 'config.json');
+        const configFile = await fetchFileFromUrlSimple(CONFIG_JSON.replace('/data', ''), 'config.json');
         if (configFile === undefined || configFile.size === 0) {
             await ThemeManager.putStyleFile(this);
             await this.saveConfig();
             ThemeManager.updateAllTabsStyle();
         } else {
-            const data = await this.loadDataFromFile(configFile);
-            const configFlag = this.compareConfig(data, this.data);
+            const data = await loadJsonFromFile(configFile);
+            const configFlag = compareConfig(data, this.data);
             if (!configFlag) {
                 await ThemeManager.putStyleFile(this);
                 await this.saveConfig();
@@ -81,10 +84,10 @@ export default class CodeTabs extends Plugin {
         const html = document.documentElement;
         const head = document.head;
         const callback = (mutationsList: any) => {
-            const siyuanConfig = this.getSiyuanConfig();
+            const siyuanConfig = getSiyuanConfig();
             for (let mutation of mutationsList) {
                 // 1. 检查思源基础配置是否有变动
-                if (!this.compareConfig(siyuanConfig, this.data)) {
+                if (!compareConfig(siyuanConfig, this.data)) {
                     debounced();
                     break;
                 }
@@ -115,18 +118,12 @@ export default class CodeTabs extends Plugin {
             }
         };
 
-        const debounce = <T extends Function>(func: T, wait: number) => {
-            let timeout: any = null;
-            return function (...args: any) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
+        // debounce 已提取到公共工具函数，不再需要此方法
 
         const putFileHandler = () => {
             logger.info(this.i18n.codeStyleChange);
             ThemeManager.putStyleFile(this).then(() => {
-                this.syncSiyuanConfig();
+                syncSiyuanConfig(this.data);
                 this.saveConfig();
                 ThemeManager.updateAllTabsStyle();
             });
@@ -208,7 +205,7 @@ export default class CodeTabs extends Plugin {
         logger.info(`插入新块, id ${new_id}`);
         // 使用 Base64 编码保存源码
         const encodedCodeText = encodeSource(codeText);
-        await setBlockAttrs(new_id, {[`${customAttr}`]: encodedCodeText});
+        await setBlockAttrs(new_id, {[`${CUSTOM_ATTR}`]: encodedCodeText});
         await deleteBlock(id)
         logger.info(`删除旧的代码块, id ${id}`);
     }
@@ -273,9 +270,9 @@ export default class CodeTabs extends Plugin {
                     customAttribute = block.attributes["custom-plugin-code-tabs-sourcecode"].value;
                 }
                 const codeText = getCodeFromAttribute(block_id, customAttribute, this.i18n);
-                const flag = "```````````````````````````";
+                const flag = TAB_SEPARATOR;
                 updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, block_id).then(() => {
-                    logger.info('标签页转为代码块');
+                    logger.info(`标签页转为代码块: id ${block_id}`);
                 });
             })
         );
@@ -284,13 +281,13 @@ export default class CodeTabs extends Plugin {
 
     private async tabToCodeInDocument() {
         const currentDocument = getActiveEditor(true);
-        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${customAttr}]`);
+        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
         const blockList = Array.from(nodeList);
         this.tabToCodeBatch(blockList);
     }
 
     private async allTabsToCode() {
-        const blockList = await sql(`SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${customAttr}')`);
+        const blockList = await sql(`SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`);
         this.tabToCodeBatch(blockList);
     }
 
@@ -304,70 +301,20 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    private async loadDataFromFile(file: File): Promise<any> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    resolve(JSON.parse(reader.result as string));
-                } catch (e) {
-                    reject(e);
-                }
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsText(file);
-        });
-    }
+    // loadDataFromFile 已提取到公共工具函数，不再需要此方法
 
-    private getSiyuanConfig() {
-        return {
-            fontSize: window.siyuan.config.editor.fontSize,
-            mode: window.siyuan.config.appearance.mode,
-            themeLight: window.siyuan.config.appearance.themeLight,
-            themeDark: window.siyuan.config.appearance.themeDark,
-            codeBlockThemeLight: window.siyuan.config.appearance.codeBlockThemeLight,
-            codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark
-        }
-    }
+    // getSiyuanConfig 已提取到公共工具函数，不再需要此方法
 
-    private syncSiyuanConfig() {
-        const properties = this.getSiyuanConfig();
-        Object.keys(properties).forEach(key => {
-            Object.defineProperty(this.data, key, {
-                value: properties[key],
-                writable: true,
-                enumerable: true
-            });
-        });
-    }
+    // syncSiyuanConfig 已提取到公共工具函数，不再需要此方法
 
     private async saveConfig() {
-        this.syncSiyuanConfig();
+        syncSiyuanConfig(this.data);
         const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
-        await putFile('/data/plugins/code-tabs/config.json', false, file);
+        await putFile(CONFIG_JSON, false, file);
     }
 
-    private compareConfig(pluginConfig: any, siyuanConfig: any) {
-        const pluginKeys = Object.keys(pluginConfig);
-        const siyuanKeys = Object.keys(siyuanConfig);
-        if (pluginKeys.length !== siyuanKeys.length) return false;
-        for (const key of siyuanKeys) {
-            if (pluginConfig[key] !== siyuanConfig[key]) return false;
-        }
-        return true;
-    }
+    // compareConfig 已提取到公共工具函数，不再需要此方法
 
 
-    private async fetchFileFromUrl(route: string, fileName: string): Promise<File> {
-        try {
-            const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
-            const url = baseUrl + route;
-            const response = await fetch(url, {headers: {'Cache-Control': 'no-cache'}});
-            if (!response.ok) return undefined;
-            const blob = await response.blob();
-            return new File([blob], fileName, {type: blob.type});
-        } catch (e) {
-            return undefined;
-        }
-    }
+    // fetchFileFromUrl 已提取到公共工具函数，不再需要此方法
 }

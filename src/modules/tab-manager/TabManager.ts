@@ -1,6 +1,6 @@
 import ClipboardJS from "clipboard";
 import {getBlockAttrs, pushErrMsg, pushMsg, updateBlock} from "@/api";
-import {customAttr} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR} from "@/assets/constants";
 import {decodeSource} from "@/utils/encoding";
 import logger from "@/utils/logger";
 import {TabParser} from "../parser/TabParser";
@@ -9,7 +9,7 @@ import {IObject} from "siyuan";
 export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
     let codeText = decodeSource(customAttribute);
     if (!codeText) {
-        logger.info('标签页转为代码块失败，未找到源码');
+        logger.info(`标签页转为代码块失败，未找到源码: id ${block_id}`);
         pushErrMsg(`${i18n.allTabsToCodeFailed}: ${block_id}`);
         return;
     }
@@ -52,8 +52,11 @@ export class TabManager {
 
                 if (tabContent.firstChild instanceof HTMLElement && tabContent.firstChild.className.includes('markdown')) {
                     const tabContents = tabContent.parentNode;
-                    const childElements = Array.from(tabContents.children);
-                    const index = childElements.indexOf(tabContent as Element) - 1;
+                    // 获取当前活动标签页的索引，需要排除非内容元素
+                    const allContentElements = Array.from(tabContents.children).filter(child => 
+                        child.classList && child.classList.contains('tab-content')
+                    );
+                    const activeContentIndex = allContentElements.indexOf(tabContent);
 
                     let parent: Node = evt.target as Node;
                     while (parent && parent.parentNode) {
@@ -67,14 +70,36 @@ export class TabManager {
 
                     getBlockAttrs(nodeId).then(res => {
                         if (!res) return;
-                        let codeText = decodeSource(res[`${customAttr}`]);
+                        let codeText = decodeSource(res[`${CUSTOM_ATTR}`]);
                         // Fallback check if needed, though decodeSource handles it.
                         // Ensure strict string type if necessary, or just proceed.
                         if (codeText && codeText[codeText.length - 1] !== '\n') {
                             codeText = codeText + '\n';
                         }
-                        const codeArr = codeText.trim().match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
-                        textContent = codeArr[index];
+                        
+                        // 尝试解析新语法 (:::) 或旧语法 (tab:::)
+                        let codeArr;
+                        if (codeText.trim().startsWith(':::')) {
+                            // 新语法：使用 ::: 分隔
+                            codeArr = codeText.split(/(?:^|\n):::/g);
+                            codeArr = codeArr.slice(1); // 移除第一个空元素
+                        } else {
+                            // 旧语法：使用 tab::: 分隔
+                            codeArr = codeText.trim().match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
+                        }
+                        
+                        if (!codeArr || codeArr.length === 0) {
+                            logger.error('无法解析标签页内容');
+                            return;
+                        }
+                        
+                        // 确保索引在有效范围内
+                        if (activeContentIndex < 0 || activeContentIndex >= codeArr.length) {
+                            logger.error(`索引超出范围: ${activeContentIndex}, 数组长度: ${codeArr.length}`);
+                            return;
+                        }
+                        
+                        textContent = codeArr[activeContentIndex];
                         const lines = textContent.split('\n');
                         lines.shift();
                         if (lines[0] && lines[0].startsWith('lang:::')) {
@@ -117,10 +142,10 @@ export class TabManager {
 
                 getBlockAttrs(nodeId).then(res => {
                     if (!res) return;
-                    const codeText = getCodeFromAttribute(nodeId, res[`${customAttr}`], i18n);
-                    const flag = "```````````````````````````";
+                    const codeText = getCodeFromAttribute(nodeId, res[`${CUSTOM_ATTR}`], i18n);
+                    const flag = TAB_SEPARATOR;
                     updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
-                        logger.info('标签页转为代码块');
+                        logger.info(`标签页转为代码块: id ${nodeId}`);
                     });
                 });
             },

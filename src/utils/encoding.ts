@@ -1,4 +1,4 @@
-import {newLineFlag} from "@/assets/constants";
+import {NEWLINE_FLAG} from "@/assets/constants";
 
 /**
  * 将源码字符串编码为 Base64（用于安全存储）
@@ -26,7 +26,7 @@ export function encodeSource(code: string): string {
 
 /**
  * 解码存储的字符串为原始源码
- * - 兼容旧格式（含 [[newLineFlag]] 标记）
+ * - 兼容旧格式（含 [[NEWLINE_FLAG]] 标记）
  * - 优先尝试 Base64 解码
  * - 失败时回退为原始字符串（如纯文本）
  * @param stored 存储的字符串
@@ -35,9 +35,9 @@ export function encodeSource(code: string): string {
 export function decodeSource(stored: string): string {
     if (!stored) return '';
 
-    // 向后兼容：旧格式使用 [[newLineFlag]] 标记换行
-    if (stored.includes(newLineFlag)) {
-        return stored.replace(new RegExp(newLineFlag, 'g'), '\n');
+    // 向后兼容：旧格式使用 [[NEWLINE_FLAG]] 标记换行
+    if (stored.includes(NEWLINE_FLAG)) {
+        return stored.replace(new RegExp(NEWLINE_FLAG, 'g'), '\n');
     }
 
     // 尝试 Base64 解码

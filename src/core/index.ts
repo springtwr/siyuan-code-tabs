@@ -1,4 +1,4 @@
-import {getActiveEditor, Plugin} from "siyuan";
+import {getActiveEditor, Plugin, Setting} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
 import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON} from "@/assets/constants";
@@ -29,6 +29,23 @@ export default class CodeTabs extends Plugin {
 
         TabManager.initGlobalFunctions(this.i18n);
 
+        // 添加设置项
+        this.setting = new Setting({
+            confirmCallback: () => {}
+        });
+        const allTabsToCodeElement = document.createElement("button");
+        allTabsToCodeElement.className = "b3-button b3-button--outline fn__flex-center fn__size200";
+        allTabsToCodeElement.textContent = `${this.i18n.allTabsToCodeBtn}`;
+        allTabsToCodeElement.addEventListener("click", () => {
+            this.allTabsToCode();
+        });
+        this.setting.addItem({
+            title: `${this.i18n.allTabsToCode}`,
+            description: `${this.i18n.allTabsToCodeDes}`,
+            actionElement: allTabsToCodeElement,
+        });
+
+        // 注册快捷方式
         this.addCommand({
             langKey: "codeToTabs",
             hotkey: "",
@@ -152,11 +169,6 @@ export default class CodeTabs extends Plugin {
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.tabToCodeInDocument, click: () => {
                 this.tabToCodeInDocument();
-            },
-        });
-        detail.menu.addItem({
-            iconHTML: "", label: this.i18n.allTabsToCode, click: () => {
-                this.allTabsToCode();
             },
         });
     }

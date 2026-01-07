@@ -2,12 +2,13 @@
   "name": "code-tabs",
   "author": "springtwr",
   "url": "https://github.com/springtwr/siyuan-code-tabs",
-  "version": "0.6.2",
-  "minAppVersion": "3.0.16",
+  "version": "0.7.0",
+  "minAppVersion": "3.5.0",
   "backends": [
     "windows",
     "linux",
     "darwin",
+    "harmony",
     "ios",
     "android",
     "docker"

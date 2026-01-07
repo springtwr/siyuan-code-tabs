@@ -1,14 +1,12 @@
 ``````
-tab:::这是c语言
-lang:::c
+::: 这是c语言 | c
 #include<stdio.h>
 int main(){
    printf("hello\n");
    return 0;
 }
 
-tab:::这是c++
-lang:::cpp
+::: 这是c++ | cpp
 #include <iostream>
 using namespace std;
 int main()
@@ -17,19 +15,18 @@ int main()
     return 0;
 }
 
-tab:::python
+:::python
 def hello_world():
    print("Hello World")
 
-tab:::这是java
-lang:::java
+:::这是java|java
 public class HelloWorld {
     public static void main(String[] args) {
         System.out.println("Hello World");
     }
 }
 
-tab:::markdown:::active
+:::markdown|active
 # 标题1
 ## 标题2 
 这是**粗体**，这是*斜体*，这是行内代码`code`， 这是行内公式 $a=\sqrt{b^2+c^2}$，这是~~删除线~~，这是[链接](https://github.com)。  
@@ -60,8 +57,7 @@ int main(){
 }
 ``` 
 
-tab:::这是go
-lang:::go
+::: 这是go | go
 package main
 
 import "fmt"
@@ -70,8 +66,7 @@ func main() {
     fmt.Println("Hello, World!")
 }
 
-tab:::这是c#
-lang:::c#
+:::这是c# | c#
 using System;
 namespace HelloWorldApplication
 {
@@ -85,12 +80,12 @@ namespace HelloWorldApplication
     }
 }
 
-tab:::rust
+:::rust
 fn main() {
     println!("Hello World!");
 }
 
-tab:::typescript
+:::typescript
 function greeter(person) {
     return "Hello, " + person;
 }
@@ -99,14 +94,13 @@ let user = "Jane User";
 
 document.body.innerHTML = greeter(user);
 
-tab:::fortran
+:::fortran
 program hello
   ! This is a comment line; it is ignored by the compiler
   print *, 'Hello, World!'
 end program hello
 
-tab:::这是php
-lang:::php
+:::这是php|php
 <!DOCTYPE html>
 <html>
 <body>

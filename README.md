@@ -18,44 +18,38 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
     - change theme
     - Close document and reopen it
     - Try the above method again after restarting SiYuan Notes
-- ***Only SiYuan 3.0.16 and above can be used normally***
+- ***Only SiYuan 3.5.0 and above can be used normally***
 
 ## Tips
 
 - 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
-- Since version 0.3.0, all functions have basically achieved the expected goals (temporarily not considering the
-  implementation of the `Code block line number`). Future updates will mainly focus on bug fixes and style
-  optimizations.
-- **After updating the plugin, if there is a display exception, you can
-  use `Plugins -> Fix all code-tabs in opened documents` to fix it. If you still have problems, try regenerating the
-  code-tabs after `toggle to code-block`**
+- Version 0.7.0 underwent major refactoring. Users who have extensively used this plugin before are advised to test thoroughly before updating to ensure no issues.
+- **After updating the plugin, if there is a display exception, you can try toggling back to code-block and regenerating the code tabs**
 
 ## Example
 
-1. Insert a code block in the SiYuan document as follows. Enter the title after `tab:::`, and then add `:::active` to
-   indicate that this tab is activated by default when the document is opened. If this flag(`:::active`) is not added,
-   the first tab is activated by default. Enter the language after `lang:::`. If "lang:::language" is omitted, the title
-   is used as the default language for the code. [Example file](./asset/example.md)
+1. Insert a code block in the SiYuan document as follows. Use `:::` as the beginning, followed by the `title | language | active` format.
+   For example `::: title | language | active`, where `active` indicates that this tab is activated by default when the document is opened. If this flag is not added,
+   the first tab is activated by default. The language parameter is optional, if omitted it will use the title as the default language for the code. [Example file](./asset/example.md)
     - When the language is `markdown`, [marked](https://github.com/markedjs/marked) will be used for rendering.
       Rendering [Katex formulas](https://katex.org)
       with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks
-      with [marked-highlight](https://github.com/markedjs/marked-highlight).
+      with siyuan's built-in hljs.
    ```
-   tab:::this is c
-   lang:::c
+   ::: this is c | c | active
    #include<stdio.h>
    int main(){
    printf("hello\n");
    return 0;
    }
    
-   tab:::python:::active
+   ::: python
    def hello_world():
    print("Hello World")
    ```
 
-2. Click the block menu in the upper-left corner of the code-block -> Plugin -> Convert code-block to tabs, you can also
-   set a shortcut key for this function in Settings -> Keymap.
+2. Click the block menu in the upper-left corner of the code-block -> Plugin -> `Block: code-block -> tabs`, you can also
+   set a shortcut key for this function in Settings -> Keymap. The other two functions in the block menu perform batch conversion and restoration based on the current document.
    ![fig2](./asset/2.gif)
 
 3. If you need to edit the code, you can click on "Toggle to code-block" in the upper-right corner of the tab. After
@@ -68,14 +62,28 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
    bar left and right to view them.
 6. Demo.  
    ![fig5](./asset/demo.gif)
+7. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file that allows users to adapt themes themselves. The configuration file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. You can adapt themes to your needs by following the examples and using developer tools. You can also submit a PR to this repository with your adapted theme, the repository's adaptation file path is `/public/asset/theme-adaption.yaml`
 
 ## Comment
 
 - Essentially, this plugin was written with the help of Wenxin Yiyan and ChatGPT.
 - This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- The version of SiYuan Notes at the time of testing: 3.1.13
+- The version of SiYuan Notes at the time of testing: 3.5.0
 
 ## Changelog
+
+### v0.7.0
+
+- **Major update: Syntax format change** - Changed from the old `tab:::title:::active` and `lang:::language` syntax to the new `::: title | language | active` syntax
+- Compatibility with old syntax, when reverting from code tabs back to code blocks it will automatically update the old syntax format to the new syntax format
+- Added theme adaptation file, allowing users to adapt third-party themes themselves
+- Implemented bidirectional batch conversion functionality between code blocks and code tabs
+- Modified source code storage method, changed to Base64 encoding for storing source code
+- Updated dependencies, code highlighting now uses siyuan's built-in hljs
+- Added settings item, moved global conversion functionality from block menu to settings panel
+- Optimized theme change detection method, fixed DOM refresh issues
+- Fixed the issue of inconsistent width between tabs and code blocks
+- Fixed angle bracket loss issue
 
 ### v0.6.2
 

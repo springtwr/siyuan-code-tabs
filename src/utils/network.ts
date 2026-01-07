@@ -101,18 +101,8 @@ export async function loadJsonFromFile(file: File): Promise<any> {
  * 从文件加载并解析 YAML 数据
  */
 export async function loadYamlFromFile(file: File): Promise<any> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            try {
-                resolve(yaml.load(reader.result as string));
-            } catch (e) {
-                reject(e);
-            }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-    });
+    const text = await file.text();
+    return yaml.load(text);
 }
 
 /**

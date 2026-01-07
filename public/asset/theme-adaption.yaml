@@ -57,6 +57,45 @@ themes:
       .markdown-body h6{
           color: var(--Sv-h6);
       }
+  - id: "Tsundoku"
+    name: "積読"
+    extraCss: |
+      .markdown-body h1 {
+          text-align: center;
+          /* 标题居中，如果不需要可以取消 */
+          border-bottom-width: 0px;
+          font-size: 1.75em !important;
+          padding: 0.3em 4px;
+          color: var(--custom-h1-color) !important;
+          border-bottom: 2px solid var(--custom-h1-color);
+      }
+      .markdown-body h2 {
+          border-bottom: 1px solid var(--custom-h2-border-color) !important;
+          font-size: 1.45em !important;
+          color: var(--custom-h2-color) !important;
+          border-radius: 0px !important;
+      }
+      .markdown-body h3 {
+          font-size: 1.35em;
+          color: var(--custom-h3-color) !important;
+          text-align: left;
+          font-weight: bold;
+          padding-left: 8px;
+          border-left: 5px solid var(--custom-h3-color);
+          height: 1.25 em;
+      }
+      .markdown-body h4 {
+          font-size: 1.2em !important;
+          color: var(--custom-h4-color) !important;
+      }
+      .markdown-body h5 {
+          font-size: 1.1em !important;
+          color: var(--custom-h5-color) !important;
+      }
+      .markdown-body h6 {
+          font-size: 1.1em !important;
+          color: var(--custom-h6-color) !important;
+      }
   - id: "Asri"
     name: "Asri"
     extraCss: |
@@ -330,4 +369,191 @@ themes:
           min-height: 1.25em;
           padding: 2px 0px 0px 7px;
           margin-bottom: 5px;
+      }
+  - id: "mini-vlook"
+    name: "mini-vlook"
+    extraCss: |
+      /* 简化的标题样式 */
+      .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+          box-shadow: none;
+          border-left: 0;
+          border-right: 0;
+          color: var(--v-block-heading-color);
+          text-align: left;
+          position: relative;
+          padding: 10px;
+          line-height: 1.5;
+          border-radius: var(--v-block-heading-border-radius);
+          background: linear-gradient(0deg, var(--v-block-heading-start-bg-color), var(--v-block-heading-end-bg-color));
+          letter-spacing: .15em;
+          width: inherit;
+          page-break-after: avoid;
+          break-after: avoid-page;
+          page-break-inside: avoid;
+          orphans: 4;
+      }
+
+      .markdown-body h1, .markdown-body h2 {
+          margin: 3em 0 0.5em;
+          border-top: 9px solid var(--v-block-heading-top-shadow);
+          counter-reset: h2;
+      }
+
+      .markdown-body h3, .markdown-body h4 {
+          border-top: 0 !important;
+          padding-top: 0 !important;
+          margin: 2em 0 0;
+          font-size: 1.5em;
+      }
+
+      .markdown-body h5 {
+          border-top: 0 !important;
+          padding-top: 0 !important;
+          margin: 1.25em 0 0;
+          font-size: 1.25em;
+      }
+
+      .markdown-body h6 {
+          margin-bottom: 0 !important;
+          padding-bottom: 0 !important;
+          font: var(--m-v-f-w-bd) 1.125em var(--m-v-f-fm-subtitle);
+          border-top: 0 !important;
+          border-bottom: 0 !important;
+          background: 0 0;
+      }
+
+      /* 标题连续样式 */
+      .markdown-body :is(h1 + h2, h2 + h3, h3 + h4, h4 + h5, h6) {
+          background: linear-gradient(-10, var(--v-block-heading-end-bg-color), var(--v-block-heading-start-bg-color), var(--v-block-heading-end-bg-color));
+          box-shadow: none !important;
+          border-top: 0 !important;
+          padding-top: 0 !important;
+          margin-top: 5px !important;
+      }
+
+      /* 连续标题底部样式 */
+      .markdown-body .h1:has(+ .h2),
+      .markdown-body .h2:has(+ .h3),
+      .markdown-body .h3:has(+ .h4),
+      .markdown-body .h4:has(+ .h5) {
+          border-bottom: 0 !important;
+          padding-bottom: 0 !important;
+          margin-bottom: 5px !important;
+      }
+
+      .markdown-body :is(h1 + h6, h2 + h6, h3 + h6, h4 + h6, h5 + h6, h6 + h6) {
+          margin-top: 0 !important;
+      }
+
+      /* 标题计数器 */
+      .markdown-body {
+          counter-reset: h1-counter;
+      }
+      
+      .markdown-body h1 { counter-increment: h1-counter; counter-reset: h2-counter h3-counter h4-counter h5-counter h6-counter; }
+      .markdown-body h2 { counter-increment: h2-counter; counter-reset: h3-counter h4-counter h5-counter h6-counter; }
+      .markdown-body h3 { counter-increment: h3-counter; counter-reset: h4-counter h5-counter h6-counter; }
+      .markdown-body h4 { counter-increment: h4-counter; counter-reset: h5-counter h6-counter; }
+      .markdown-body h5 { counter-increment: h5-counter; counter-reset: h6-counter; }
+
+      /* 标题编号 */
+      .markdown-body h1::before { content: counter(h1-counter) "\00A0"; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+      .markdown-body h2::before { content: counter(h1-counter) "." counter(h2-counter) "\00A0"; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+      .markdown-body h3::before { content: counter(h1-counter) "." counter(h2-counter) "." counter(h3-counter) "\00A0"; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+      .markdown-body h4::before { content: "(" counter(h4-counter) ")" "\00A0"; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+      .markdown-body h5::before { content: counter(h5-counter, my-circle-number-2) "\00A0"; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+      .markdown-body h6::before { content: '※'; display: block; float: left; font-size: var(--custom-h-num-font-size); }
+
+      .markdown-body h1 { border-left: 3px solid var(--custom-h1-color); padding-left: 9px; }
+
+      /* 标题装饰图标 */
+      .markdown-body h1:not(:empty)::after { background: var(--h1-r-graphic); }
+      .markdown-body h2:not(:empty)::after { background: var(--h2-r-graphic); }
+      .markdown-body h3:not(:empty)::after { background: var(--h3-r-graphic); }
+      .markdown-body h4:not(:empty)::after { background: var(--h4-r-graphic); }
+      .markdown-body h5:not(:empty)::after { background: var(--h5-r-graphic); }
+      
+      .markdown-body :is(h1, h2, h3, h4, h5, h6):not(:empty)::after {
+          content: "";
+          position: absolute;
+          float: right;
+          margin-left: 0.2em;
+          height: 1.2em;
+          width: 1.2em;
+          background-size: 100% 100%;
+      }
+  - id: "OneNote"
+    name: "OneNote"
+    extraCss: |
+      .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+          color: #4e4e4e;
+      }
+      .markdown-body h1 {
+          text-align: left;
+          font-size: 1.6em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          vertical-align: middle;
+          margin-top: 36px;
+      }
+      .markdown-body h2 {
+          font-size: 1.5em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          margin-top: 30px;
+      }
+      .markdown-body h3 {
+          font-size: 1.4em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          margin-top: 24px;
+      }
+      .markdown-body h4 {
+          font-size: 1.3em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          margin-top: 18px;
+      }
+      .markdown-body h5 {
+          font-size: 1.2em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          margin-top: 12px;
+          line-height: 28px;
+      }
+      .markdown-body h6 {
+          font-size: 1.1em !important;
+          font-weight: 600;
+          position: relative;
+          z-index: 0;
+          margin-top: 6px;
+          line-height: 26px;
+      }
+      .markdown-body :is(h1,h2,h3,h4,h5,h6)::before {
+          position: absolute;
+          top: -1em;
+          color: #55555a4d;
+      }
+      .markdown-body h1::before {
+          content: ".";
+      }
+      .markdown-body h2::before {
+          content: "..";
+      }
+      .markdown-body h3::before {
+          content: "...";
+      }
+      .markdown-body h4::before {
+          content: "....";
+      }
+      .markdown-body h5::before {
+          content: ".....";
+      }
+      .markdown-body h6::before {
+          content: "......";
       }

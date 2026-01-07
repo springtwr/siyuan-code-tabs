@@ -3,7 +3,8 @@
  */
 
 import logger from "@/utils/logger";
-import {CODE_STYLE_CSS, BACKGROUND_CSS, THEME_ADAPTION_JSON} from "@/assets/constants";
+import {CODE_STYLE_CSS, BACKGROUND_CSS, THEME_ADAPTION_YAML} from "@/assets/constants";
+import * as yaml from "js-yaml";
 
 /**
  * 带重试功能的网络请求
@@ -19,7 +20,7 @@ export async function fetchWithRetry(route: string, options: RequestInit = {}, r
                     const passThroughPaths = [
                         CODE_STYLE_CSS.replace('/data', '/'),
                         BACKGROUND_CSS.replace('/data', '/'),
-                        THEME_ADAPTION_JSON.replace('/data', '/')
+                        THEME_ADAPTION_YAML.replace('/data', '/')
                     ];
                     if (passThroughPaths.includes(route)) {
                         return response;
@@ -94,4 +95,36 @@ export async function loadJsonFromFile(file: File): Promise<any> {
         reader.onerror = () => reject(reader.error);
         reader.readAsText(file);
     });
+}
+
+/**
+ * 从文件加载并解析 YAML 数据
+ */
+export async function loadYamlFromFile(file: File): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                resolve(yaml.load(reader.result as string));
+            } catch (e) {
+                reject(e);
+            }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+    });
+}
+
+/**
+ * 从 URL 获取并解析 YAML 文件
+ */
+export async function fetchYamlFromUrl(route: string, fileName: string): Promise<any> {
+    try {
+        const file = await fetchFileFromUrl(route, fileName);
+        if (!file) return undefined;
+        return await loadYamlFromFile(file);
+    } catch (error) {
+        logger.error(`fetchYamlFromUrl: ${route}, error: ${error}`);
+        return undefined;
+    }
 }

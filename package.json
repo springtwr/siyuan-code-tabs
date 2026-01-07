@@ -14,11 +14,15 @@
     "make-install": "vite build && node --no-warnings ./scripts/make_install.js"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.0.3",
     "clipboard": "^2.0.11",
     "fast-glob": "^3.3.3",
     "glob": "^13.0.0",
     "js-yaml": "^4.1.1",
+    "marked": "^17.0.1",
+    "marked-highlight": "^2.2.3",
+    "marked-katex-extension": "^5.1.6",
     "minimist": "^1.2.8",
     "rollup-plugin-livereload": "^2.0.5",
     "sass": "^1.97.1",
@@ -27,9 +31,6 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-static-copy": "^3.1.4",
-    "vite-plugin-zip-pack": "^1.2.4",
-    "marked": "^17.0.1",
-    "marked-highlight": "^2.2.3",
-    "marked-katex-extension": "^5.1.6"
+    "vite-plugin-zip-pack": "^1.2.4"
   }
 }

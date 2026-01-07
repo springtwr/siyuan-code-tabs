@@ -1,8 +1,9 @@
 import {deleteBlock, insertBlock, pushErrMsg, putFile} from "@/api";
 import logger from "@/utils/logger";
-import {CUSTOM_ATTR, CODE_STYLE_CSS, BACKGROUND_CSS, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_JSON, THEME_ADAPTION_ASSET_JSON} from "@/assets/constants";
+import {CUSTOM_ATTR, CODE_STYLE_CSS, BACKGROUND_CSS, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_YAML, THEME_ADAPTION_ASSET_YAML} from "@/assets/constants";
 import {ThemePatch, ThemeStyle} from "@/assets/theme-adaption";
-import {fetchFileFromUrl} from "@/utils/network";
+import {fetchFileFromUrl, fetchYamlFromUrl} from "@/utils/network";
+import * as yaml from "js-yaml";
 
 export class ThemeManager {
     static async putStyleFile(plugin: any) {
@@ -23,17 +24,15 @@ export class ThemeManager {
         const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
 
         let style: ThemeStyle;
-        let extraCss = "";
+        let extraCss = patch?.extraCss || "";
 
         if (patch && patch.fullStyle) {
             // 如果有完整补丁，直接使用，跳过 getCodeBlockStyle
             logger.info(`使用外部主题适配: ${patch.name}`);
             style = patch.fullStyle;
-            extraCss = patch.extraCss || "";
         } else {
             // 否则回退到自动采集逻辑
             style = await this.getCodeBlockStyle(plugin.i18n);
-            extraCss = patch?.extraCss || "";
         }
 
         const cssContent = `
@@ -204,20 +203,17 @@ ${extraCss}
     }
 
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
-        const fetchPath = THEME_ADAPTION_JSON.replace('/data', '');
-        const storagePath = THEME_ADAPTION_JSON;
-        const defaultAssetPath = THEME_ADAPTION_ASSET_JSON;
+        const fetchPath = THEME_ADAPTION_YAML.replace('/data', '');
+        const storagePath = THEME_ADAPTION_YAML;
+        const defaultAssetPath = THEME_ADAPTION_ASSET_YAML;
 
         // 1. 加载默认配置 (获取最新版本和主题列表)
         let defaultConfig: { version: string, themes: ThemePatch[] } | null = null;
         try {
-            const defaultFile = await fetchFileFromUrl(defaultAssetPath, 'theme-adaption.json');
-            if (defaultFile) {
-                const content = await defaultFile.text();
-                defaultConfig = JSON.parse(content);
-            }
+            logger.info("尝试加载默认主题配置...");
+            defaultConfig = await fetchYamlFromUrl(defaultAssetPath, 'theme-adaption.yaml');
         } catch (e) {
-            logger.error(`加载默认配置失败: ${e}`);
+            logger.warn(`加载默认主题配置失败: ${e}`);
             return [];
         }
 
@@ -228,18 +224,14 @@ ${extraCss}
 
         // 2. 尝试加载用户配置
         try {
-            logger.info("尝试从数据目录加载主题配置...");
-            const userFile = await fetchFileFromUrl(fetchPath, 'theme-adaption.json');
+            logger.info("尝试从数据目录加载用户主题配置...");
+            const userConfig = await fetchYamlFromUrl(fetchPath, 'theme-adaption.yaml');
 
-            if (userFile && userFile.size > 0) {
-                const content = await userFile.text();
-                const userConfig = JSON.parse(content);
-
+            if (userConfig && userConfig.themes) {
                 // 2.1 检查用户配置格式
-                let userThemes: ThemePatch[] = [];
+                let userThemes: ThemePatch[] = userConfig.themes || [];
                 let userVersion: string | undefined;
 
-                userThemes = userConfig.themes || [];
                 userVersion = userConfig.version;
 
                 // 2.2 版本检测:如果用户版本低于插件版本,进行合并
@@ -258,14 +250,14 @@ ${extraCss}
                         version: defaultConfig.version,
                         themes: mergedThemes.config
                     };
-                    await this.saveThemeConfig(newConfig, storagePath);
-                    logger.info("已更新用户配置到最新版本");
+                    await this.saveYamlThemeConfig(newConfig, storagePath);
+                    logger.info("已更新用户主题配置到最新版本");
 
                     return mergedThemes.config;
                 }
 
                 // 2.3 版本一致,直接使用用户配置
-                logger.info("配置版本一致,使用用户配置");
+                logger.info("配置版本一致,使用用户主题配置");
                 return userThemes;
             }
         } catch (e) {
@@ -273,8 +265,8 @@ ${extraCss}
         }
 
         // 3. 用户配置不存在,首次安装,初始化配置
-        logger.info("首次安装,初始化配置文件...");
-        await this.saveThemeConfig(defaultConfig, storagePath);
+        logger.info("首次安装,初始化主题配置文件...");
+        await this.saveYamlThemeConfig(defaultConfig, storagePath);
         logger.info("已初始化用户主题配置");
 
         return defaultConfig.themes;
@@ -311,17 +303,17 @@ ${extraCss}
 
         return {config: result, hasChanges};
     }
-
+    
     /**
      * 保存主题配置
      */
-    private static async saveThemeConfig(
+    private static async saveYamlThemeConfig(
         config: { version: string, themes: ThemePatch[] },
         path: string
     ) {
-        const content = JSON.stringify(config, null, 4);
-        const blob = new Blob([content], {type: 'application/json'});
-        const file = new File([blob], 'theme-adaption.json', {type: 'application/json'});
+        const content = yaml.dump(config, { indent: 2 });
+        const blob = new Blob([content], {type: 'application/yaml'});
+        const file = new File([blob], 'theme-adaption.yaml', {type: 'application/yaml'});
         await putFile(path, false, file);
     }
 }

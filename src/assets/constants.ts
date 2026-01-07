@@ -8,8 +8,8 @@ export const DATA_PATH = '/data/plugins/code-tabs';
 
 // 配置文件路径
 export const CONFIG_JSON = `${DATA_PATH}/custom/config.json`;
-export const THEME_ADAPTION_JSON = `${DATA_PATH}/custom/theme-adaption.json`;
-export const THEME_ADAPTION_ASSET_JSON = `${PLUGIN_PATH}/asset/theme-adaption.json`;
+export const THEME_ADAPTION_YAML = `${DATA_PATH}/custom/theme-adaption.yaml`;
+export const THEME_ADAPTION_ASSET_YAML = `${PLUGIN_PATH}/asset/theme-adaption.yaml`;
 
 // 样式文件路径
 export const CODE_STYLE_CSS = `${DATA_PATH}/custom/code-style.css`;

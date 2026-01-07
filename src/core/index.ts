@@ -1,7 +1,7 @@
 import {getActiveEditor, Plugin, Setting} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
-import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON, settingIconMain} from "@/assets/constants";
 import {TabParser} from "@/modules/parser/TabParser";
 import {TabRenderer} from "@/modules/renderer/TabRenderer";
 import {ThemeManager} from "@/modules/theme/ThemeManager";
@@ -81,6 +81,16 @@ export default class CodeTabs extends Plugin {
 
     async onLayoutReady() {
         logger.info("layout ready");
+
+        this.addTopBar({
+            icon: settingIconMain,
+            title: "code-tabs",
+            position: "right",
+            callback: () => {
+                this.openSetting();
+            }
+        });
+
         syncSiyuanConfig(this.data);
 
         const configFile = await fetchFileFromUrlSimple(CONFIG_JSON.replace('/data', ''), 'config.json');

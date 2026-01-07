@@ -73,8 +73,7 @@
   margin: .67em 0;
   font-weight: 600;
   padding-bottom: .3em;
-  font-size: 2em;
-  border-bottom: 1px solid #21262d;
+  font-size: 1.75em;
 }
 
 .markdown-body mark {
@@ -282,29 +281,27 @@
 .markdown-body h2 {
   font-weight: 600;
   padding-bottom: .3em;
-  font-size: 1.5em;
-  border-bottom: 1px solid #21262d;
+  font-size: 1.55em;
 }
 
 .markdown-body h3 {
   font-weight: 600;
-  font-size: 1.25em;
+  font-size: 1.38em;
 }
 
 .markdown-body h4 {
   font-weight: 600;
-  font-size: 1em;
+  font-size: 1.25em;
 }
 
 .markdown-body h5 {
   font-weight: 600;
-  font-size: .875em;
+  font-size: 1.13em;
 }
 
 .markdown-body h6 {
   font-weight: 600;
-  font-size: .85em;
-  color: #848d97;
+  font-size: 1em;
 }
 
 .markdown-body p {

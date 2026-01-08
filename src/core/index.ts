@@ -8,7 +8,7 @@ import {ThemeManager} from "@/modules/theme/ThemeManager";
 import {getCodeFromAttribute, TabManager} from "@/modules/tab-manager/TabManager";
 import {encodeSource, stripInvisibleChars} from "@/utils/encoding";
 import {fetchFileFromUrlSimple, loadJsonFromFile} from "@/utils/network";
-import {compareConfig, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
+import {compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
 import {debounce} from "@/utils/common";
 
 export default class CodeTabs extends Plugin {
@@ -50,31 +50,16 @@ export default class CodeTabs extends Plugin {
             langKey: "codeToTabs",
             hotkey: "",
             editorCallback: () => {
-                const selection = document.getSelection();
-                if (!selection || selection.rangeCount === 0) {
-                    logger.info("没有选中的代码块");
-                    pushMsg(`${this.i18n.noSelectedCodeBlock}`);
-                }
-
-                const range = selection.getRangeAt(0);
-                let startEl: Element | null = null;
-
-                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                    startEl = range.startContainer as Element;
-                } else {
-                    // 如果是 Text、Comment 等节点，取其父元素
-                    startEl = range.startContainer.parentElement;
-                }
-
-                // 现在 startEl 要么是 Element，要么是 null
-                const currentNode = startEl?.closest<HTMLElement>('[data-type]');
-
-                if (currentNode && currentNode.dataset.type === 'NodeCodeBlock') {
-                    const editElement = currentNode.querySelector('[contenteditable="true"]');
-                    if (editElement) {
-                        this.codeToTabs(currentNode).then(() => this.reloadActivateDocument());
-                    }
-                }
+                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
+                this.codeToTabsBatch(blockList);
+            }
+        });
+        this.addCommand({
+            langKey: "tabToCode",
+            hotkey: "",
+            editorCallback: () => {
+                const blockList = getSelectedElements(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+                this.tabToCodeBatch(blockList);
             }
         });
     }
@@ -163,12 +148,14 @@ export default class CodeTabs extends Plugin {
     private blockIconEvent({detail}: any) {
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabs, click: () => {
-                for (const item of detail.blockElements) {
+                const blockList: HTMLElement[] = [];
+                for (const item of detail.blockElements as HTMLElement[]) {
                     const editElement = item.querySelector('[contenteditable="true"]');
                     if (editElement && item.dataset?.type === "NodeCodeBlock") {
-                        this.codeToTabs(item).then(() => this.reloadActivateDocument());
+                        blockList.push(item);
                     }
                 }
+                this.codeToTabsBatch(blockList);
             }
         });
         detail.menu.addItem({
@@ -180,7 +167,7 @@ export default class CodeTabs extends Plugin {
                         blockList.push(item);
                     }
                 }
-                this.tabToCode(blockList);
+                this.tabToCodeBatch(blockList);
             }
         })
         detail.menu.addItem({
@@ -198,37 +185,59 @@ export default class CodeTabs extends Plugin {
     private reloadActivateDocument() {
         const activeEditor = getActiveEditor(true);
         if (activeEditor) {
+            logger.info("刷新页面");
             activeEditor.reload(true);
         }
     }
 
-    private async codeToTabs(item: HTMLElement) {
-        const id = item.dataset.nodeId;
-        const contentEl = item.querySelector<HTMLElement>('[contenteditable="true"]');
-        // 防御性检查
-        if (!id) {
-            logger.warn(`codeToTabs: 节点缺少 nodeId: &{item}`);
-            return;
+    private async codeToTabsBatch(blockList: HTMLElement[]) {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${this.i18n.noTabsToConvert}`);
+            return {"success": 0, "failure": 0};
         }
-        if (!contentEl) {
-            logger.warn(`codeToTabs: 未找到 contenteditable 元素 (nodeId: ${id})`);
-            return;
+        logger.info(`开始转换 ${blockList.length} 个 Tabs 为代码块`);
+        // 并行执行所有转换（允许部分失败）
+        const results = await Promise.allSettled(
+            blockList.map(block => {
+                const id = block.dataset.nodeId;
+                const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
+                // 防御性检查
+                if (!id) {
+                    logger.warn(`codeToTabs: 节点缺少 nodeId: &{id}`);
+                    return;
+                }
+                if (!contentEl) {
+                    logger.warn(`codeToTabs: 未找到 contenteditable 元素 (nodeId: ${id})`);
+                    return;
+                }
+
+                // 获取并清理文本
+                let codeText = contentEl.textContent || '';
+                codeText = stripInvisibleChars(codeText);
+
+                // 检查是否符合 Tab 格式
+                const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+                if (!checkResult.result) {
+                    logger.info(`codeToTabs: 代码块不符合 Tab 格式, 跳过 (nodeId: ${id})`)
+                    return; // 不符合，跳过
+                }
+
+                // 渲染并更新 DOM
+                const htmlBlock = TabRenderer.createHtmlBlock(checkResult.code, this.i18n.toggleToCode);
+                return this.update('dom', htmlBlock, id, codeText);
+            })
+        )
+
+        const counter = this.resultCounter(results, blockList);
+        if (counter.success == 0) {
+            pushMsg(`${this.i18n.noCodeBlockToConvert}`);
+        } else {
+            pushMsg(`${this.i18n.allCodeToTabsCompleted}: ${counter.success}`);
+            pushMsg(`${this.i18n.allCodeToTabsCompletedFailed}: ${counter.failure}`);
         }
 
-        // 获取并清理文本
-        let codeText = contentEl.textContent || '';
-        codeText = stripInvisibleChars(codeText);
-
-        // 检查是否符合 Tab 格式
-        const checkResult = TabParser.checkCodeText(codeText, this.i18n);
-        if (!checkResult.result) {
-            logger.info(`codeToTabs: 代码块不符合 Tab 格式, 跳过 (nodeId: ${id})`)
-            return; // 不符合，跳过
-        }
-
-        // 渲染并更新 DOM
-        const htmlBlock = TabRenderer.createHtmlBlock(checkResult.code, this.i18n.toggleToCode);
-        await this.update('dom', htmlBlock, id, codeText);
+        // 所有任务（无论成败）都已结束，可安全执行文档刷新
+        this.reloadActivateDocument();
     }
 
     private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
@@ -253,13 +262,8 @@ export default class CodeTabs extends Plugin {
 
         logger.info(`开始转换 ${codeBlocks.length} 个代码块为 Tabs`);
         // 并行执行所有转换（允许部分失败）
-        const results = await Promise.allSettled(
-            codeBlocks.map(node => this.codeToTabs(node))
-        );
-        this.resultCounter(results, codeBlocks);
-
-        // 所有任务（无论成败）都已结束，可安全执行文档刷新
-        this.reloadActivateDocument();
+        
+        this.codeToTabsBatch(codeBlocks);
     }
 
     private resultCounter(results: PromiseSettledResult<void>[], blockList: any[]) {
@@ -282,7 +286,7 @@ export default class CodeTabs extends Plugin {
         return {"success": successes, "failure": failures.length}
     }
 
-    private async tabToCode(blockList: any[]) {
+    private async tabToCodeBatch(blockList: any[]) {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${this.i18n.noTabsToConvert}`);
             return {"success": 0, "failure": 0};
@@ -303,12 +307,18 @@ export default class CodeTabs extends Plugin {
                 }
                 const codeText = getCodeFromAttribute(block_id, customAttribute, this.i18n);
                 const flag = TAB_SEPARATOR;
-                updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, block_id).then(() => {
+                return updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, block_id).then(() => {
                     logger.info(`标签页转为代码块: id ${block_id}`);
                 });
             })
         );
-        return this.resultCounter(results, blockList);
+        const counter = this.resultCounter(results, blockList);
+        if (counter.success == 0) {
+            pushMsg(`${this.i18n.noTabsToConvert}`);
+        } else {
+            pushMsg(`${this.i18n.allTabsToCodeCompleted}: ${counter.success}`);
+            pushMsg(`${this.i18n.allTabsToCodeCompletedFailed}: ${counter.failure}`);
+        }
     }
 
     private async tabToCodeInDocument() {
@@ -321,16 +331,6 @@ export default class CodeTabs extends Plugin {
     private async allTabsToCode() {
         const blockList = await sql(`SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`);
         this.tabToCodeBatch(blockList);
-    }
-
-    private async tabToCodeBatch(blockList: any[]) {
-        const counter = await this.tabToCode(blockList);
-        if (counter.success == 0) {
-            pushMsg(`${this.i18n.noTabsToConvert}`);
-        } else {
-            pushMsg(`${this.i18n.allTabsToCodeCompleted}: ${counter.success}`);
-            pushMsg(`${this.i18n.allTabsToCodeCompletedFailed}: ${counter.failure}`);
-        }
     }
 
     private async saveConfig() {

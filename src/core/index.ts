@@ -172,6 +172,18 @@ export default class CodeTabs extends Plugin {
             }
         });
         detail.menu.addItem({
+            iconHTML: "", label: this.i18n.tabToCode, click: () => {
+                const blockList: any[] = [];
+                for (const item of detail.blockElements) {
+                    const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
+                    if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
+                        blockList.push(item);
+                    }
+                }
+                this.tabToCode(blockList);
+            }
+        })
+        detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabsInDocument, click: () => {
                 this.codeToTabsInDocument();
             },

@@ -14,6 +14,7 @@
   "noCodeWhenCheckCode": "No code after :::",
   "fixAllTabsErrMsg": "An error was thrown during the fix, please check the custom attribute of the block",
   "upgradeAllTabs": "Upgrade all code-tabs in siyuan",
+  "tabToCode": "Block: tabs -> code-block",
   "tabToCodeInDocument": "Document: tabs -> code-block",
   "allTabsToCode": "Restore all code-tabs to code-block",
   "allTabsToCodeBtn": "Restore",

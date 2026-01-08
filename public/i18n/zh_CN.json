@@ -14,6 +14,7 @@
   "noCodeWhenCheckCode": "没有代码",
   "fixAllTabsErrMsg": "修复时遇到错误，请检查以下块的自定义属性",
   "upgradeAllTabs": "升级文档中的所有代码标签页",
+  "tabToCode": "块：标签页 -> 代码块",
   "tabToCodeInDocument": "文档：标签页 -> 代码块",
   "allTabsToCode": "将所有代码标签页还原为代码块",
   "allTabsToCodeBtn": "还原",

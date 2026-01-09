@@ -23,6 +23,12 @@ export class ThemeManager {
         const themePatches = await this.loadThemeConfig();
         const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
 
+        // 获取代码块换行和连字设置
+        const codeLigatures = window.siyuan.config.editor.codeLigatures === true 
+            ? "normal": "none";
+        const codeLineWrap = window.siyuan.config.editor.codeLineWrap === true 
+            ? "pre-wrap": "pre";
+
         let style: ThemeStyle;
         let extraCss = patch?.extraCss || "";
 
@@ -60,6 +66,8 @@ export class ThemeManager {
   padding: ${style.editablePadding};
   margin: ${style.editableMargin};
   background-color: ${style.editableBg};
+  font-variant-ligatures: ${codeLigatures};
+  white-space: ${codeLineWrap} !important;
 }
 ${extraCss}
 `;

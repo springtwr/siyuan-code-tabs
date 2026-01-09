@@ -69,7 +69,9 @@ export function getSiyuanConfig(): any {
         themeLight: window.siyuan.config.appearance.themeLight,
         themeDark: window.siyuan.config.appearance.themeDark,
         codeBlockThemeLight: window.siyuan.config.appearance.codeBlockThemeLight,
-        codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark
+        codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark,
+        codeLigatures: window.siyuan.config.editor.codeLigatures,
+        codeLineWrap: window.siyuan.config.editor.codeLineWrap
     };
 }
 

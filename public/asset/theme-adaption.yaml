@@ -30,6 +30,20 @@ themes:
       .tab-toggle {
           background-color: transparent;
       }
+  - id: "QYL-theme"
+    name: "QYL"
+    extraCss: |
+      .code > .tab-code-line > .tab-line-num::after {
+          color: var(--b3-theme-primary)
+      }
+  - id: "Rem Craft"
+    name: "瑞姆工艺"
+    extraCss: |
+      .code > .tab-code-line > .tab-line-num::after {
+          width: 90px;
+          text-align: center;
+          color: var(--text-disabled);
+      }
   - id: "siyuan-theme-darkside"
     name: "PureColor"
     extraCss: |
@@ -485,6 +499,9 @@ themes:
   - id: "OneNote"
     name: "OneNote"
     extraCss: |
+      .code > .tab-code-line > .tab-line-num::after {
+        color: rgba(128, 128, 128, 0.5);
+      }
       .markdown-body :is(h1, h2, h3, h4, h5, h6) {
           color: #4e4e4e;
       }

@@ -32,7 +32,7 @@ export class TabParser {
             let header = `::: ${title}`;
 
             // 智能重建：如果语言与标题推断匹配则省略语言标记
-            const inferredLang = window.hljs.getLanguage(title) ? title.toLowerCase() : 'plaintext';
+            const inferredLang = this.getLanguage(title);
             if (lang !== inferredLang) {
                 header += ` | ${lang}`;
             }
@@ -87,14 +87,10 @@ export class TabParser {
 
             // 智能推断语言
             if (!language) {
-                if (window.hljs.getLanguage(title)) {
-                    language = title.toLowerCase();
-                } else {
-                    language = 'plaintext';
-                }
+                language = this.getLanguage(title);
             } else {
                 // 校验语言有效性
-                language = window.hljs.getLanguage(language) ? language : 'plaintext';
+                language = this.getLanguage(language);
             }
 
             if (isActive) {
@@ -146,7 +142,7 @@ export class TabParser {
             if (language === '') {
                 language = title.split(':::active')[0].trim();
             }
-            language = window.hljs.getLanguage(language) ? language : 'plaintext';
+            language = this.getLanguage(language);
             codeResult.push({
                 title: title,
                 language: language,
@@ -154,5 +150,13 @@ export class TabParser {
             });
         }
         return {result: true, code: codeResult};
+    }
+
+    private static getLanguage(lang: string) {
+        if (lang === 'markdown-render') {
+            return 'markdown-render';
+        } else {
+            return window.hljs.getLanguage(lang) ? lang.toLowerCase() : 'plaintext';
+        }
     }
 }

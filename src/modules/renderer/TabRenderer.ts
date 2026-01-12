@@ -47,7 +47,7 @@ export class TabRenderer {
             content.className = "tab-content hljs";
             content.dataset.render = "true";
             let hlText = code;
-            if (language === 'markdown') {
+            if (language === 'markdown-render') {
                 const marked = new Marked(
                     markedHighlight({
                         langPrefix: 'hljs language-',

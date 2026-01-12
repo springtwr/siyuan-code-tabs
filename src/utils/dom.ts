@@ -69,7 +69,9 @@ export function getSiyuanConfig(): any {
         themeLight: window.siyuan.config.appearance.themeLight,
         themeDark: window.siyuan.config.appearance.themeDark,
         codeBlockThemeLight: window.siyuan.config.appearance.codeBlockThemeLight,
-        codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark
+        codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark,
+        codeLigatures: window.siyuan.config.editor.codeLigatures,
+        codeLineWrap: window.siyuan.config.editor.codeLineWrap
     };
 }
 
@@ -85,4 +87,48 @@ export function syncSiyuanConfig(data: any): void {
             enumerable: true
         });
     });
+}
+
+/**
+ * 获取思源笔记中“逻辑上被选中或聚焦”的所有指定类型块
+ * - 如果存在 .protyle-wysiwyg--select，则返回所有选中块
+ * - 否则，根据 Selection 焦点位置返回当前光标所在块
+ *
+ * @param selector 例如 '[data-type="NodeCodeBlock"]'
+ * @returns 匹配的 HTMLElement 数组（通常 0～N 个）
+ */
+export function getSelectedElements(selector: string): HTMLElement[] {
+    // 优先检查是否有视觉多选
+    const visuallySelected = document.querySelectorAll<HTMLElement>(
+        `.protyle-wysiwyg--select${selector}, .protyle-wysiwyg--select ${selector}`
+    );
+
+    if (visuallySelected.length > 0) {
+        return Array.from(visuallySelected);
+    }
+
+    // 无多选则回退到 Selection 焦点位置
+    const selection = document.getSelection();
+    if (!selection || (!selection.anchorNode && !selection.focusNode)) {
+        return [];
+    }
+
+    // 使用 focusNode（或 anchorNode）定位当前块
+    const node = selection.focusNode || selection.anchorNode;
+    if (!node) return [];
+
+    // 向上查找匹配 selector 的祖先
+    let el: Element | null =
+        node.nodeType === Node.ELEMENT_NODE
+        ? (node as Element)
+        : node.parentElement;
+
+    while (el) {
+        if (el.matches(selector)) {
+            return [el as HTMLElement];
+        }
+        el = el.parentElement;
+    }
+
+    return [];
 }

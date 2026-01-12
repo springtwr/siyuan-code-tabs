@@ -23,6 +23,13 @@ export const KATEX_CSS = `${PLUGIN_PATH}/asset/katex.min.css`;
 export const CODE_TABS_CSS = `${PLUGIN_PATH}/asset/code-tabs.css`;
 export const COPY_PNG = `${PLUGIN_PATH}/asset/copy.png`;
 
+export const HTML_BLOCK_STYLE = `
+div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { 
+    padding: 0 !important; 
+    margin: 0 !important; 
+    border: none !important;
+}`
+
 export const htmlBlockStr = `
 <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
     <div class="protyle-icons">

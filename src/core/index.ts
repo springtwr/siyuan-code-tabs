@@ -1,14 +1,14 @@
 import {getActiveEditor, Plugin, Setting} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
-import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON, settingIconMain} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON, settingIconMain, HTML_BLOCK_STYLE} from "@/assets/constants";
 import {TabParser} from "@/modules/parser/TabParser";
 import {TabRenderer} from "@/modules/renderer/TabRenderer";
 import {ThemeManager} from "@/modules/theme/ThemeManager";
 import {getCodeFromAttribute, TabManager} from "@/modules/tab-manager/TabManager";
 import {encodeSource, stripInvisibleChars} from "@/utils/encoding";
 import {fetchFileFromUrlSimple, loadJsonFromFile} from "@/utils/network";
-import {compareConfig, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
+import {compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
 import {debounce} from "@/utils/common";
 
 export default class CodeTabs extends Plugin {
@@ -24,7 +24,7 @@ export default class CodeTabs extends Plugin {
 
         // 注入全局样式，移除 html 块默认的 padding
         const style = document.createElement('style');
-        style.innerHTML = `div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { padding: 0 !important; }`;
+        style.innerHTML = HTML_BLOCK_STYLE;
         document.head.appendChild(style);
 
         TabManager.initGlobalFunctions(this.i18n);
@@ -50,31 +50,16 @@ export default class CodeTabs extends Plugin {
             langKey: "codeToTabs",
             hotkey: "",
             editorCallback: () => {
-                const selection = document.getSelection();
-                if (!selection || selection.rangeCount === 0) {
-                    logger.info("没有选中的代码块");
-                    pushMsg(`${this.i18n.noSelectedCodeBlock}`);
-                }
-
-                const range = selection.getRangeAt(0);
-                let startEl: Element | null = null;
-
-                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                    startEl = range.startContainer as Element;
-                } else {
-                    // 如果是 Text、Comment 等节点，取其父元素
-                    startEl = range.startContainer.parentElement;
-                }
-
-                // 现在 startEl 要么是 Element，要么是 null
-                const currentNode = startEl?.closest<HTMLElement>('[data-type]');
-
-                if (currentNode && currentNode.dataset.type === 'NodeCodeBlock') {
-                    const editElement = currentNode.querySelector('[contenteditable="true"]');
-                    if (editElement) {
-                        this.codeToTabs(currentNode).then(() => this.reloadActivateDocument());
-                    }
-                }
+                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
+                this.codeToTabsBatch(blockList);
+            }
+        });
+        this.addCommand({
+            langKey: "tabToCode",
+            hotkey: "",
+            editorCallback: () => {
+                const blockList = getSelectedElements(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+                this.tabToCodeBatch(blockList);
             }
         });
     }
@@ -163,14 +148,28 @@ export default class CodeTabs extends Plugin {
     private blockIconEvent({detail}: any) {
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabs, click: () => {
-                for (const item of detail.blockElements) {
+                const blockList: HTMLElement[] = [];
+                for (const item of detail.blockElements as HTMLElement[]) {
                     const editElement = item.querySelector('[contenteditable="true"]');
                     if (editElement && item.dataset?.type === "NodeCodeBlock") {
-                        this.codeToTabs(item).then(() => this.reloadActivateDocument());
+                        blockList.push(item);
                     }
                 }
+                this.codeToTabsBatch(blockList);
             }
         });
+        detail.menu.addItem({
+            iconHTML: "", label: this.i18n.tabToCode, click: () => {
+                const blockList: any[] = [];
+                for (const item of detail.blockElements) {
+                    const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
+                    if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
+                        blockList.push(item);
+                    }
+                }
+                this.tabToCodeBatch(blockList);
+            }
+        })
         detail.menu.addItem({
             iconHTML: "", label: this.i18n.codeToTabsInDocument, click: () => {
                 this.codeToTabsInDocument();
@@ -186,37 +185,94 @@ export default class CodeTabs extends Plugin {
     private reloadActivateDocument() {
         const activeEditor = getActiveEditor(true);
         if (activeEditor) {
+            logger.info("刷新页面");
             activeEditor.reload(true);
         }
     }
 
-    private async codeToTabs(item: HTMLElement) {
-        const id = item.dataset.nodeId;
-        const contentEl = item.querySelector<HTMLElement>('[contenteditable="true"]');
-        // 防御性检查
-        if (!id) {
-            logger.warn(`codeToTabs: 节点缺少 nodeId: &{item}`);
-            return;
-        }
-        if (!contentEl) {
-            logger.warn(`codeToTabs: 未找到 contenteditable 元素 (nodeId: ${id})`);
-            return;
+    private async codeToTabsBatch(blockList: HTMLElement[]) {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${this.i18n.noCodeBlockToConvert}`);
+            return {"success": 0, "failure": 0};
         }
 
-        // 获取并清理文本
-        let codeText = contentEl.textContent || '';
-        codeText = stripInvisibleChars(codeText);
+        // ===== 分类所有块 =====
+        const toProcess: { block: HTMLElement; id: string; codeText: string }[] = [];
+        const skipped: { nodeId: string; reason: string }[] = [];
+        const invalid: { nodeId: string; reason: string }[] = [];
 
-        // 检查是否符合 Tab 格式
-        const checkResult = TabParser.checkCodeText(codeText, this.i18n);
-        if (!checkResult.result) {
-            logger.info(`codeToTabs: 代码块不符合 Tab 格式, 跳过 (nodeId: ${id})`)
-            return; // 不符合，跳过
+        for (const block of blockList) {
+            const id = block.dataset.nodeId;
+            const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
+
+            // 情况1：数据异常（应视为“无效”，可能算失败或警告）
+            if (!id) {
+                const msg = "缺少 nodeId";
+                invalid.push({ nodeId: 'unknown', reason: msg });
+                logger.warn(`codeToTabs: ${msg}`);
+                continue;
+            }
+            if (!contentEl) {
+                const msg = "未找到 contenteditable 元素";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`codeToTabs: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            // 情况2：内容不符合格式（正常跳过）
+            let codeText = stripInvisibleChars(contentEl.textContent || '');
+            const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+            if (!checkResult.result) {
+                const msg = "代码块不符合 Tab 格式";
+                skipped.push({ nodeId: id, reason: msg });
+                logger.info(`codeToTabs: ${msg}，跳过 (nodeId: ${id})`);
+                continue;
+            }
+
+            // 情况3：有效，加入处理队列
+            toProcess.push({ block, id, codeText });
         }
 
-        // 渲染并更新 DOM
-        const htmlBlock = TabRenderer.createHtmlBlock(checkResult.code, this.i18n.toggleToCode);
-        await this.update('dom', htmlBlock, id, codeText);
+        const codeToTabsMessages = {
+            completed: this.i18n.allCodeToTabsCompleted,
+            failed: this.i18n.allCodeToTabsCompletedFailed,
+            invalidBlocks: this.i18n.invalidBlocks,
+            noItems: this.i18n.noCodeBlockToConvert,
+            skippedDueToFormat: this.i18n.skippedBlocks
+        };
+
+        // ===== 如果没有需要处理的项 =====
+        if (toProcess.length === 0) {
+            return this.resultCounter(codeToTabsMessages, [], [], skipped, invalid);
+        }
+
+        // ===== 对有效块执行异步更新 =====
+        logger.info(`开始转换 ${toProcess.length} 个代码块为 Tabs`);
+        const results = await Promise.allSettled(
+            toProcess.map(({ id, codeText }) => {
+                const htmlBlock = TabRenderer.createHtmlBlock(
+                    TabParser.checkCodeText(codeText, this.i18n).code!,
+                    this.i18n.toggleToCode
+                );
+                return this.update('dom', htmlBlock, id, codeText);
+            })
+        );
+
+        // ===== 统计并提示 =====
+        const stats = this.resultCounter(
+            codeToTabsMessages,
+            toProcess.map(x => ({ id: x.id })), // 只需 id 用于关联错误
+            results,
+            skipped,
+            invalid
+        );
+        // 所有任务（无论成败）都已结束，可安全执行文档刷新
+        if (stats.success > 0) {
+            this.reloadActivateDocument();
+        }
+
+        return stats;
+
     }
 
     private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
@@ -241,62 +297,159 @@ export default class CodeTabs extends Plugin {
 
         logger.info(`开始转换 ${codeBlocks.length} 个代码块为 Tabs`);
         // 并行执行所有转换（允许部分失败）
-        const results = await Promise.allSettled(
-            codeBlocks.map(node => this.codeToTabs(node))
-        );
-        this.resultCounter(results, codeBlocks);
-
-        // 所有任务（无论成败）都已结束，可安全执行文档刷新
-        this.reloadActivateDocument();
+        
+        this.codeToTabsBatch(codeBlocks);
     }
 
-    private resultCounter(results: PromiseSettledResult<void>[], blockList: any[]) {
-        const successes = results.filter(r => r.status === 'fulfilled').length;
-        const failures = results
-            .map((result, index) =>
-                result.status === 'rejected'
-                    ? {nodeId: blockList[index]?.dataset.nodeId || 'unknown', error: result.reason}
-                    : null
-            )
-            .filter((item): item is { nodeId: string; error: unknown } => item !== null);
+    private resultCounter(
+        messages: { completed: string; failed: string; invalidBlocks: string; skippedDueToFormat: string; noItems: string; },
+        toProcess: Array<{ id: string }>,            // 真正尝试转换的项
+        results: PromiseSettledResult<any>[],          // 对应 toProcess 的异步结果
+        skipped: { nodeId: string; reason: string }[],   // 因格式跳过的项
+        invalid: { nodeId: string; reason: string }[]   // 因数据异常无法处理的项
+    ): { success: number; failure: number; } {
+        // === 1. 统计真正执行的结果 ===
+        const success = results.filter(r => r.status === 'fulfilled').length;
+        const executionFailures: { nodeId: string; error: unknown }[] = [];
 
-        logger.info(`转换完成：${successes} 成功，${failures.length} 失败`);
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                executionFailures.push({
+                    nodeId: toProcess[index].id,
+                    error: result.reason
+                });
+            }
+        });
 
-        if (failures.length > 0) {
-            failures.forEach(({nodeId, error}) => {
-                logger.warn(`节点 ${nodeId} 转换失败: ${error}`);
-            });
+        // === 2. 总失败数 = 执行失败 + 无效项（根据业务决定是否包含）
+        const totalFailure = executionFailures.length + invalid.length;
+
+        // === 3. 日志记录 ===
+
+        executionFailures.forEach(({ nodeId, error }) => {
+            logger.warn(`执行失败 - 节点 ${nodeId}: ${error}`);
+        });
+
+        invalid.forEach(({ nodeId, reason }) => {
+            logger.warn(`数据无效 - 节点 ${nodeId}: ${reason}`);
+        });
+
+        skipped.forEach(({ nodeId, reason }) => {
+            logger.info(`格式跳过 - 节点 ${nodeId}: ${reason}`);
+        });
+
+        logger.info(`转换完成：${success} 成功，${executionFailures.length} 执行失败，${invalid.length} 数据无效，${skipped.length} 格式跳过`);
+
+        // === 4. 用户提示（pushMsg）===
+        if (success > 0) {
+            pushMsg(messages.completed.replace('{0}', String(success)));
         }
-        return {"success": successes, "failure": failures.length}
+
+        if (executionFailures.length > 0) {
+            pushMsg(messages.failed.replace('{0}', String(executionFailures.length)));
+        }
+
+        if (invalid.length > 0) {
+            pushMsg(messages.invalidBlocks.replace('{0}', String(invalid.length)));
+        }
+
+        if (skipped.length > 0) {
+            pushMsg(messages.skippedDueToFormat.replace('{0}', String(skipped.length)));
+        }
+
+        // 如果没有任何成功，且所有项都被跳过或无效
+        if (success === 0 && (skipped.length + invalid.length) > 0) {
+            pushMsg(messages.noItems);
+        }
+
+        return {
+            success,
+            failure: totalFailure
+        };
     }
 
-    private async tabToCode(blockList: any[]) {
+    private async tabToCodeBatch(blockList: any[]) {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${this.i18n.noTabsToConvert}`);
             return {"success": 0, "failure": 0};
         }
         logger.info(`开始转换 ${blockList.length} 个 Tabs 为代码块`);
+
+        // ===== 分类所有块 =====
+        const toProcess: { block: HTMLElement; id: string; codeText: string }[] = [];
+        const skipped: { nodeId: string; reason: string }[] = [];
+        const invalid: { nodeId: string; reason: string }[] = [];
+
+        for (const block of blockList){
+            let customAttribute = "";
+            let id = "";
+            // 用sql语句查询的结果使用block.ial,用Dom查询的结果使用block.attributes
+            if (block.ial) {
+                id = block.id;
+                customAttribute = block.ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1];
+            } else {
+                id = block.attributes["data-node-id"].value
+                customAttribute = block.attributes[`${CUSTOM_ATTR}`].value;
+            }
+            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
+
+            if (!id) {
+                const msg = "缺少 nodeId";
+                invalid.push({ nodeId: 'unknown', reason: msg });
+                logger.warn(`tabToCode: ${msg}`);
+                continue;
+            }
+            if (!customAttribute) {
+                const msg = "未找到插件自定义属性";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`tabToCode: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            if (!codeText) {
+                const msg = "未找到源码";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`tabToCode: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            // 有效，加入处理队列
+            toProcess.push({ block, id, codeText });
+        }
+
+        const tabsToCodeMessages = {
+            completed: this.i18n.allTabsToCodeCompleted,
+            failed: this.i18n.allTabsToCodeCompletedFailed,
+            invalidBlocks: this.i18n.invalidBlocks,
+            noItems: this.i18n.noTabsToConvert,
+            skippedDueToFormat: this.i18n.skippedBlocks
+        };
+        // ===== 如果没有需要处理的项 =====
+        if (toProcess.length === 0) {
+            return this.resultCounter(tabsToCodeMessages, [], [], skipped, invalid);
+        }
+
+
         // 并行执行所有转换（允许部分失败）
         const results = await Promise.allSettled(
-            blockList.map(block => {
-                let customAttribute = "";
-                let block_id = "";
-                // 用sql语句查询的结果使用block.ial,用Dom查询的结果使用block.attributes
-                if (block.ial) {
-                    block_id = block.id;
-                    customAttribute = block.ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1];
-                } else {
-                    block_id = block.attributes["data-node-id"].value
-                    customAttribute = block.attributes["custom-plugin-code-tabs-sourcecode"].value;
-                }
-                const codeText = getCodeFromAttribute(block_id, customAttribute, this.i18n);
+            toProcess.map(({ id, codeText }) => {
                 const flag = TAB_SEPARATOR;
-                updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, block_id).then(() => {
-                    logger.info(`标签页转为代码块: id ${block_id}`);
+                return updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, id).then(() => {
+                    logger.info(`标签页转为代码块: id ${id}`);
                 });
             })
         );
-        return this.resultCounter(results, blockList);
+        
+        // ===== 统计并提示 =====
+        const stats = this.resultCounter(
+            tabsToCodeMessages,
+            toProcess.map(x => ({ id: x.id })), // 只需 id 用于关联错误
+            results,
+            skipped,
+            invalid
+        );
+
+        return stats;
     }
 
     private async tabToCodeInDocument() {
@@ -309,16 +462,6 @@ export default class CodeTabs extends Plugin {
     private async allTabsToCode() {
         const blockList = await sql(`SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`);
         this.tabToCodeBatch(blockList);
-    }
-
-    private async tabToCodeBatch(blockList: any[]) {
-        const counter = await this.tabToCode(blockList);
-        if (counter.success == 0) {
-            pushMsg(`${this.i18n.noTabsToConvert}`);
-        } else {
-            pushMsg(`${this.i18n.allTabsToCodeCompleted}: ${counter.success}`);
-            pushMsg(`${this.i18n.allTabsToCodeCompletedFailed}: ${counter.failure}`);
-        }
     }
 
     private async saveConfig() {

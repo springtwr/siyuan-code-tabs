@@ -133,22 +133,22 @@
 }
 
 /* 定义代码块横向滚动条（在关闭代码块换行时会用到） */
-.hljs > :is(.markdown-body, .code) {
+.hljs.tab-content--active {
     overflow-x: auto;
 }
 
 /* 自定义滚动条整体（只影响水平方向）*/
-.hljs > div:is(.markdown-body, .code)::-webkit-scrollbar {
+.hljs.tab-content--active::-webkit-scrollbar {
     width: 10px;
     height: 10px; /* 水平滚动条高度 */
 }
 
-.hljs > div:is(.markdown-body, .code)::-webkit-scrollbar-corner {
+.hljs.tab-content--active::-webkit-scrollbar-corner {
     background-color: rgba(0, 0, 0, 0);
 }
 
 /* 滚动条滑块 */
-.hljs > div:is(.markdown-body, .code)::-webkit-scrollbar-thumb {
+.hljs.tab-content--active::-webkit-scrollbar-thumb {
     box-sizing: content-box;
     border: 4px solid rgba(0, 0, 0, 0);
     border-radius: var(--b3-border-radius);
@@ -157,6 +157,6 @@
 }
 
 /* 滑块悬停效果 */
-.hljs > div:is(.markdown-body, .code)::-webkit-scrollbar-thumb:hover {
+.hljs.tab-content--active::-webkit-scrollbar-thumb:hover {
     border-width: 1px;
 }

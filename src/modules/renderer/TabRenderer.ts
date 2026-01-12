@@ -65,6 +65,7 @@ export class TabRenderer {
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
                 hlText = window.hljs.highlight(code, {language: language, ignoreIllegals: true}).value;
+                hlText = this.wrapHLJSLines(hlText);
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText;
@@ -84,6 +85,11 @@ export class TabRenderer {
         tabContainer.appendChild(tabsOuter);
         tabContainer.appendChild(tabContents);
         return this.escapeHtml(containerDiv.innerHTML);
+    }
+
+    private static wrapHLJSLines(hlText: string): string {
+        const lines = hlText.split(/\r?\n/);
+        return lines.map(line => `<div class="tab-code-line"><div class="tab-line-num"></div>${line}</div>`).join('');
     }
 
     private static escapeHtml(input: string): string {

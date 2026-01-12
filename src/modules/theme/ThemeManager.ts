@@ -23,11 +23,13 @@ export class ThemeManager {
         const themePatches = await this.loadThemeConfig();
         const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
 
-        // 获取代码块换行和连字设置
+        // 获取代码块换行、连字和行号设置
         const codeLigatures = window.siyuan.config.editor.codeLigatures === true 
             ? "normal": "none";
         const codeLineWrap = window.siyuan.config.editor.codeLineWrap === true 
             ? "pre-wrap": "pre";
+        const codeSyntaxHighlightLineNum = window.siyuan.config.editor.codeSyntaxHighlightLineNum === true 
+            ? "block": "none";
 
         let style: ThemeStyle;
         let extraCss = patch?.extraCss || "";
@@ -40,6 +42,11 @@ export class ThemeManager {
             // 否则回退到自动采集逻辑
             style = await this.getCodeBlockStyle(plugin.i18n);
         }
+        // 为了行号能正常显示，editableContentPadding 需要拆分为两部分
+        const editablePadding = style.editablePadding === '0' 
+            ? [`0`, `0`, `0`, `0`] : style.editablePadding.split(" ");
+        const codeContentPadding = `${editablePadding[0]} 0 ${editablePadding[2]} 0`;
+        const codeLinePadding = `0 ${editablePadding[1]} 0 ${editablePadding[3]}`;
 
         const cssContent = `
 .tabs-container {
@@ -63,11 +70,18 @@ export class ThemeManager {
   font-family: ${style.fontFamily};
 }
 .hljs > div:is(.markdown-body, .code) {
-  padding: ${style.editablePadding};
+  padding: ${codeContentPadding};
   margin: ${style.editableMargin};
   background-color: ${style.editableBg};
   font-variant-ligatures: ${codeLigatures};
   white-space: ${codeLineWrap} !important;
+}
+.code > .tab-code-line {
+  padding: ${codeLinePadding};
+}
+
+.code > .tab-code-line > .tab-line-num {
+    display: ${codeSyntaxHighlightLineNum} !important;
 }
 ${extraCss}
 `;
@@ -142,19 +156,28 @@ ${extraCss}
 
         let blockPadding = blockStyle.padding;
         let hljsPadding = hljsStyle.padding;
+        let editablePadding = editableStyle.padding;
 
         let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
         let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
+        let [editableTop, editableRight, editableBottom, editableLeft] = this.parsePadding(editablePadding);
         const lineHeight = parseFloat(blockStyle.lineHeight);
+        const pxFormat = (num: number) => {
+            if (0 === num){
+                return "0";
+            }
+            return `${num}px`;
+        }
         blockTop = Math.max(blockTop, lineHeight + 4);
         blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
         hljsTop = hljsBottom == 0 ? 5 : hljsBottom;
-        hljsPadding = `${hljsTop}px ${hljsRight}px ${hljsBottom}px ${hljsLeft}px`;
+        hljsPadding = `${pxFormat(hljsTop)} ${pxFormat(hljsRight)} ${pxFormat(hljsBottom)} ${pxFormat(hljsLeft)}`;
+        editablePadding = `${pxFormat(editableTop)} ${pxFormat(editableRight)} ${pxFormat(editableBottom)} ${pxFormat(editableLeft)}`;
 
         let hljsMargin = hljsStyle.margin;
         let [hljsMarginTop, hljsMarginRight, hljsMarginBottom, hljsMarginLeft] = this.parsePadding(hljsMargin);
         hljsMarginTop = Math.max(0, hljsMarginTop);
-        hljsMargin = `${hljsMarginTop}px ${hljsMarginRight}px ${hljsMarginBottom}px ${hljsMarginLeft}px`;
+        hljsMargin = `${pxFormat(hljsMarginTop)} ${pxFormat(hljsMarginRight)} ${pxFormat(hljsMarginBottom)} ${pxFormat(hljsMarginLeft)}`;
 
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
 
@@ -166,7 +189,7 @@ ${extraCss}
             fontFamily: editableStyle.fontFamily,
             blockPadding: blockPadding,
             hljsPadding: hljsPadding,
-            editablePadding: editableStyle.padding,
+            editablePadding: editablePadding,
             blockMargin: blockStyle.margin,
             hljsMargin: hljsMargin,
             editableMargin: editableStyle.margin,
@@ -178,7 +201,7 @@ ${extraCss}
 
     private static parsePadding(padding: string) {
         const paddings = padding.split(' ').map(value => parseInt(value, 10));
-        let paddingTop, paddingRight, paddingBottom, paddingLeft;
+        let paddingTop: number, paddingRight: number, paddingBottom: number, paddingLeft: number;
 
         switch (paddings.length) {
             case 1:

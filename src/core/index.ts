@@ -1,7 +1,7 @@
 import {getActiveEditor, Plugin, Setting} from "siyuan";
 import {deleteBlock, insertBlock, pushErrMsg, pushMsg, putFile, setBlockAttrs, sql, updateBlock} from "@/api";
 import logger from "@/utils/logger";
-import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON, settingIconMain} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR, CONFIG_JSON, settingIconMain, HTML_BLOCK_STYLE} from "@/assets/constants";
 import {TabParser} from "@/modules/parser/TabParser";
 import {TabRenderer} from "@/modules/renderer/TabRenderer";
 import {ThemeManager} from "@/modules/theme/ThemeManager";
@@ -24,7 +24,7 @@ export default class CodeTabs extends Plugin {
 
         // 注入全局样式，移除 html 块默认的 padding
         const style = document.createElement('style');
-        style.innerHTML = `div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { padding: 0 !important; }`;
+        style.innerHTML = HTML_BLOCK_STYLE;
         document.head.appendChild(style);
 
         TabManager.initGlobalFunctions(this.i18n);

@@ -57,10 +57,10 @@
 .code-tabs--icon_copy {
     opacity: 0;
     position: absolute;
-    top: 5px;
+    top: 1.2em;
     right: 5px;
-    width: 1.5em;
-    height: 1.5em;
+    width: 1em;
+    height: 1em;
     border-radius: 5px;
     padding: 5px;
     cursor: pointer;
@@ -129,7 +129,7 @@
 .tab-contents {
     word-break: break-word;
     font-variant-ligatures: none;
-    position: relative;
+    position: static;
 }
 
 /* 定义代码块横向滚动条（在关闭代码块换行时会用到） */

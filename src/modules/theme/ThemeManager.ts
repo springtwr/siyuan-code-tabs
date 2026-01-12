@@ -132,55 +132,47 @@ ${extraCss}
         const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
         const tempId = result[0].doOperations[0].id;
         const blockElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
+        const blockStyle = window.getComputedStyle(blockElement);
         const protyleActionElement = blockElement.querySelector('.protyle-action');
+        const protyleActionStyle = window.getComputedStyle(protyleActionElement);
         const hljsElement = blockElement.querySelector('.hljs');
+        const hljsStyle = window.getComputedStyle(hljsElement);
         const editableElement = blockElement.querySelector('[contenteditable="true"]');
+        const editableStyle = window.getComputedStyle(editableElement);
 
-        const blockBg = window.getComputedStyle(blockElement).backgroundColor;
-        const protyleActionBg = window.getComputedStyle(protyleActionElement).backgroundColor;
-        const hljsBg = window.getComputedStyle(hljsElement).backgroundColor;
-        const editableBg = window.getComputedStyle(editableElement).backgroundColor;
-
-        const fontFamily = window.getComputedStyle(editableElement).fontFamily;
-        let blockPadding = window.getComputedStyle(blockElement).padding;
-        let hljsPadding = window.getComputedStyle(hljsElement).padding;
-        const editablePadding = window.getComputedStyle(editableElement).padding;
+        let blockPadding = blockStyle.padding;
+        let hljsPadding = hljsStyle.padding;
 
         let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
         let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
-        const lineHeight = parseFloat(window.getComputedStyle(blockElement).lineHeight);
+        const lineHeight = parseFloat(blockStyle.lineHeight);
         blockTop = Math.max(blockTop, lineHeight + 4);
         blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
         hljsTop = hljsBottom == 0 ? 5 : hljsBottom;
         hljsPadding = `${hljsTop}px ${hljsRight}px ${hljsBottom}px ${hljsLeft}px`;
 
-        const blockMargin = window.getComputedStyle(blockElement).margin;
-        let hljsMargin = window.getComputedStyle(hljsElement).margin;
+        let hljsMargin = hljsStyle.margin;
         let [hljsMarginTop, hljsMarginRight, hljsMarginBottom, hljsMarginLeft] = this.parsePadding(hljsMargin);
         hljsMarginTop = Math.max(0, hljsMarginTop);
         hljsMargin = `${hljsMarginTop}px ${hljsMarginRight}px ${hljsMarginBottom}px ${hljsMarginLeft}px`;
-        const editableMargin = window.getComputedStyle(editableElement).margin;
 
-        const border = window.getComputedStyle(blockElement).border;
-        const boxShadow = window.getComputedStyle(blockElement).boxShadow;
-        const borderRadius = window.getComputedStyle(blockElement).borderRadius;
         deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
 
         return {
-            blockBg: blockBg,
-            protyleActionBg: protyleActionBg,
-            hljsBg: hljsBg,
-            editableBg: editableBg,
-            fontFamily: fontFamily,
+            blockBg: blockStyle.backgroundColor,
+            protyleActionBg: protyleActionStyle.backgroundColor,
+            hljsBg: hljsStyle.backgroundColor,
+            editableBg: editableStyle.backgroundColor,
+            fontFamily: editableStyle.fontFamily,
             blockPadding: blockPadding,
             hljsPadding: hljsPadding,
-            editablePadding: editablePadding,
-            blockMargin: blockMargin,
+            editablePadding: editableStyle.padding,
+            blockMargin: blockStyle.margin,
             hljsMargin: hljsMargin,
-            editableMargin: editableMargin,
-            border: border,
-            boxShadow: boxShadow,
-            borderRadius: borderRadius
+            editableMargin: editableStyle.margin,
+            border: blockStyle.border,
+            boxShadow: blockStyle.boxShadow,
+            borderRadius: blockStyle.borderRadius
         };
     }
 

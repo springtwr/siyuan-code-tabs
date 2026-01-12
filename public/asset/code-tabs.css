@@ -167,6 +167,7 @@
 }
 .code > .tab-code-line {
     position: relative;
+    height: 1.625em;
 }
 
 .code > .tab-code-line > .tab-line-num {
@@ -179,6 +180,8 @@
     content: counter(tab-line-num);
     position: absolute;
     left: 0;
+    padding-top: 3px;
+    align-items: center; 
     font-size: 85%;
     text-align: right;
     color: var(--b3-theme-on-surface);

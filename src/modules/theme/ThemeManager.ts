@@ -62,7 +62,7 @@ export class ThemeManager {
   background-color: ${style.hljsBg}; 
   font-family: ${style.fontFamily};
 }
-.hljs > div:is(.markdown-body, .code) {
+.hljs > .code {
   padding: ${style.editablePadding};
   margin: ${style.editableMargin};
   background-color: ${style.editableBg};

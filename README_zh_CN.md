@@ -29,7 +29,7 @@
 1. 先在思源文档中插入一个代码块，形式如下。使用 `:::` 作为开头，后面接 `标题 | 语言 | active` 的格式。
    其中 `active` 表示打开文档时默认激活这个标签，若没有添加该标志则默认激活第一个标签。
    语言参数可选，如果省略会将标题作为代码的语言类型。[示例文件](./asset/example.md)
-    - 语言类型为`markdown`时会使用[marked](https://github.com/markedjs/marked)
+    - 语言类型为`markdown-render`时会使用[marked](https://github.com/markedjs/marked)
       进行渲染，使用[marked-katex-extension](https://github.com/UziTech/marked-katex-extension)
       渲染[Katex](https://katex.org/)公式，使用思源自带的 hljs 渲染代码块。
    ```
@@ -63,6 +63,12 @@
 - 测试时的思源版本：3.5.0
 
 ## 更新日志
+
+### v0.8.0
+
+- 同步代码块换行及连字设置
+- 新增 `markdown-render` 类型标签，现在可以通过切换语言 `markdown` / `markdown-render` 控制标签页中是否对 markdown 进行渲染
+- 部分样式调整及优化
 
 ### v0.7.0
 

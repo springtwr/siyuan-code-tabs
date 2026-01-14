@@ -13,6 +13,10 @@ export interface ThemeStyle {
     editableBg: string;
     /** 字体家族 (如 "JetBrainsMono-Regular", "inherit" 等) */
     fontFamily: string;
+    /** 字体大小 (如 "16px", "1em" 等) */
+    fontSize: string;
+    /** 行高 (如 "1.5", "1.5em" 等) */
+    lineHeight: string;
     /** 外层容器内边距 (支持 "16px" 或 "1em 2em" 格式) */
     blockPadding: string;
     /** 高亮区域内边距 */
@@ -25,12 +29,16 @@ export interface ThemeStyle {
     hljsMargin: string;
     /** 编辑区域外边距 */
     editableMargin: string;
+    /** 文字颜色 */
+    color: string;
     /** 边框样式 (如 "1px solid var(--b3-theme-divider)") */
     border: string;
     /** 阴影样式 (如 "none" 或 "0 4px 6px rgba(0,0,0,0.1)") */
     boxShadow: string;
     /** 圆角大小 (如 "8px") */
     borderRadius: string;
+    /** 顶部标签栏位置 (如 "absolute" 或 "sticky") */
+    protyleActionPosition: string;
 }
 
 export interface ThemePatch {

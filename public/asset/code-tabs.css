@@ -37,6 +37,10 @@
     font-family: "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 
+.tab-content > :is(.code, .markdown-body){
+    margin-top: 8px;
+}
+
 .tab-content > .code {
     font-size: 85%;
 }

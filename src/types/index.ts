@@ -100,6 +100,13 @@ export type codeTab = {
     code: string;
 }
 
+export type codeBlockStyleSnapshot = {
+    block: Record<string, string>;
+    header: Record<string, string>;
+    body: Record<string, string>;
+    content: Record<string, string>; 
+}
+
 /**
  * API Response interface
  */

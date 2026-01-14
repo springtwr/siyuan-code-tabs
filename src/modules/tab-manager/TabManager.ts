@@ -5,6 +5,7 @@ import {decodeSource} from "@/utils/encoding";
 import logger from "@/utils/logger";
 import {TabParser} from "../parser/TabParser";
 import {IObject} from "siyuan";
+import { StyleProbe } from "../theme/StyleProtyle";
 
 export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
     let codeText = decodeSource(customAttribute);
@@ -29,6 +30,7 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
 export class TabManager {
     static initGlobalFunctions(i18n: IObject) {
         window.pluginCodeTabs = {
+            codeBlockStyle : StyleProbe,
             openTag: (evt: MouseEvent) => {
                 const clicked = evt.target as HTMLElement;
                 const tabContainer = clicked.closest('.tabs-container');

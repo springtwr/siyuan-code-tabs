@@ -3,20 +3,23 @@ themes:
   - id: "ttt"
     name: "ttt"
     fullStyle:
-      blockBg: "var(--b3-theme-surface-light)"
-      protyleActionBg: "transparent"
-      hljsBg: "transparent"
-      editableBg: "transparent"
-      fontFamily: "var(--b3-font-family-code)"
+      blockBg: "rgba(27, 31, 35, 0.05)"
+      protyleActionBg: "rgba(0, 0, 0, 0)"
+      hljsBg: "rgba(0, 0, 0, 0)"
+      editableBg: "rgba(0, 0, 0, 0)"
+      fontFamily: var(--b3-font-family-code)
+      fontSize: "18px"
+      lineHeight: "29.25px"
       blockPadding: "4px"
-      hljsPadding: "0"
-      editablePadding: "0"
-      blockMargin: "2px 0"
-      hljsMargin: "0"
-      editableMargin: "0"
-      border: "1px solid var(--b3-theme-divider)"
-      boxShadow: "var(--b3-scroll-color)"
-      borderRadius: "10px"
+      hljsPadding: "30.6px 15.3px 24.48px"
+      editablePadding: "0px"
+      blockMargin: "2px 0px"
+      editableMargin: "0px"
+      color: "rgb(0, 0, 0)"
+      border: "0px none rgb(0, 0, 0)"
+      boxShadow: "none"
+      borderRadius: var(--b3-border-radius)
+      protyleActionPosition: "absolute"
     extraCss: |
       .tabs {
           background-color: transparent;

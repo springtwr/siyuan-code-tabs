@@ -1,12 +1,13 @@
-import {deleteBlock, insertBlock, pushErrMsg, putFile} from "@/api";
+import {putFile} from "@/api";
 import logger from "@/utils/logger";
 import {CUSTOM_ATTR, CODE_STYLE_CSS, BACKGROUND_CSS, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_YAML, THEME_ADAPTION_ASSET_YAML} from "@/assets/constants";
 import {ThemePatch, ThemeStyle} from "@/assets/theme-adaption";
 import {fetchFileFromUrl, fetchYamlFromUrl} from "@/utils/network";
 import * as yaml from "js-yaml";
+import { StyleProbe } from "./StyleProtyle";
 
 export class ThemeManager {
-    static async putStyleFile(plugin: any) {
+    static async putStyleFile() {
         // 配置代码样式文件
         const codeStyle = document.querySelector('link#protyleHljsStyle')?.getAttribute('href');
         const fileCodeStyle = await fetchFileFromUrl(codeStyle, 'code-style.css');
@@ -38,17 +39,23 @@ export class ThemeManager {
             style = patch.fullStyle;
         } else {
             // 否则回退到自动采集逻辑
-            style = await this.getCodeBlockStyle(plugin.i18n);
+            style = StyleProbe.getFullStyle();
         }
 
         const cssContent = `
 .tabs-container {
+  font-size: ${style.fontSize};
+  line-height: ${style.lineHeight};
+  color: ${style.color};
   border: ${style.border}; 
   border-radius: ${style.borderRadius};
   box-shadow: ${style.boxShadow};
   padding: ${style.blockPadding};
   margin: ${style.blockMargin};
   background-color: ${style.blockBg};
+}
+.tabs-outer {
+  position: ${style.protyleActionPosition} !important;
 }
 .tabs {
   background-color: ${style.protyleActionBg};
@@ -64,8 +71,6 @@ export class ThemeManager {
 }
 .hljs > .code {
   padding: ${style.editablePadding};
-  margin: ${style.editableMargin};
-  background-color: ${style.editableBg};
   font-variant-ligatures: ${codeLigatures};
   white-space: ${codeLineWrap} !important;
 }
@@ -95,111 +100,6 @@ ${extraCss}
                 link.href = url.pathname + url.search;
             });
         });
-    }
-
-    private static async getCodeBlockStyle(i18n: any) {
-        let protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
-        let block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]') as HTMLElement;
-        let i = 0;
-        while (block == undefined || block.childElementCount === 0) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            protyle = document.querySelector('.fn__flex-1.protyle:not(.fn__none)');
-            block = protyle?.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]') as HTMLElement;
-            i++;
-            if (i > 6) break;
-        }
-        block = block?.lastChild as HTMLElement;
-        const id = block?.dataset.nodeId;
-        if (id === undefined) {
-            pushErrMsg(i18n.errMsgGetBackground).then();
-            return {
-                blockBg: "rgb(248, 249, 250)",
-                protyleActionBg: "transparent",
-                hljsBg: "rgb(248, 249, 250)",
-                editableBg: "rgb(248, 249, 250)",
-                fontFamily: '"JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace',
-                blockPadding: "2em 1em",
-                hljsPadding: "0",
-                editablePadding: "0",
-                blockMargin: "1em, 0",
-                hljsMargin: "0",
-                editableMargin: "0",
-                border: "none",
-                boxShadow: "none",
-                borderRadius: "6px"
-            };
-        }
-        const result = await insertBlock("markdown", "\`\`\`python\nprint(\"code-tabs: temp block\")\n", '', id, '');
-        const tempId = result[0].doOperations[0].id;
-        const blockElement = document.querySelector(`[data-node-id="${tempId}"][data-type="NodeCodeBlock"]`);
-        const blockStyle = window.getComputedStyle(blockElement);
-        const protyleActionElement = blockElement.querySelector('.protyle-action');
-        const protyleActionStyle = window.getComputedStyle(protyleActionElement);
-        const hljsElement = blockElement.querySelector('.hljs');
-        const hljsStyle = window.getComputedStyle(hljsElement);
-        const editableElement = blockElement.querySelector('[contenteditable="true"]');
-        const editableStyle = window.getComputedStyle(editableElement);
-
-        let blockPadding = blockStyle.padding;
-        let hljsPadding = hljsStyle.padding;
-
-        let [blockTop, blockRight, blockBottom, blockLeft] = this.parsePadding(blockPadding);
-        let [hljsTop, hljsRight, hljsBottom, hljsLeft] = this.parsePadding(hljsPadding);
-        const lineHeight = parseFloat(blockStyle.lineHeight);
-        blockTop = Math.max(blockTop, lineHeight + 4);
-        blockPadding = `${blockTop}px ${blockRight}px ${blockBottom}px ${blockLeft}px`;
-        hljsTop = hljsBottom == 0 ? 5 : hljsBottom;
-        hljsPadding = `${hljsTop}px ${hljsRight}px ${hljsBottom}px ${hljsLeft}px`;
-
-        let hljsMargin = hljsStyle.margin;
-        let [hljsMarginTop, hljsMarginRight, hljsMarginBottom, hljsMarginLeft] = this.parsePadding(hljsMargin);
-        hljsMarginTop = Math.max(0, hljsMarginTop);
-        hljsMargin = `${hljsMarginTop}px ${hljsMarginRight}px ${hljsMarginBottom}px ${hljsMarginLeft}px`;
-
-        deleteBlock(tempId).then(() => logger.info("delete temp code-block"));
-
-        return {
-            blockBg: blockStyle.backgroundColor,
-            protyleActionBg: protyleActionStyle.backgroundColor,
-            hljsBg: hljsStyle.backgroundColor,
-            editableBg: editableStyle.backgroundColor,
-            fontFamily: editableStyle.fontFamily,
-            blockPadding: blockPadding,
-            hljsPadding: hljsPadding,
-            editablePadding: editableStyle.padding,
-            blockMargin: blockStyle.margin,
-            hljsMargin: hljsMargin,
-            editableMargin: editableStyle.margin,
-            border: blockStyle.border,
-            boxShadow: blockStyle.boxShadow,
-            borderRadius: blockStyle.borderRadius
-        };
-    }
-
-    private static parsePadding(padding: string) {
-        const paddings = padding.split(' ').map(value => parseInt(value, 10));
-        let paddingTop, paddingRight, paddingBottom, paddingLeft;
-
-        switch (paddings.length) {
-            case 1:
-                paddingTop = paddingRight = paddingBottom = paddingLeft = paddings[0];
-                break;
-            case 2:
-                paddingTop = paddingBottom = paddings[0];
-                paddingRight = paddingLeft = paddings[1];
-                break;
-            case 3:
-                paddingTop = paddings[0];
-                paddingRight = paddingLeft = paddings[1];
-                paddingBottom = paddings[2];
-                break;
-            case 4:
-                [paddingTop, paddingRight, paddingBottom, paddingLeft] = paddings;
-                break;
-            default:
-                [paddingTop, paddingRight, paddingBottom, paddingLeft] = [0, 0, 0, 0];
-        }
-        return [paddingTop, paddingRight, paddingBottom, paddingLeft];
     }
 
     private static async loadThemeConfig(): Promise<ThemePatch[]> {

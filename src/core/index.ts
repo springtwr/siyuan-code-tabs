@@ -80,14 +80,14 @@ export default class CodeTabs extends Plugin {
 
         const configFile = await fetchFileFromUrlSimple(CONFIG_JSON.replace('/data', ''), 'config.json');
         if (configFile === undefined || configFile.size === 0) {
-            await ThemeManager.putStyleFile(this);
+            await ThemeManager.putStyleFile();
             await this.saveConfig();
             ThemeManager.updateAllTabsStyle();
         } else {
             const data = await loadJsonFromFile(configFile);
             const configFlag = compareConfig(data, this.data);
             if (!configFlag) {
-                await ThemeManager.putStyleFile(this);
+                await ThemeManager.putStyleFile();
                 await this.saveConfig();
                 ThemeManager.updateAllTabsStyle();
             }
@@ -132,7 +132,7 @@ export default class CodeTabs extends Plugin {
 
         const putFileHandler = () => {
             logger.info(this.i18n.codeStyleChange);
-            ThemeManager.putStyleFile(this).then(() => {
+            ThemeManager.putStyleFile().then(() => {
                 syncSiyuanConfig(this.data);
                 this.saveConfig();
                 ThemeManager.updateAllTabsStyle();

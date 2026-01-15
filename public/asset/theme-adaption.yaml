@@ -67,6 +67,11 @@ themes:
   - id: "Tsundoku"
     name: "積読"
     extraCss: |
+      .tabs-container {
+          margin: 1em auto;
+          width: 98%;
+          box-sizing: border-box;
+      }
       .markdown-body h1 {
           text-align: center;
           /* 标题居中，如果不需要可以取消 */

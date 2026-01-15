@@ -48,6 +48,7 @@ export class ThemeManager {
   line-height: ${style.lineHeight};
   color: ${style.color};
   border: ${style.border}; 
+  border-left: ${style.borderLeft}; 
   border-radius: ${style.borderRadius};
   box-shadow: ${style.boxShadow};
   padding: ${style.blockPadding};

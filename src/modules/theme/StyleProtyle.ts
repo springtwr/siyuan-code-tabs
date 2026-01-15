@@ -7,6 +7,7 @@ export const StyleProbe = (() => {
         block: [
             'backgroundColor',
             'border',
+            'borderLeft',
             'borderRadius',
             'boxShadow',
             'margin',
@@ -122,6 +123,7 @@ export const StyleProbe = (() => {
                 editableMargin: cache.content.margin,
                 color: cache.block.color,
                 border: cache.block.border,
+                borderLeft: cache.block.borderLeft,
                 boxShadow: cache.block.boxShadow,
                 borderRadius: cache.block.borderRadius,
                 protyleActionPosition: cache.header.position,

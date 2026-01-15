@@ -18,6 +18,7 @@ themes:
       editableMargin: "0px"
       color: "rgb(0, 0, 0)"
       border: "0px none rgb(0, 0, 0)"
+      border-left: "0px none rgb(0, 0, 0)"
       boxShadow: "none"
       borderRadius: var(--b3-border-radius)
       protyleActionPosition: "absolute"

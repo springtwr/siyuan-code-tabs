@@ -33,6 +33,8 @@ export interface ThemeStyle {
     color: string;
     /** 边框样式 (如 "1px solid var(--b3-theme-divider)") */
     border: string;
+    /** 左边框样式 (如 "1px solid var(--b3-theme-divider)") */
+    borderLeft: string;
     /** 阴影样式 (如 "none" 或 "0 4px 6px rgba(0,0,0,0.1)") */
     boxShadow: string;
     /** 圆角大小 (如 "8px") */

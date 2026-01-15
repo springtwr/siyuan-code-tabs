@@ -71,8 +71,10 @@ export class ThemeManager {
   background-color: ${style.hljsBg}; 
   font-family: ${style.fontFamily};
 }
-.hljs > .code {
+.hljs > :is(.code, .markdown-body) {
   padding: ${style.editablePadding};
+}
+.hljs > .code {
   font-variant-ligatures: ${codeLigatures};
   white-space: ${codeLineWrap} !important;
 }

@@ -56,6 +56,7 @@ export class ThemeManager {
 }
 .tabs-outer {
   position: ${style.protyleActionPosition} !important;
+  border-bottom: ${style.protyleActionBorderBottom};
 }
 .tabs {
   background-color: ${style.protyleActionBg};
@@ -66,6 +67,7 @@ export class ThemeManager {
 .tab-contents > .hljs { 
   padding: ${style.hljsPadding};
   margin: ${style.hljsMargin};
+  border-top: ${style.hljsBorderTop};
   background-color: ${style.hljsBg}; 
   font-family: ${style.fontFamily};
 }

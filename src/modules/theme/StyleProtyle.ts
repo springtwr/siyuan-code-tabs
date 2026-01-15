@@ -21,13 +21,14 @@ export const StyleProbe = (() => {
             'height',
             'padding',
             'backgroundColor',
-            'borderBottom'
+            'borderBottom',
         ],
         body: [
             'fontFamily',
             'padding',
             'backgroundColor',
-            'overflow'
+            'overflow',
+            'borderTop'
         ],
         content: [
             'backgroundColor',
@@ -126,6 +127,8 @@ export const StyleProbe = (() => {
                 boxShadow: cache.block.boxShadow,
                 borderRadius: cache.block.borderRadius,
                 protyleActionPosition: cache.header.position,
+                protyleActionBorderBottom: cache.header.borderBottom,
+                hljsBorderTop: cache.body.borderTop
             }
         },
         invalidate() {

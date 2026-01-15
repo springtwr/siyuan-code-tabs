@@ -39,6 +39,10 @@ export interface ThemeStyle {
     borderRadius: string;
     /** 顶部标签栏位置 (如 "absolute" 或 "sticky") */
     protyleActionPosition: string;
+    /** 顶部标签栏边框样式 */
+    protyleActionBorderBottom: string;
+    /** 高亮区域边框样式 */
+    hljsBorderTop: string;
 }
 
 export interface ThemePatch {

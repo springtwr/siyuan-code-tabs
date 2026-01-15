@@ -14,12 +14,15 @@ themes:
       hljsPadding: "30.6px 15.3px 24.48px"
       editablePadding: "0px"
       blockMargin: "2px 0px"
+      hljsMargin: ""
       editableMargin: "0px"
       color: "rgb(0, 0, 0)"
       border: "0px none rgb(0, 0, 0)"
       boxShadow: "none"
       borderRadius: var(--b3-border-radius)
       protyleActionPosition: "absolute"
+      protyleActionBorderBottom: "0px none rgb(0, 0, 0)"
+      hljsBorderTop: "0px none rgb(0, 0, 0)"
     extraCss: |
       .tabs {
           background-color: transparent;

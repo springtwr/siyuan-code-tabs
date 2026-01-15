@@ -2,7 +2,6 @@ import { ThemeStyle } from "@/assets/theme-adaption";
 import { codeBlockStyleSnapshot } from "@/types";
 
 export const StyleProbe = (() => {
-    let cache: codeBlockStyleSnapshot
 
     const SYNC_PROPS = {
         block: [
@@ -102,11 +101,10 @@ export const StyleProbe = (() => {
 
     return {
         get() {
-            if (!cache) cache = probe()
-            return cache
+            return probe()
         },
         getFullStyle(): ThemeStyle {
-            if (!cache) cache = probe()
+            const cache = probe()
 
             return {
                 blockBg: cache.block.backgroundColor,
@@ -130,9 +128,6 @@ export const StyleProbe = (() => {
                 protyleActionBorderBottom: cache.header.borderBottom,
                 hljsBorderTop: cache.body.borderTop
             }
-        },
-        invalidate() {
-            cache = null
         }
     }
 })()

@@ -37,15 +37,39 @@ themes:
       .tab-toggle {
           background-color: transparent;
       }
+      ::-webkit-scrollbar-thumb {
+          background-clip: padding-box;
+          border: 2px solid transparent;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+          background-color: var(--wh-scroll-color_15);
+          border-width: unset
+      }
   - id: "siyuan-theme-darkside"
     name: "PureColor"
     extraCss: |
       .tabs-container {
           border-left: var(--quote-border-width) solid var(--code-border-color);
       }
+      ::-webkit-scrollbar-thumb {
+          border-radius: 0px;
+      }
   - id: "Savor"
     name: "写味"
     extraCss: |
+      ::-webkit-scrollbar {
+          width : var(--webkit-scrollbar);
+          height: var(--webkit-scrollbar);
+          background-color:transparent;
+      }
+      ::-webkit-scrollbar-thumb{
+          border-radius: var(--webkit-scrollbar-thumb);
+          background-color:var(--Sv-scroll-color);
+          box-shadow: none;
+      }
+      ::-webkit-scrollbar-thumb:hover{
+          background-color:var(--Sv-scroll-color-hover);
+      }
       .markdown-body h1{
           color: var(--Sv-h1);
       }
@@ -111,6 +135,15 @@ themes:
   - id: "Asri"
     name: "Asri"
     extraCss: |
+      ::-webkit-scrollbar-thumb {
+          -webkit-border-radius: 10px;
+          background-clip: padding-box;
+          border: 2px solid rgba(0, 0, 0, 0);
+          background-color: var(--b3-scroll-color);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+          background-color: var(--b3-scroll-color-hover);
+      }
       .markdown-body :is(h1,h2,h3,h4,h5,h6) {
           background: var(--texture-goldfoil);
           background-blend-mode: var(--texture-goldfoil-blend-mode);
@@ -118,6 +151,41 @@ themes:
           background-clip: text;
           color: var(--b3-theme-primary);
           caret-color: var(--foil-local-clr, auto);
+      }
+  - id: "Rem Craft"
+    name: "瑞姆工艺"
+    extraCss: |
+      ::-webkit-scrollbar:horizontal {
+          height: 6px;
+      }
+      .tab-content--active::-webkit-scrollbar-thumb {
+          border-radius: 9999px;
+          box-shadow: inset 0 0 6px 6px var(--scroll-base);
+          border: solid 3px rgba(0, 0, 0, 0);
+      }
+      .tab-content--active::-webkit-scrollbar-thumb:hover {
+          border: solid 1.5px rgba(0, 0, 0, 0);
+      }
+  - id: "chuizi"
+    name: "锤子"
+    extraCss: |
+      ::-webkit-scrollbar-thumb {
+          background-color: var(--b3-scroll-color);
+          border-radius: 1px;
+      }
+  - id: "pink-room"
+    name: "粉色小屋"
+    extraCss: |
+      ::-webkit-scrollbar-thumb {
+          box-sizing: content-box;
+          border: 1px solid rgb(255 255 255 / 0%);
+          border-radius: 5px;
+          box-shadow: inset 0 0 5px 5px #b4dded
+      }
+      ::-webkit-scrollbar-thumb:hover{
+          background-color:#69caf1;
+          border-radius: 0.3em;   
+          border: none;
       }
   - id: "Dark+"
     name: "暗色+"
@@ -242,6 +310,11 @@ themes:
   - id: "StarDust"
     name: "星尘"
     extraCss: |
+      ::-webkit-scrollbar-thumb:hover{
+          background-color:#41b8e8;
+          border-radius: 0.2em;  
+          width : 1em;
+      }
       .markdown-body > :is(h1,h2,h3,h4,h5,h6) {
           color: #ffffff !important;
           text-shadow:0 0 3px #0ed1c7b0, 0 0 4px #0ed1c7a8, 0 0 8px #39ccc548, 0 0 14px #61c4c109;
@@ -497,6 +570,14 @@ themes:
   - id: "OneNote"
     name: "OneNote"
     extraCss: |
+      ::-webkit-scrollbar-thumb {
+          background-color: var(--b3-scroll-color);
+          border-radius: 1px;
+          box-shadow: unset;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+          background-color: #d3d3d3;
+      }
       .markdown-body :is(h1, h2, h3, h4, h5, h6) {
           color: #4e4e4e;
       }

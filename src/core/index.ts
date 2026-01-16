@@ -6,6 +6,7 @@ import {TabParser} from "@/modules/parser/TabParser";
 import {TabRenderer} from "@/modules/renderer/TabRenderer";
 import {ThemeManager} from "@/modules/theme/ThemeManager";
 import {getCodeFromAttribute, TabManager} from "@/modules/tab-manager/TabManager";
+import {LineNumberManager} from "@/modules/line-number/LineNumberManager";
 import {encodeSource, stripInvisibleChars} from "@/utils/encoding";
 import {fetchFileFromUrlSimple, loadJsonFromFile} from "@/utils/network";
 import {compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
@@ -136,6 +137,7 @@ export default class CodeTabs extends Plugin {
                 syncSiyuanConfig(this.data);
                 this.saveConfig();
                 ThemeManager.updateAllTabsStyle();
+                LineNumberManager.refreshAll();
             });
         }
 
@@ -143,6 +145,16 @@ export default class CodeTabs extends Plugin {
         const observer = new MutationObserver(callback);
         observer.observe(html, {attributes: true, childList: false, subtree: false});
         observer.observe(head, {attributes: true, childList: true, subtree: true});
+
+        this.eventBus.on("loaded-protyle-static", (evt: any) => {
+            const detail = evt?.detail;
+            LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+        });
+        this.eventBus.on("loaded-protyle-dynamic", (evt: any) => {
+            const detail = evt?.detail;
+            LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+        });
+        LineNumberManager.scanAll();
     }
 
     private blockIconEvent({detail}: any) {

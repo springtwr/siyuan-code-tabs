@@ -6,6 +6,7 @@ import logger from "@/utils/logger";
 import {TabParser} from "../parser/TabParser";
 import {IObject} from "siyuan";
 import { StyleProbe } from "../theme/StyleProtyle";
+import {LineNumberManager} from "@/modules/line-number/LineNumberManager";
 
 export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
     let codeText = decodeSource(customAttribute);
@@ -33,7 +34,8 @@ export class TabManager {
             codeBlockStyle : StyleProbe,
             openTag: (evt: MouseEvent) => {
                 const clicked = evt.target as HTMLElement;
-                const tabContainer = clicked.closest('.tabs-container');
+                const tabContainer = clicked.closest('.tabs-container') as HTMLElement | null;
+                if (!tabContainer) return;
                 const tabItems = tabContainer.querySelectorAll('.tab-item');
                 const tabContents = tabContainer.querySelectorAll('.tab-content');
                 tabItems.forEach((tabItem: HTMLElement, index: number) => {
@@ -45,6 +47,7 @@ export class TabManager {
                         tabContents[index].classList.remove('tab-content--active');
                     }
                 });
+                LineNumberManager.refreshActive(tabContainer);
             },
 
             copyCode: (evt: MouseEvent) => {

@@ -27,6 +27,7 @@
 
 .tab-content {
     display: none;
+    position: relative;
 }
 
 .tab-content--active {
@@ -56,6 +57,18 @@
 .tab-content > div {
     padding: 0;
     margin: 0;
+}
+
+.tab-line-num {
+    display: none;
+}
+
+.tab-content--linenumber .tab-line-num {
+    display: block;
+}
+
+.tab-line-num__row {
+    display: block;
 }
 
 .code-tabs--icon_copy {
@@ -99,6 +112,7 @@
     right: 0;
     justify-content: space-between;
     align-items: center;
+    z-index: 2;
 }
 
 .tabs {

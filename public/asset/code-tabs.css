@@ -61,6 +61,12 @@
 
 .tab-line-num {
     display: none;
+    pointer-events: none;
+    user-select: none;
+    font-size: 85%;
+    font-family: var(--b3-font-family-code);
+    text-align: right;
+    position: absolute;
 }
 
 .tab-content--linenumber .tab-line-num {
@@ -69,6 +75,8 @@
 
 .tab-line-num__row {
     display: block;
+    color: var(--b3-theme-on-background, inherit);
+    text-align: right;
 }
 
 .code-tabs--icon_copy {

@@ -1,23 +1,11 @@
 import {CUSTOM_ATTR} from "@/assets/constants";
-
-type LineNumberStyleSnapshot = {
-    container: Record<string, string>;
-    row: Record<string, string>;
-    codePadding: {
-        top: string;
-        right: string;
-        bottom: string;
-        left: string;
-    } | null;
-    lineNumWidth: number | null;
-};
+import {getActiveEditor} from "siyuan";
+ 
 
 export class LineNumberManager {
     private static readonly lineNumClass = "tab-line-num";
     private static readonly lineNumEnabledClass = "tab-content--linenumber";
     private static readonly rowClass = "tab-line-num__row";
-    private static styleCache: LineNumberStyleSnapshot | null = null;
-    private static styleSheets = new WeakMap<ShadowRoot, HTMLStyleElement>();
     private static resizeObservers = new Map<HTMLElement, ResizeObserver>();
     private static rafIds = new WeakMap<HTMLElement, number>();
     private static measurers = new WeakMap<ShadowRoot, HTMLElement>();
@@ -31,9 +19,9 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
-        document
-            .querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`)
-            .forEach(node => this.attachNode(node));
+        const editor = getActiveEditor(true);
+        if (!editor) return;
+        this.scan(editor.protyle?.contentElement);
     }
 
     static scanProtyle(root?: HTMLElement): void {
@@ -41,14 +29,21 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
-        const scope = root ?? document;
-        const nodes = scope.querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
-        nodes.forEach(node => this.attachNode(node));
+        const editor = getActiveEditor(true);
+        if (!editor) return;
+        const scope = root ?? editor.protyle?.contentElement;
+        this.scan(scope);
     }
 
     static refreshAll(): void {
-        this.styleCache = null;
+        const editor = getActiveEditor(true);
+        if (!editor) return;
         this.scanAll();
+        requestAnimationFrame(() => {
+            document.querySelectorAll<HTMLElement>(".tabs-container").forEach(container => {
+                this.refreshActive(container);
+            });
+        });
     }
 
     static refreshActive(tabContainer: HTMLElement): void {
@@ -58,9 +53,7 @@ export class LineNumberManager {
         }
         const active = tabContainer.querySelector<HTMLElement>(".tab-content--active");
         if (!active) return;
-        const shadowRoot = tabContainer.getRootNode() as ShadowRoot;
-        if (!shadowRoot) return;
-        this.ensureLineNumbers(active, shadowRoot);
+        this.ensureLineNumbers(active);
     }
 
     private static disableAll(): void {
@@ -73,9 +66,6 @@ export class LineNumberManager {
         document
             .querySelectorAll<HTMLElement>(".tab-content .code")
             .forEach(codeEl => {
-                codeEl.style.paddingTop = "";
-                codeEl.style.paddingRight = "";
-                codeEl.style.paddingBottom = "";
                 codeEl.style.paddingLeft = "";
             });
         this.resizeObservers.forEach(observer => observer.disconnect());
@@ -86,11 +76,18 @@ export class LineNumberManager {
         const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
         if (!shadowRoot) return;
         shadowRoot.querySelectorAll<HTMLElement>(".tab-content").forEach(tabContent => {
-            this.ensureLineNumbers(tabContent, shadowRoot);
+            this.ensureLineNumbers(tabContent);
         });
     }
 
-    private static ensureLineNumbers(tabContent: HTMLElement, shadowRoot: ShadowRoot): void {
+    private static scan(scope?: HTMLElement): void {
+        if (!scope) return;
+        const nodes = scope.querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+        if (nodes.length === 0) return;
+        nodes.forEach(node => this.attachNode(node));
+    }
+
+    private static ensureLineNumbers(tabContent: HTMLElement): void {
         const codeEl = tabContent.querySelector<HTMLElement>(".code");
         if (!codeEl) return;
 
@@ -103,12 +100,7 @@ export class LineNumberManager {
             tabContent.insertBefore(lineNumEl, tabContent.firstChild);
         }
 
-        const isActive = tabContent.classList.contains("tab-content--active");
-        if (!isActive) return;
-
-        this.applyStyles(tabContent, codeEl, lineNumEl, shadowRoot);
-        this.refreshTabContent(tabContent);
-        this.attachResizeObserver(tabContent);
+        this.renderTabContent(tabContent, lineNumEl);
     }
 
     private static refreshTabContent(tabContent: HTMLElement): void {
@@ -129,16 +121,10 @@ export class LineNumberManager {
         const lines = cleaned.length === 0 ? [""] : cleaned.split("\n");
         const lineCount = Math.max(1, lines.length);
 
-        const basePaddingLeft = this.getBasePaddingLeft(codeEl);
-        const lineNumWidth = this.styleCache?.lineNumWidth ?? 0;
-        if (lineNumWidth > 0) {
-            lineNumEl.style.width = `${lineNumWidth}px`;
-            codeEl.style.paddingLeft = `${Math.max(basePaddingLeft, lineNumWidth)}px`;
-        } else {
-            lineNumEl.style.width = "";
-            const estimatedPadding = Math.max(basePaddingLeft, this.estimatePaddingLeft(lineCount));
-            codeEl.style.paddingLeft = `${estimatedPadding}px`;
-        }
+        lineNumEl.style.width = "";
+        const basePaddingLeft = this.parsePx(getComputedStyle(codeEl).paddingLeft) ?? 32;
+        const estimatedPadding = Math.max(basePaddingLeft, this.estimatePaddingLeft(lineCount));
+        codeEl.style.paddingLeft = `${estimatedPadding}px`;
 
         lineNumEl.innerHTML = "";
         const heights = active && wrapEnabled
@@ -158,32 +144,18 @@ export class LineNumberManager {
         lineNumEl.style.height = `${codeEl.scrollHeight}px`;
     }
 
-    private static applyStyles(
+    private static renderTabContent(
         tabContent: HTMLElement,
-        codeEl: HTMLElement,
-        lineNumEl: HTMLElement,
-        shadowRoot: ShadowRoot
+        lineNumEl: HTMLElement
     ): void {
-        const snapshot = this.getStyleSnapshot(shadowRoot);
-        const resolved = snapshot ?? this.buildFallbackSnapshot(codeEl);
-        if (snapshot) {
-            this.styleCache = snapshot;
-        }
-
-        if (resolved.codePadding) {
-            codeEl.style.paddingTop = resolved.codePadding.top;
-            codeEl.style.paddingRight = resolved.codePadding.right;
-            codeEl.style.paddingBottom = resolved.codePadding.bottom;
-            codeEl.style.paddingLeft = resolved.codePadding.left;
-        }
-        this.cacheBasePaddingLeft(codeEl, resolved.codePadding?.left);
-
-        this.updateLineNumberStyles(shadowRoot, resolved);
-
+        this.applyStyles(lineNumEl);
+        this.refreshTabContent(tabContent);
+        this.attachResizeObserver(tabContent);
+    }
+    private static applyStyles(lineNumEl: HTMLElement): void {
         lineNumEl.style.position = "absolute";
         lineNumEl.style.boxSizing = "border-box";
         lineNumEl.style.pointerEvents = "none";
-        lineNumEl.style.textAlign = "right";
         lineNumEl.style.zIndex = "1";
     }
 
@@ -211,7 +183,10 @@ export class LineNumberManager {
         measurer.style.lineHeight = style.lineHeight;
         measurer.style.whiteSpace = style.whiteSpace;
         measurer.style.wordBreak = style.wordBreak;
-        measurer.style.width = `${codeEl.clientWidth}px`;
+        const paddingLeft = this.parsePx(style.paddingLeft) ?? 0;
+        const paddingRight = this.parsePx(style.paddingRight) ?? 0;
+        const contentWidth = Math.max(0, codeEl.clientWidth - paddingLeft - paddingRight);
+        measurer.style.width = `${contentWidth}px`;
 
         const heights: number[] = [];
         for (const line of lines) {
@@ -246,41 +221,6 @@ export class LineNumberManager {
         return total / lineCount;
     }
 
-    private static updateLineNumberStyles(shadowRoot: ShadowRoot, snapshot: LineNumberStyleSnapshot): void {
-        let styleEl = this.styleSheets.get(shadowRoot);
-        if (!styleEl) {
-            styleEl = document.createElement("style");
-            styleEl.dataset.codeTabsLineNum = "true";
-            shadowRoot.appendChild(styleEl);
-            this.styleSheets.set(shadowRoot, styleEl);
-        }
-        const container = snapshot.container;
-        const row = snapshot.row;
-        styleEl.textContent = `
-.tab-line-num {
-  color: ${container.color || "inherit"};
-  background-color: ${container.backgroundColor || "transparent"};
-  padding-top: ${container.paddingTop || "0px"};
-  padding-right: ${container.paddingRight || "0px"};
-  padding-bottom: ${container.paddingBottom || "0px"};
-  padding-left: ${container.paddingLeft || "0px"};
-  border-right: ${container.borderRight || "none"};
-  font-family: ${container.fontFamily || "inherit"};
-  font-size: ${container.fontSize || "inherit"};
-  line-height: ${container.lineHeight || "normal"};
-  text-align: ${container.textAlign || "right"};
-}
-.tab-line-num__row {
-  color: ${row.color || "inherit"};
-  font-size: ${row.fontSize || "inherit"};
-  line-height: ${row.lineHeight || "normal"};
-  font-family: ${row.fontFamily || "inherit"};
-  text-align: ${row.textAlign || container.textAlign || "right"};
-  display: block;
-}
-`;
-    }
-
     private static estimatePaddingLeft(lineCount: number): number {
         const digits = Math.max(1, String(lineCount).length);
         if (digits <= 1) return 24;
@@ -289,132 +229,6 @@ export class LineNumberManager {
         return 39 + (digits - 3) * 7;
     }
 
-    private static cacheBasePaddingLeft(codeEl: HTMLElement, paddingLeft: string | undefined): void {
-        if (codeEl.dataset.tabCodePaddingLeft) return;
-        const value = paddingLeft ?? getComputedStyle(codeEl).paddingLeft;
-        const parsed = this.parsePx(value);
-        if (parsed === null || parsed <= 0) {
-            codeEl.dataset.tabCodePaddingLeft = "32px";
-            codeEl.dataset.tabCodePaddingLeftDefault = "1";
-            return;
-        }
-        codeEl.dataset.tabCodePaddingLeft = value;
-    }
-
-    private static getBasePaddingLeft(codeEl: HTMLElement): number {
-        const stored = codeEl.dataset.tabCodePaddingLeft;
-        const parsed = stored ? this.parsePx(stored) : null;
-        if (parsed !== null) return parsed;
-        const computed = this.parsePx(getComputedStyle(codeEl).paddingLeft);
-        if (computed === null || computed <= 0) {
-            codeEl.dataset.tabCodePaddingLeft = "32px";
-            codeEl.dataset.tabCodePaddingLeftDefault = "1";
-            return 32;
-        }
-        return computed;
-    }
-
-
-    private static getStyleSnapshot(shadowRoot: ShadowRoot): LineNumberStyleSnapshot | null {
-        if (this.styleCache) return this.styleCache;
-        const host = shadowRoot.host as HTMLElement | null;
-        if (!host) return null;
-        const protyle = host.closest(".protyle");
-        if (!protyle) return null;
-        const sourceLineNum = protyle.querySelector<HTMLElement>(".protyle-linenumber__rows");
-        const sourceLineNumRow = sourceLineNum?.querySelector<HTMLElement>("span");
-        const sourceCode = protyle.querySelector<HTMLElement>(".hljs .code");
-        const sourceEditable = protyle.querySelector<HTMLElement>('[data-type="NodeCodeBlock"] [contenteditable="true"]')
-            ?? protyle.querySelector<HTMLElement>('.code-block [contenteditable="true"]');
-        if (!sourceLineNum && !sourceCode) return null;
-
-        const containerStyle = sourceLineNum ? getComputedStyle(sourceLineNum) : null;
-        const rowStyle = sourceLineNumRow ? getComputedStyle(sourceLineNumRow) : null;
-        const rowAfterStyle = sourceLineNumRow ? getComputedStyle(sourceLineNumRow, "::after") : null;
-        const codeStyle = sourceEditable
-            ? getComputedStyle(sourceEditable)
-            : sourceCode
-                ? getComputedStyle(sourceCode)
-                : null;
-
-        const rawWidth = sourceLineNum
-            ? Math.round(sourceLineNum.getBoundingClientRect().width)
-            : null;
-        const lineNumWidth = rawWidth && rawWidth >= 12 ? rawWidth : null;
-        const snapshot: LineNumberStyleSnapshot = {
-            container: containerStyle
-                ? this.pickStyles(containerStyle, [
-                    "color",
-                    "backgroundColor",
-                    "paddingTop",
-                    "paddingRight",
-                    "paddingBottom",
-                    "paddingLeft",
-                    "borderRight",
-                    "fontFamily",
-                    "fontSize",
-                    "lineHeight",
-                    "textAlign"
-                ])
-                : {},
-            row: rowStyle
-                ? {
-                    ...this.pickStyles(rowStyle, [
-                        "color",
-                        "fontSize",
-                        "lineHeight",
-                        "fontFamily"
-                    ]),
-                    textAlign: rowAfterStyle?.textAlign || rowStyle.textAlign
-                }
-                : {},
-            codePadding: codeStyle
-                ? {
-                    top: codeStyle.paddingTop,
-                    right: codeStyle.paddingRight,
-                    bottom: codeStyle.paddingBottom,
-                    left: codeStyle.paddingLeft
-                }
-                : null,
-            lineNumWidth: lineNumWidth
-        };
-
-        this.styleCache = snapshot;
-        return snapshot;
-    }
-
-    private static buildFallbackSnapshot(codeEl: HTMLElement): LineNumberStyleSnapshot {
-        const codeStyle = getComputedStyle(codeEl);
-        return {
-            container: {
-                color: codeStyle.color,
-                fontSize: codeStyle.fontSize,
-                fontFamily: codeStyle.fontFamily,
-                lineHeight: codeStyle.lineHeight
-            },
-            row: {
-                color: codeStyle.color,
-                fontSize: codeStyle.fontSize,
-                fontFamily: codeStyle.fontFamily,
-                lineHeight: codeStyle.lineHeight
-            },
-            codePadding: {
-                top: codeStyle.paddingTop,
-                right: codeStyle.paddingRight,
-                bottom: codeStyle.paddingBottom,
-                left: codeStyle.paddingLeft
-            },
-            lineNumWidth: null
-        };
-    }
-
-    private static pickStyles(style: CSSStyleDeclaration, keys: string[]): Record<string, string> {
-        const out: Record<string, string> = {};
-        for (const key of keys) {
-            out[key] = (style as any)[key] ?? "";
-        }
-        return out;
-    }
 
     private static parsePx(value: string): number | null {
         const parsed = parseFloat(value);

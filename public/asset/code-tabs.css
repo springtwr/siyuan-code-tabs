@@ -84,6 +84,7 @@
     position: absolute;
     top: 1.2em;
     right: 5px;
+    z-index: 3;
     width: 1em;
     height: 1em;
     border-radius: 5px;

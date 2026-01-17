@@ -47,6 +47,23 @@ themes:
           background-color: var(--wh-scroll-color_15);
           border-width: unset
       }
+  - id: "QYL-theme"
+    name: "QYL"
+    extraCss: |
+      .tab-line-num {
+          color: var(--b3-theme-primary) !important;
+      }
+  - id: "Zhihu"
+    name: "知乎"
+    extraCss: |
+      .tab-content--linenumber > .code {
+          padding-left: 64px !important;
+      }
+      .tab-line-num {
+          width: 40px;
+          padding: 4px;
+          color: #808007 !important;
+      }
   - id: "siyuan-theme-darkside"
     name: "PureColor"
     extraCss: |
@@ -97,6 +114,9 @@ themes:
           margin: 1em auto;
           width: 98%;
           box-sizing: border-box;
+      }
+      .tab-line-num {
+          opacity: 0.7;
       }
       .markdown-body h1 {
           text-align: center;
@@ -157,6 +177,9 @@ themes:
   - id: "Rem Craft"
     name: "瑞姆工艺"
     extraCss: |
+      .tab-line-num {
+          color: var(--text-disabled) !important;
+      }
       ::-webkit-scrollbar:horizontal {
           height: 6px;
       }
@@ -171,13 +194,28 @@ themes:
   - id: "chuizi"
     name: "锤子"
     extraCss: |
+      .tab-line-num {
+          color: rgba(128, 128, 128, 0.5) !important;
+      }
       ::-webkit-scrollbar-thumb {
           background-color: var(--b3-scroll-color);
           border-radius: 1px;
       }
+  - id: "siyuan-vscodelite-edit"
+    name: "VSCode Light Edit"
+    extraCss: |
+      .tab-line-num {
+          width: 2em;
+      }
+      .tab-content--linenumber > .code {
+          padding-left: 2.8em !important;
+      }
   - id: "pink-room"
     name: "粉色小屋"
     extraCss: |
+      .tab-line-num {
+          border-right: 1px solid #e3bfc5;;
+      }
       ::-webkit-scrollbar-thumb {
           box-sizing: content-box;
           border: 1px solid rgb(255 255 255 / 0%);
@@ -192,6 +230,17 @@ themes:
   - id: "Dark+"
     name: "暗色+"
     extraCss: |
+      .tab-content--linenumber > .code {
+          padding-left: 3em !important;
+      }
+      .tab-line-num {
+          font-size: 100%    !important;
+          padding: 0 0.5em !important;
+          border-right: var(--custom-block-code-linenumber-separator-width) solid var(--custom-block-code-linenumber-separator-color);
+      }
+      .tab-line-num__row {
+          font-size: 85% !important;
+      }
       .tab-content--active > .markdown-body {
         counter-reset: h1-counter-tabs 0;
       }
@@ -460,6 +509,16 @@ themes:
   - id: "mini-vlook"
     name: "mini-vlook"
     extraCss: |
+      .tab-line-num {
+          border-right: 1px solid var(--pn-c);
+          width: 36px;
+      }
+      .tab-line-num__row {
+          text-align: center !important;
+      }
+      .tab-content--linenumber > .code {
+          padding-left: 52px !important;
+      }
       /* 简化的标题样式 */
       .markdown-body :is(h1, h2, h3, h4, h5, h6) {
           box-shadow: none;
@@ -572,6 +631,9 @@ themes:
   - id: "OneNote"
     name: "OneNote"
     extraCss: |
+      .tab-line-num {
+          color: rgba(128, 128, 128, 0.5) !important;
+      }
       ::-webkit-scrollbar-thumb {
           background-color: var(--b3-scroll-color);
           border-radius: 1px;

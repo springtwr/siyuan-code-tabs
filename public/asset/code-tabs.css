@@ -67,6 +67,7 @@
     font-family: var(--b3-font-family-code);
     text-align: right;
     position: absolute;
+    color: var(--b3-theme-on-surface)
 }
 
 .tab-content--linenumber .tab-line-num {
@@ -75,7 +76,6 @@
 
 .tab-line-num__row {
     display: block;
-    color: var(--b3-theme-on-background, inherit);
     text-align: right;
 }
 

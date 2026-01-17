@@ -103,10 +103,10 @@ export class LineNumberManager {
         this.renderTabContent(tabContent, lineNumEl);
     }
 
-    private static refreshTabContent(tabContent: HTMLElement): void {
+    private static refreshTabContent(tabContent: HTMLElement): boolean {
         const codeEl = tabContent.querySelector<HTMLElement>(".code");
         const lineNumEl = tabContent.querySelector<HTMLElement>(`.${this.lineNumClass}`);
-        if (!codeEl || !lineNumEl) return;
+        if (!codeEl || !lineNumEl) return false;
 
         const codeRect = codeEl.getBoundingClientRect();
         const tabRect = tabContent.getBoundingClientRect();
@@ -122,9 +122,14 @@ export class LineNumberManager {
         const lineCount = Math.max(1, lines.length);
 
         lineNumEl.style.width = "";
-        const basePaddingLeft = this.parsePx(getComputedStyle(codeEl).paddingLeft) ?? 32;
-        const estimatedPadding = Math.max(basePaddingLeft, this.estimatePaddingLeft(lineCount));
+        const codeStyle = getComputedStyle(codeEl);
+        const basePaddingLeft = this.parsePx(codeStyle.paddingLeft) ?? 32;
+        const codeFontSize = this.parsePx(codeStyle.fontSize) ?? 16;
+        const lineNumFontSize = codeFontSize * 0.85;
+        const normalFontSize = codeFontSize / 0.85;
+        const estimatedPadding = Math.max(basePaddingLeft, this.estimatePaddingLeft(lineCount, normalFontSize));
         codeEl.style.paddingLeft = `${estimatedPadding}px`;
+        lineNumEl.style.fontSize = `${lineNumFontSize}px`;
 
         lineNumEl.innerHTML = "";
         const heights = active && wrapEnabled
@@ -141,7 +146,15 @@ export class LineNumberManager {
             lineNumEl.appendChild(row);
         }
 
-        lineNumEl.style.height = `${codeEl.scrollHeight}px`;
+        const scrollHeight = codeEl.scrollHeight;
+        lineNumEl.style.height = `${scrollHeight}px`;
+
+        if (active && wrapEnabled && heights) {
+            const totalHeight = heights.reduce((sum, height) => sum + height, 0);
+            return Math.abs(totalHeight - scrollHeight) > 1;
+        }
+
+        return false;
     }
 
     private static renderTabContent(
@@ -164,7 +177,12 @@ export class LineNumberManager {
         const observer = new ResizeObserver(() => {
             const existing = this.rafIds.get(tabContent);
             if (existing) cancelAnimationFrame(existing);
-            const rafId = requestAnimationFrame(() => this.refreshTabContent(tabContent));
+            const rafId = requestAnimationFrame(() => {
+                const needsRetry = this.refreshTabContent(tabContent);
+                if (needsRetry) {
+                    requestAnimationFrame(() => this.refreshTabContent(tabContent));
+                }
+            });
             this.rafIds.set(tabContent, rafId);
         });
         observer.observe(tabContent);
@@ -221,12 +239,11 @@ export class LineNumberManager {
         return total / lineCount;
     }
 
-    private static estimatePaddingLeft(lineCount: number): number {
+    private static estimatePaddingLeft(lineCount: number, normalFontSizePx: number): number {
         const digits = Math.max(1, String(lineCount).length);
-        if (digits <= 1) return 24;
-        if (digits === 2) return 32;
-        if (digits === 3) return 39;
-        return 39 + (digits - 3) * 7;
+        const base = Math.floor(0.48 * normalFontSizePx + 15);
+        const step = Math.ceil(0.42 * normalFontSizePx);
+        return base + step * (digits - 1);
     }
 
 

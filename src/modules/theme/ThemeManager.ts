@@ -71,6 +71,8 @@ export class ThemeManager {
   border-top: ${style.hljsBorderTop};
   background-color: ${style.hljsBg}; 
   font-family: ${style.fontFamily};
+  ${style.hljsOverflowY ? `overflow-y: ${style.hljsOverflowY};` : ""}
+  ${style.hljsOverflowY && style.hljsMaxHeight ? `max-height: ${style.hljsMaxHeight};` : ""}
 }
 .hljs > :is(.code, .markdown-body) {
   padding: ${style.editablePadding};

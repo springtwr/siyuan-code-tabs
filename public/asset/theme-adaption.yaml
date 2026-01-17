@@ -24,6 +24,8 @@ themes:
       protyleActionPosition: "absolute"
       protyleActionBorderBottom: "0px none rgb(0, 0, 0)"
       hljsBorderTop: "0px none rgb(0, 0, 0)"
+      hljsOverflowY: "auto"
+      hljsMaxHeight: ""
     extraCss: |
       .tabs {
           background-color: transparent;

@@ -12,6 +12,7 @@ export const StyleProbe = (() => {
             'boxShadow',
             'margin',
             'padding',
+            'maxHeight',
             'fontSize',
             'lineHeight',
             'color'
@@ -27,7 +28,7 @@ export const StyleProbe = (() => {
             'fontFamily',
             'padding',
             'backgroundColor',
-            'overflow',
+            'overflowY',
             'borderTop'
         ],
         content: [
@@ -128,7 +129,9 @@ export const StyleProbe = (() => {
                 borderRadius: cache.block.borderRadius,
                 protyleActionPosition: cache.header.position,
                 protyleActionBorderBottom: cache.header.borderBottom,
-                hljsBorderTop: cache.body.borderTop
+                hljsBorderTop: cache.body.borderTop,
+                hljsOverflowY: cache.body.overflowY,
+                hljsMaxHeight: cache.block.maxHeight
             }
         }
     }

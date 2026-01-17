@@ -45,6 +45,10 @@ export interface ThemeStyle {
     protyleActionBorderBottom: string;
     /** 高亮区域边框样式 */
     hljsBorderTop: string;
+    /** 高亮区域 overflow-y */
+    hljsOverflowY?: string;
+    /** 高亮区域 max-height */
+    hljsMaxHeight?: string;
 }
 
 export interface ThemePatch {

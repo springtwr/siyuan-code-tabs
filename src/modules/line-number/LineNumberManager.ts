@@ -123,11 +123,10 @@ export class LineNumberManager {
 
         lineNumEl.style.width = "";
         const codeStyle = getComputedStyle(codeEl);
-        const basePaddingLeft = this.parsePx(codeStyle.paddingLeft) ?? 32;
         const codeFontSize = this.parsePx(codeStyle.fontSize) ?? 16;
         const lineNumFontSize = codeFontSize * 0.85;
         const normalFontSize = codeFontSize / 0.85;
-        const estimatedPadding = Math.max(basePaddingLeft, this.estimatePaddingLeft(lineCount, normalFontSize));
+        const estimatedPadding = this.estimatePaddingLeft(lineCount, normalFontSize);
         codeEl.style.paddingLeft = `${estimatedPadding}px`;
         lineNumEl.style.fontSize = `${lineNumFontSize}px`;
 

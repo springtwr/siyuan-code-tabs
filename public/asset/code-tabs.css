@@ -67,7 +67,8 @@
     font-family: var(--b3-font-family-code);
     text-align: right;
     position: absolute;
-    color: var(--b3-theme-on-surface)
+    color: var(--b3-theme-on-surface);
+    transform: translateY(var(--tab-line-num-offset, 0.2em));
 }
 
 .tab-content--linenumber .tab-line-num {

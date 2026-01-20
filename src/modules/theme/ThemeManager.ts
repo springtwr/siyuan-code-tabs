@@ -130,10 +130,18 @@ ${extraCss}
         const defaultAssetPath = THEME_ADAPTION_ASSET_YAML;
 
         // 1. 加载默认配置 (获取最新版本和主题列表)
-        let defaultConfig: { version: string; themes: ThemePatch[] } | null = null;
+        let defaultConfig: ThemeConfig | null = null;
         try {
             logger.info("尝试加载默认主题配置...");
-            defaultConfig = await fetchYamlFromUrl(defaultAssetPath, "theme-adaption.yaml");
+            const defaultConfigRaw = await fetchYamlFromUrl(
+                defaultAssetPath,
+                "theme-adaption.yaml"
+            );
+            if (!isThemeConfig(defaultConfigRaw)) {
+                logger.error("默认主题配置格式不正确");
+                return [];
+            }
+            defaultConfig = defaultConfigRaw;
         } catch (e) {
             logger.warn(`加载默认主题配置失败: ${e}`);
             return [];
@@ -147,14 +155,14 @@ ${extraCss}
         // 2. 尝试加载用户配置
         try {
             logger.info("尝试从数据目录加载用户主题配置...");
-            const userConfig = await fetchYamlFromUrl(fetchPath, "theme-adaption.yaml");
+            const userConfigRaw = await fetchYamlFromUrl(fetchPath, "theme-adaption.yaml");
 
-            if (userConfig && userConfig.themes) {
+            if (isThemeConfig(userConfigRaw)) {
                 // 2.1 检查用户配置格式
-                let userThemes: ThemePatch[] = userConfig.themes || [];
+                let userThemes: ThemePatch[] = userConfigRaw.themes || [];
                 let userVersion: string | undefined;
 
-                userVersion = userConfig.version;
+                userVersion = userConfigRaw.version;
 
                 // 2.2 版本检测:如果用户版本低于插件版本,进行合并
                 if (!userVersion || userVersion !== defaultConfig.version) {
@@ -184,7 +192,10 @@ ${extraCss}
                 logger.info("配置版本一致,使用用户主题配置");
                 return userThemes;
             }
-        } catch (e) {
+            if (userConfigRaw) {
+                logger.warn("用户主题配置格式不正确，使用默认配置");
+            }
+        } catch {
             logger.info("未检测到用户配置文件");
         }
 
@@ -239,4 +250,16 @@ ${extraCss}
         const file = new File([blob], "theme-adaption.yaml", { type: "application/yaml" });
         await putFile(path, false, file);
     }
+}
+
+type ThemeConfig = {
+    version: string;
+    themes: ThemePatch[];
+};
+
+function isThemeConfig(value: unknown): value is ThemeConfig {
+    if (typeof value !== "object" || value === null) return false;
+    if (!("version" in value) || !("themes" in value)) return false;
+    const config = value as { version?: unknown; themes?: unknown };
+    return typeof config.version === "string" && Array.isArray(config.themes);
 }

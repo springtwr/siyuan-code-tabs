@@ -10,6 +10,16 @@ module.exports = [
     },
     js.configs.recommended,
     {
+        files: ["**/*.{js,cjs,mjs}"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
         files: ["**/*.{ts,tsx}"],
         languageOptions: {
             parser: tsParser,

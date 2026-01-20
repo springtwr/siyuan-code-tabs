@@ -33,7 +33,7 @@ export class TabConverter {
         }
 
         // ===== 分类所有块 =====
-        const toProcess: { block: HTMLElement; id: string; codeText: string }[] = [];
+        const toProcess: { id: string; codeText: string }[] = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
@@ -66,7 +66,7 @@ export class TabConverter {
             }
 
             // 情况3：有效，加入处理队列
-            toProcess.push({ block, id, codeText });
+            toProcess.push({ id, codeText });
         }
 
         const codeToTabsMessages = {
@@ -126,7 +126,7 @@ export class TabConverter {
         this.codeToTabsBatch(codeBlocks);
     }
 
-    async tabToCodeBatch(blockList: any[]): Promise<ConversionStats> {
+    async tabToCodeBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${this.i18n.noTabsToConvert}`);
             return { success: 0, failure: 0 };
@@ -134,7 +134,7 @@ export class TabConverter {
         logger.info(`开始转换 ${blockList.length} 个 Tabs 为代码块`);
 
         // ===== 分类所有块 =====
-        const toProcess: { block: HTMLElement; id: string; codeText: string }[] = [];
+        const toProcess: { id: string; codeText: string }[] = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
@@ -142,14 +142,15 @@ export class TabConverter {
             let customAttribute = "";
             let id = "";
             // 用sql语句查询的结果使用block.ial,用Dom查询的结果使用block.attributes
-            if (block.ial) {
-                id = block.id;
+            if ("ial" in block && typeof block.ial === "string") {
+                id = block.id ?? "";
                 customAttribute = block.ial.match(
                     /custom-plugin-code-tabs-sourcecode="([^"]*)"/
                 )?.[1];
             } else {
-                id = block.attributes["data-node-id"].value;
-                customAttribute = block.attributes[`${CUSTOM_ATTR}`].value;
+                const domBlock = block as HTMLElement;
+                id = domBlock.getAttribute("data-node-id") ?? "";
+                customAttribute = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
             }
             const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
 
@@ -174,7 +175,7 @@ export class TabConverter {
             }
 
             // 有效，加入处理队列
-            toProcess.push({ block, id, codeText });
+            toProcess.push({ id, codeText });
         }
 
         const tabsToCodeMessages = {
@@ -222,9 +223,9 @@ export class TabConverter {
     }
 
     async allTabsToCode(): Promise<void> {
-        const blockList = await sql(
+        const blockList = (await sql(
             `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
-        );
+        )) as SqlBlock[];
         this.tabToCodeBatch(blockList);
     }
 
@@ -242,7 +243,7 @@ export class TabConverter {
     private resultCounter(
         messages: ConversionMessages,
         toProcess: Array<{ id: string }>,
-        results: PromiseSettledResult<any>[],
+        results: PromiseSettledResult<unknown>[],
         skipped: { nodeId: string; reason: string }[],
         invalid: { nodeId: string; reason: string }[]
     ): ConversionStats {
@@ -308,3 +309,10 @@ export class TabConverter {
         };
     }
 }
+
+type SqlBlock = {
+    ial?: string;
+    id?: string;
+};
+
+type TabBlock = HTMLElement | SqlBlock;

@@ -1,5 +1,5 @@
 import { Marked } from "marked";
-import markedKatex from "marked-katex-extension";
+import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
 import { CodeTab } from "@/modules/tabs/types";
 import { htmlBlockStr, protyleHtmlStr } from "@/constants";
@@ -57,10 +57,10 @@ export class TabRenderer {
                         },
                     })
                 );
-                const options = {
+                const options: MarkedKatexOptions = {
                     throwOnError: false,
                 };
-                marked.use(markedKatex(options as any));
+                marked.use(markedKatex(options));
                 hlText = marked.parse(code) as string;
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {

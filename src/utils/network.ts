@@ -47,7 +47,7 @@ export async function fetchWithRetry(
 /**
  * 从 URL 获取文件
  */
-export async function fetchFileFromUrl(route: string, fileName: string): Promise<File> {
+export async function fetchFileFromUrl(route: string, fileName: string): Promise<File | undefined> {
     try {
         let file: File;
         if (route === undefined) {
@@ -71,7 +71,10 @@ export async function fetchFileFromUrl(route: string, fileName: string): Promise
 /**
  * 从 URL 获取文件（简化版，无重试）
  */
-export async function fetchFileFromUrlSimple(route: string, fileName: string): Promise<File> {
+export async function fetchFileFromUrlSimple(
+    route: string,
+    fileName: string
+): Promise<File | undefined> {
     try {
         const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
         const url = baseUrl + route;
@@ -79,7 +82,7 @@ export async function fetchFileFromUrlSimple(route: string, fileName: string): P
         if (!response.ok) return undefined;
         const blob = await response.blob();
         return new File([blob], fileName, { type: blob.type });
-    } catch (e) {
+    } catch {
         return undefined;
     }
 }
@@ -87,7 +90,7 @@ export async function fetchFileFromUrlSimple(route: string, fileName: string): P
 /**
  * 从文件加载并解析 JSON 数据
  */
-export async function loadJsonFromFile(file: File): Promise<any> {
+export async function loadJsonFromFile(file: File): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -105,7 +108,7 @@ export async function loadJsonFromFile(file: File): Promise<any> {
 /**
  * 从文件加载并解析 YAML 数据
  */
-export async function loadYamlFromFile(file: File): Promise<any> {
+export async function loadYamlFromFile(file: File): Promise<unknown> {
     const text = await file.text();
     return yaml.load(text);
 }
@@ -113,7 +116,7 @@ export async function loadYamlFromFile(file: File): Promise<any> {
 /**
  * 从 URL 获取并解析 YAML 文件
  */
-export async function fetchYamlFromUrl(route: string, fileName: string): Promise<any> {
+export async function fetchYamlFromUrl(route: string, fileName: string): Promise<unknown> {
     try {
         const file = await fetchFileFromUrl(route, fileName);
         if (!file) return undefined;

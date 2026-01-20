@@ -12,19 +12,19 @@ class Logger {
         this.isDev = process.env.DEV_MODE === "true";
     }
 
-    public info(message: any): void {
+    public info(message: unknown): void {
         this.log(LogLevel.INFO, message);
     }
 
-    public warn(message: any): void {
+    public warn(message: unknown): void {
         this.log(LogLevel.WARNING, message);
     }
 
-    public error(message: any): void {
+    public error(message: unknown): void {
         this.log(LogLevel.ERROR, message);
     }
 
-    private log(level: LogLevel = LogLevel.INFO, message: any): void {
+    private log(level: LogLevel = LogLevel.INFO, message: unknown): void {
         // 生产环境中只输出错误信息，屏蔽 info 和 warn 信息
         if (!this.isDev) {
             if (level === LogLevel.ERROR) {
@@ -36,10 +36,8 @@ class Logger {
         }
         const timestamp = new Date().toISOString();
         let logHeader = `[${timestamp}] [code-tabs] [${level.toUpperCase()}]: `;
-        let elementFlag: Boolean = false;
-        if (message instanceof Element || message instanceof Object) {
-            elementFlag = true;
-        }
+        const elementFlag =
+            message instanceof Element || (typeof message === "object" && message !== null);
         if (elementFlag) {
             console.log(logHeader);
             console.log(message);

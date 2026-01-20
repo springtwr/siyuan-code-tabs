@@ -164,19 +164,44 @@ export interface IResExportResources {
 
 declare global {
     interface Window {
-        siyuan: {
-            appearance: any;
-            config: any;
-            notebooks: any;
-            menus: any;
-            dialogs: any;
-            blockPanels: any;
-            storage: any;
-            user: any;
-            ws: any;
-            languages: any;
+        siyuan: SiyuanGlobal;
+        pluginCodeTabs: unknown;
+        hljs: {
+            getLanguage: (lang: string) => unknown;
+            highlight: (
+                code: string,
+                options: { language: string; ignoreIllegals?: boolean }
+            ) => {
+                value: string;
+            };
         };
-        pluginCodeTabs: any;
-        hljs: any;
     }
 }
+
+type SiyuanGlobal = {
+    appearance: unknown;
+    config: {
+        editor: {
+            fontSize: number | string;
+            codeLigatures: boolean;
+            codeLineWrap: boolean;
+            codeSyntaxHighlightLineNum: boolean;
+            allowHTMLBLockScript?: boolean;
+        };
+        appearance: {
+            mode: string;
+            themeLight: string;
+            themeDark: string;
+            codeBlockThemeLight: string;
+            codeBlockThemeDark: string;
+        };
+    };
+    notebooks: unknown;
+    menus: unknown;
+    dialogs: unknown;
+    blockPanels: unknown;
+    storage: unknown;
+    user: unknown;
+    ws: unknown;
+    languages: unknown;
+};

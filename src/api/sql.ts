@@ -1,7 +1,7 @@
 import { Block } from "@/types";
 import { request } from "./request";
 
-export async function sql(sql: string): Promise<any[]> {
+export async function sql(sql: string): Promise<unknown[]> {
     let sqldata = {
         stmt: sql,
     };
@@ -9,8 +9,8 @@ export async function sql(sql: string): Promise<any[]> {
     return request(url, sqldata);
 }
 
-export async function getBlockByID(blockId: string): Promise<Block> {
+export async function getBlockByID(blockId: string): Promise<Block | undefined> {
     let sqlScript = `select * from blocks where id ='${blockId}'`;
-    let data = await sql(sqlScript);
+    let data = (await sql(sqlScript)) as Block[];
     return data[0];
 }

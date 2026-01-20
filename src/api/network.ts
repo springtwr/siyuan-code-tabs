@@ -4,8 +4,8 @@ import { request } from "./request";
 export async function forwardProxy(
     url: string,
     method: string = "GET",
-    payload: any = {},
-    headers: any[] = [],
+    payload: unknown = {},
+    headers: unknown[] = [],
     timeout: number = 7000,
     contentType: string = "text/html"
 ): Promise<IResForwardProxy> {

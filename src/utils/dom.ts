@@ -49,7 +49,14 @@ export function getNodeId(element: HTMLElement): string | null {
 /**
  * 比较两个对象的配置
  */
-export function compareConfig(pluginConfig: any, siyuanConfig: any): boolean {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+export function compareConfig(pluginConfig: unknown, siyuanConfig: unknown): boolean {
+    if (!isRecord(pluginConfig) || !isRecord(siyuanConfig)) {
+        return false;
+    }
     const pluginKeys = Object.keys(pluginConfig);
     const siyuanKeys = Object.keys(siyuanConfig);
     if (pluginKeys.length !== siyuanKeys.length) return false;
@@ -62,7 +69,7 @@ export function compareConfig(pluginConfig: any, siyuanConfig: any): boolean {
 /**
  * 获取思源配置
  */
-export function getSiyuanConfig(): any {
+export function getSiyuanConfig(): Record<string, unknown> {
     return {
         fontSize: window.siyuan.config.editor.fontSize,
         mode: window.siyuan.config.appearance.mode,
@@ -79,7 +86,7 @@ export function getSiyuanConfig(): any {
 /**
  * 同步思源配置
  */
-export function syncSiyuanConfig(data: any): void {
+export function syncSiyuanConfig(data: Record<string, unknown>): void {
     const properties = getSiyuanConfig();
     Object.keys(properties).forEach((key) => {
         Object.defineProperty(data, key, {

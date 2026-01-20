@@ -83,7 +83,10 @@ export async function getIDsByHPath(notebook: NotebookId, path: string): Promise
     return request(url, data);
 }
 
-export async function upload(assetsDirPath: string, files: any[]): Promise<IResUpload> {
+export async function upload(
+    assetsDirPath: string,
+    files: Array<Blob | File>
+): Promise<IResUpload> {
     let form = new FormData();
     form.append("assetsDirPath", assetsDirPath);
     for (let file of files) {
@@ -93,7 +96,7 @@ export async function upload(assetsDirPath: string, files: any[]): Promise<IResU
     return request(url, form);
 }
 
-export async function getFile(path: string): Promise<any> {
+export async function getFile(path: string): Promise<unknown> {
     let data = {
         path: path,
     };
@@ -101,12 +104,12 @@ export async function getFile(path: string): Promise<any> {
     try {
         let file = await fetchSyncPost(url, data);
         return file;
-    } catch (error_msg) {
+    } catch {
         return null;
     }
 }
 
-export async function putFile(path: string, isDir: boolean, file: any) {
+export async function putFile(path: string, isDir: boolean, file: Blob | File) {
     let form = new FormData();
     form.append("path", path);
     form.append("isDir", isDir.toString());

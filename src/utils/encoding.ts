@@ -48,7 +48,7 @@ export function decodeSource(stored: string): string {
         }
         const decoder = new TextDecoder();
         return decoder.decode(bytes);
-    } catch (error) {
+    } catch {
         // 解码失败：可能是未编码的明文（如用户直接输入的文本）
         // 或损坏数据，此时直接返回原字符串（不 strip）
         return stored;

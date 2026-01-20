@@ -1,8 +1,9 @@
 import { pushMsg } from "@/api";
 import { CodeTab } from "@/modules/tabs/types";
+import { IObject } from "siyuan";
 
 export class TabParser {
-    static checkCodeText(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
+    static checkCodeText(codeText: string, i18n: IObject): { result: boolean; code: CodeTab[] } {
         codeText = codeText.trim();
         // 兼容旧语法
         if (codeText.startsWith("tab:::")) {
@@ -43,7 +44,7 @@ export class TabParser {
         return result.trim();
     }
 
-    private static parseNew(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
+    private static parseNew(codeText: string, i18n: IObject): { result: boolean; code: CodeTab[] } {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
         if (parts[0].trim() === "") parts.shift();
@@ -110,7 +111,10 @@ export class TabParser {
         return { result: true, code: codeResult };
     }
 
-    private static parseLegacy(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
+    private static parseLegacy(
+        codeText: string,
+        i18n: IObject
+    ): { result: boolean; code: CodeTab[] } {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
         if (!codeArr) return { result: false, code: [] };
 

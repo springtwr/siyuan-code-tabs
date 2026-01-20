@@ -15,13 +15,11 @@ export default class CodeTabs extends Plugin {
     private tabConverter!: TabConverter;
     private themeObserver?: MutationObserver;
     private injectedStyleEl?: HTMLStyleElement;
-    private onLoadedProtyleStatic = (evt: any) => {
-        const detail = evt?.detail;
-        LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+    private onLoadedProtyleStatic = (evt: unknown) => {
+        this.handleProtyleLoaded(evt);
     };
-    private onLoadedProtyleDynamic = (evt: any) => {
-        const detail = evt?.detail;
-        LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+    private onLoadedProtyleDynamic = (evt: unknown) => {
+        this.handleProtyleLoaded(evt);
     };
 
     async onload() {
@@ -111,9 +109,9 @@ export default class CodeTabs extends Plugin {
 
         const html = document.documentElement;
         const head = document.head;
-        const callback = (mutationsList: any) => {
+        const callback = (mutationsList: MutationRecord[]) => {
             const siyuanConfig = getSiyuanConfig();
-            for (let mutation of mutationsList) {
+            for (const mutation of mutationsList) {
                 // 1. 检查思源基础配置是否有变动
                 if (!compareConfig(siyuanConfig, this.data)) {
                     debounced();
@@ -189,7 +187,7 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    private blockIconEvent({ detail }: any) {
+    private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
         detail.menu.addItem({
             iconHTML: "",
             label: this.i18n.codeToTabs,
@@ -208,7 +206,7 @@ export default class CodeTabs extends Plugin {
             iconHTML: "",
             label: this.i18n.tabToCode,
             click: () => {
-                const blockList: any[] = [];
+                const blockList: HTMLElement[] = [];
                 for (const item of detail.blockElements) {
                     const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
                     if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
@@ -249,4 +247,23 @@ export default class CodeTabs extends Plugin {
         });
         await putFile(CONFIG_JSON, false, file);
     }
+
+    private handleProtyleLoaded(evt: unknown) {
+        const detail = (
+            evt as {
+                detail?: {
+                    protyle?: { contentElement?: HTMLElement };
+                    element?: HTMLElement;
+                };
+            }
+        )?.detail;
+        LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+    }
 }
+
+type BlockIconEventDetail = {
+    menu: {
+        addItem: (item: { iconHTML: string; label: string; click: () => void }) => void;
+    };
+    blockElements: HTMLElement[];
+};

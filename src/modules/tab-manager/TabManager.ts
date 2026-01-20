@@ -113,7 +113,9 @@ export class TabManager {
                         copyTextToClipboard(textContent);
                     });
                 } else {
-                    copyTextToClipboard(textContent);
+                    const codeEl = tabContent.querySelector(".code");
+                    const codeText = codeEl?.textContent;
+                    copyTextToClipboard(codeText ?? textContent);
                 }
 
                 function copyTextToClipboard(text: string) {

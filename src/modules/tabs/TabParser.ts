@@ -1,31 +1,31 @@
-import {pushMsg} from "@/api";
-import {CodeTab} from "@/modules/tabs/types";
+import { pushMsg } from "@/api";
+import { CodeTab } from "@/modules/tabs/types";
 
 export class TabParser {
-    static checkCodeText(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
+    static checkCodeText(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
         codeText = codeText.trim();
         // 兼容旧语法
-        if (codeText.startsWith('tab:::')) {
+        if (codeText.startsWith("tab:::")) {
             return this.parseLegacy(codeText, i18n);
         }
         // 新语法
-        if (codeText.startsWith(':::')) {
+        if (codeText.startsWith(":::")) {
             return this.parseNew(codeText, i18n);
         }
         pushMsg(i18n.headErrWhenCheckCode).then();
-        return {result: false, code: []};
+        return { result: false, code: [] };
     }
 
     static generateNewSyntax(tabs: CodeTab[]): string {
-        let result = '';
+        let result = "";
         for (const tab of tabs) {
             let title = tab.title;
-            let active = '';
+            let active = "";
 
             // 提取标题中的激活标记
-            if (title.includes(':::active')) {
-                title = title.replace(':::active', '').trim();
-                active = ' | active';
+            if (title.includes(":::active")) {
+                title = title.replace(":::active", "").trim();
+                active = " | active";
             }
 
             let lang = tab.language;
@@ -43,18 +43,18 @@ export class TabParser {
         return result.trim();
     }
 
-    private static parseNew(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
+    private static parseNew(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
-        if (parts[0].trim() === '') parts.shift();
+        if (parts[0].trim() === "") parts.shift();
 
         const codeResult: CodeTab[] = [];
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
-            const firstLineBreak = part.indexOf('\n');
-            let headerLine = '';
-            let codeContent = '';
+            const firstLineBreak = part.indexOf("\n");
+            let headerLine = "";
+            let codeContent = "";
 
             if (firstLineBreak === -1) {
                 // 只有一行的情况
@@ -64,21 +64,21 @@ export class TabParser {
                 codeContent = part.substring(firstLineBreak + 1).trim();
             }
 
-            const headerParts = headerLine.split('|').map(item => item.trim());
+            const headerParts = headerLine.split("|").map((item) => item.trim());
             const title = headerParts[0];
 
             if (!title) {
                 pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
-                return {result: false, code: []};
+                return { result: false, code: [] };
             }
 
-            let language = '';
+            let language = "";
             let isActive = false;
 
             // 检查后续参数
             for (let j = 1; j < headerParts.length; j++) {
                 const p = headerParts[j].toLowerCase();
-                if (p === 'active') {
+                if (p === "active") {
                     isActive = true;
                 } else if (!language) {
                     language = p;
@@ -97,66 +97,69 @@ export class TabParser {
                 codeResult.push({
                     title: `${title} :::active`,
                     language: language,
-                    code: codeContent
+                    code: codeContent,
                 });
             } else {
                 codeResult.push({
                     title: title,
                     language: language,
-                    code: codeContent
+                    code: codeContent,
                 });
             }
         }
-        return {result: true, code: codeResult};
+        return { result: true, code: codeResult };
     }
 
-    private static parseLegacy(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
+    private static parseLegacy(codeText: string, i18n: any): { result: boolean; code: CodeTab[] } {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
-        if (!codeArr) return {result: false, code: []};
+        if (!codeArr) return { result: false, code: [] };
 
         const codeResult: CodeTab[] = [];
         for (let i = 0; i < codeArr.length; i++) {
-            const codeSplitArr = codeArr[i].trim().split('\n');
-            if (codeSplitArr.length === 1 || (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith('lang:::'))) {
+            const codeSplitArr = codeArr[i].trim().split("\n");
+            if (
+                codeSplitArr.length === 1 ||
+                (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith("lang:::"))
+            ) {
                 pushMsg(`${i18n.noCodeWhenCheckCode} (${i + 1})`).then();
-                return {result: false, code: []};
+                return { result: false, code: [] };
             }
             if (codeSplitArr[0].length < 7) {
                 pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
-                return {result: false, code: []};
+                return { result: false, code: [] };
             }
             const title = codeSplitArr[0].substring(6).trim();
-            let language = '';
-            if (codeSplitArr[1].trim().startsWith('lang:::')) {
+            let language = "";
+            if (codeSplitArr[1].trim().startsWith("lang:::")) {
                 const languageLine = codeSplitArr[1].trim();
                 if (languageLine.length < 8) {
                     pushMsg(`${i18n.noLangWhenCheckCode} (${i + 1})`).then();
-                    return {result: false, code: []};
+                    return { result: false, code: [] };
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
 
                 codeSplitArr.splice(1, 1);
             }
             codeSplitArr.shift();
-            const code = codeSplitArr.join('\n').trim();
-            if (language === '') {
-                language = title.split(':::active')[0].trim();
+            const code = codeSplitArr.join("\n").trim();
+            if (language === "") {
+                language = title.split(":::active")[0].trim();
             }
             language = this.getLanguage(language);
             codeResult.push({
                 title: title,
                 language: language,
-                code: code
+                code: code,
             });
         }
-        return {result: true, code: codeResult};
+        return { result: true, code: codeResult };
     }
 
     private static getLanguage(lang: string) {
-        if (lang === 'markdown-render') {
-            return 'markdown-render';
+        if (lang === "markdown-render") {
+            return "markdown-render";
         } else {
-            return window.hljs.getLanguage(lang) ? lang.toLowerCase() : 'plaintext';
+            return window.hljs.getLanguage(lang) ? lang.toLowerCase() : "plaintext";
         }
     }
 }

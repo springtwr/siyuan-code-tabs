@@ -1,5 +1,5 @@
-import {IResBootProgress} from "@/types";
-import {request} from "./request";
+import { IResBootProgress } from "@/types";
+import { request } from "./request";
 
 export async function bootProgress(): Promise<IResBootProgress> {
     return request("/api/system/bootProgress", {});

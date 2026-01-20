@@ -1,4 +1,4 @@
-import {fetchSyncPost, IWebSocketData} from "siyuan";
+import { fetchSyncPost, IWebSocketData } from "siyuan";
 
 export async function request<T = any>(url: string, data: any): Promise<T> {
     let response: IWebSocketData = await fetchSyncPost(url, data);

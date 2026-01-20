@@ -1,4 +1,4 @@
-import {fetchSyncPost} from "siyuan";
+import { fetchSyncPost } from "siyuan";
 import {
     BlockId,
     DocumentId,
@@ -6,11 +6,15 @@ import {
     IResExportResources,
     IResReadDir,
     IResUpload,
-    NotebookId
+    NotebookId,
 } from "@/types";
-import {request} from "./request";
+import { request } from "./request";
 
-export async function createDocWithMd(notebook: NotebookId, path: string, markdown: string): Promise<DocumentId> {
+export async function createDocWithMd(
+    notebook: NotebookId,
+    path: string,
+    markdown: string
+): Promise<DocumentId> {
     let data = {
         notebook: notebook,
         path: path,
@@ -20,11 +24,15 @@ export async function createDocWithMd(notebook: NotebookId, path: string, markdo
     return request(url, data);
 }
 
-export async function renameDoc(notebook: NotebookId, path: string, title: string): Promise<DocumentId> {
+export async function renameDoc(
+    notebook: NotebookId,
+    path: string,
+    title: string
+): Promise<DocumentId> {
     let data = {
         doc: notebook,
         path: path,
-        title: title
+        title: title,
     };
     let url = "/api/filetree/renameDoc";
     return request(url, data);
@@ -43,7 +51,7 @@ export async function moveDocs(fromPaths: string[], toNotebook: NotebookId, toPa
     let data = {
         fromPaths: fromPaths,
         toNotebook: toNotebook,
-        toPath: toPath
+        toPath: toPath,
     };
     let url = "/api/filetree/moveDocs";
     return request(url, data);
@@ -52,7 +60,7 @@ export async function moveDocs(fromPaths: string[], toNotebook: NotebookId, toPa
 export async function getHPathByPath(notebook: NotebookId, path: string): Promise<string> {
     let data = {
         notebook: notebook,
-        path: path
+        path: path,
     };
     let url = "/api/filetree/getHPathByPath";
     return request(url, data);
@@ -60,7 +68,7 @@ export async function getHPathByPath(notebook: NotebookId, path: string): Promis
 
 export async function getHPathByID(id: BlockId): Promise<string> {
     let data = {
-        id: id
+        id: id,
     };
     let url = "/api/filetree/getHPathByID";
     return request(url, data);
@@ -69,7 +77,7 @@ export async function getHPathByID(id: BlockId): Promise<string> {
 export async function getIDsByHPath(notebook: NotebookId, path: string): Promise<BlockId[]> {
     let data = {
         notebook: notebook,
-        path: path
+        path: path,
     };
     let url = "/api/filetree/getIDsByHPath";
     return request(url, data);
@@ -87,7 +95,7 @@ export async function upload(assetsDirPath: string, files: any[]): Promise<IResU
 
 export async function getFile(path: string): Promise<any> {
     let data = {
-        path: path
+        path: path,
     };
     let url = "/api/file/getFile";
     try {
@@ -112,7 +120,7 @@ export async function putFile(path: string, isDir: boolean, file: any) {
 
 export async function removeFile(path: string) {
     let data = {
-        path: path
+        path: path,
     };
     let url = "/api/file/removeFile";
     return request(url, data);
@@ -120,7 +128,7 @@ export async function removeFile(path: string) {
 
 export async function readDir(path: string): Promise<IResReadDir> {
     let data = {
-        path: path
+        path: path,
     };
     let url = "/api/file/readDir";
     return request(url, data);
@@ -128,7 +136,7 @@ export async function readDir(path: string): Promise<IResReadDir> {
 
 export async function exportMdContent(id: DocumentId): Promise<IResExportMdContent> {
     let data = {
-        id: id
+        id: id,
     };
     let url = "/api/export/exportMdContent";
     return request(url, data);
@@ -137,7 +145,7 @@ export async function exportMdContent(id: DocumentId): Promise<IResExportMdConte
 export async function exportResources(paths: string[], name: string): Promise<IResExportResources> {
     let data = {
         paths: paths,
-        name: name
+        name: name,
     };
     let url = "/api/export/exportResources";
     return request(url, data);
@@ -147,7 +155,7 @@ export type PandocArgs = string;
 
 export async function pandoc(args: PandocArgs[]) {
     let data = {
-        args: args
+        args: args,
     };
     let url = "/api/convert/pandoc";
     return request(url, data);

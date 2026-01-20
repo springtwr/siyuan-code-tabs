@@ -1,14 +1,14 @@
-import {getActiveEditor, Plugin, Setting} from "siyuan";
-import {pushErrMsg, putFile} from "@/api";
+import { getActiveEditor, Plugin, Setting } from "siyuan";
+import { pushErrMsg, putFile } from "@/api";
 import logger from "@/utils/logger";
-import {CONFIG_JSON, CUSTOM_ATTR, HTML_BLOCK_STYLE, settingIconMain} from "@/constants";
-import {TabConverter} from "@/modules/tabs/TabConverter";
-import {ThemeManager} from "@/modules/theme/ThemeManager";
-import {TabManager} from "@/modules/tabs/TabManager";
-import {LineNumberManager} from "@/modules/line-number/LineNumberManager";
-import {fetchFileFromUrlSimple, loadJsonFromFile} from "@/utils/network";
-import {compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig} from "@/utils/dom";
-import {debounce} from "@/utils/common";
+import { CONFIG_JSON, CUSTOM_ATTR, HTML_BLOCK_STYLE, settingIconMain } from "@/constants";
+import { TabConverter } from "@/modules/tabs/TabConverter";
+import { ThemeManager } from "@/modules/theme/ThemeManager";
+import { TabManager } from "@/modules/tabs/TabManager";
+import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
+import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
+import { debounce } from "@/utils/common";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -42,7 +42,7 @@ export default class CodeTabs extends Plugin {
 
         // 添加设置项
         this.setting = new Setting({
-            confirmCallback: () => {}
+            confirmCallback: () => {},
         });
         const allTabsToCodeElement = document.createElement("button");
         allTabsToCodeElement.className = "b3-button b3-button--outline fn__flex-center fn__size200";
@@ -63,15 +63,17 @@ export default class CodeTabs extends Plugin {
             editorCallback: () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
                 this.tabConverter.codeToTabsBatch(blockList);
-            }
+            },
         });
         this.addCommand({
             langKey: "tabToCode",
             hotkey: "",
             editorCallback: () => {
-                const blockList = getSelectedElements(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+                const blockList = getSelectedElements(
+                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+                );
                 this.tabConverter.tabToCodeBatch(blockList);
-            }
+            },
         });
     }
 
@@ -84,12 +86,15 @@ export default class CodeTabs extends Plugin {
             position: "right",
             callback: () => {
                 this.openSetting();
-            }
+            },
         });
 
         syncSiyuanConfig(this.data);
 
-        const configFile = await fetchFileFromUrlSimple(CONFIG_JSON.replace('/data', ''), 'config.json');
+        const configFile = await fetchFileFromUrlSimple(
+            CONFIG_JSON.replace("/data", ""),
+            "config.json"
+        );
         if (configFile === undefined || configFile.size === 0) {
             await ThemeManager.putStyleFile();
             await this.saveConfig();
@@ -117,22 +122,30 @@ export default class CodeTabs extends Plugin {
 
                 // 2. 检查 html 元素和 head 中主题相关的变动
                 const isThemeLink = (node: Node) => {
-                    return node instanceof HTMLLinkElement && node.href.includes('/appearance/themes/');
+                    return (
+                        node instanceof HTMLLinkElement && node.href.includes("/appearance/themes/")
+                    );
                 };
 
-                if (mutation.target === document.documentElement && mutation.type === 'attributes') {
+                if (
+                    mutation.target === document.documentElement &&
+                    mutation.type === "attributes"
+                ) {
                     // html 元素的任何属性变动 (如 data-theme-mode, savor-theme 等)
                     debounced();
                     break;
                 }
 
-                if (mutation.type === 'childList') {
-                    const nodes = [...Array.from(mutation.addedNodes as NodeList), ...Array.from(mutation.removedNodes as NodeList)];
+                if (mutation.type === "childList") {
+                    const nodes = [
+                        ...Array.from(mutation.addedNodes as NodeList),
+                        ...Array.from(mutation.removedNodes as NodeList),
+                    ];
                     if (nodes.some((node: Node) => isThemeLink(node))) {
                         debounced();
                         break;
                     }
-                } else if (mutation.type === 'attributes') {
+                } else if (mutation.type === "attributes") {
                     if (isThemeLink(mutation.target as Node)) {
                         debounced();
                         break;
@@ -149,12 +162,12 @@ export default class CodeTabs extends Plugin {
                 ThemeManager.updateAllTabsStyle();
                 LineNumberManager.refreshAll();
             });
-        }
+        };
 
         const debounced = debounce(putFileHandler, 500);
         this.themeObserver = new MutationObserver(callback);
-        this.themeObserver.observe(html, {attributes: true, childList: false, subtree: false});
-        this.themeObserver.observe(head, {attributes: true, childList: true, subtree: true});
+        this.themeObserver.observe(html, { attributes: true, childList: false, subtree: false });
+        this.themeObserver.observe(head, { attributes: true, childList: true, subtree: true });
 
         this.eventBus.on("loaded-protyle-static", this.onLoadedProtyleStatic);
         this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
@@ -176,9 +189,11 @@ export default class CodeTabs extends Plugin {
         }
     }
 
-    private blockIconEvent({detail}: any) {
+    private blockIconEvent({ detail }: any) {
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.codeToTabs, click: () => {
+            iconHTML: "",
+            label: this.i18n.codeToTabs,
+            click: () => {
                 const blockList: HTMLElement[] = [];
                 for (const item of detail.blockElements as HTMLElement[]) {
                     const editElement = item.querySelector('[contenteditable="true"]');
@@ -187,10 +202,12 @@ export default class CodeTabs extends Plugin {
                     }
                 }
                 this.tabConverter.codeToTabsBatch(blockList);
-            }
+            },
         });
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.tabToCode, click: () => {
+            iconHTML: "",
+            label: this.i18n.tabToCode,
+            click: () => {
                 const blockList: any[] = [];
                 for (const item of detail.blockElements) {
                     const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
@@ -199,15 +216,19 @@ export default class CodeTabs extends Plugin {
                     }
                 }
                 this.tabConverter.tabToCodeBatch(blockList);
-            }
-        })
+            },
+        });
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.codeToTabsInDocument, click: () => {
+            iconHTML: "",
+            label: this.i18n.codeToTabsInDocument,
+            click: () => {
                 this.tabConverter.codeToTabsInDocument();
             },
         });
         detail.menu.addItem({
-            iconHTML: "", label: this.i18n.tabToCodeInDocument, click: () => {
+            iconHTML: "",
+            label: this.i18n.tabToCodeInDocument,
+            click: () => {
                 this.tabConverter.tabToCodeInDocument();
             },
         });
@@ -223,9 +244,9 @@ export default class CodeTabs extends Plugin {
 
     private async saveConfig() {
         syncSiyuanConfig(this.data);
-        const file = new File([JSON.stringify(this.data)], 'config.json', {type: 'application/json'});
+        const file = new File([JSON.stringify(this.data)], "config.json", {
+            type: "application/json",
+        });
         await putFile(CONFIG_JSON, false, file);
     }
-
-
 }

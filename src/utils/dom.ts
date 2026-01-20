@@ -41,7 +41,7 @@ export function getNodeId(element: HTMLElement): string | null {
     // 尝试从 Shadow DOM 获取
     const nodeIdFromShadow = getNodeIdFromShadow(element);
     if (nodeIdFromShadow) return nodeIdFromShadow;
-    
+
     // 尝试从普通 DOM 获取
     return element.dataset.nodeId || null;
 }
@@ -72,7 +72,7 @@ export function getSiyuanConfig(): any {
         codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark,
         codeLigatures: window.siyuan.config.editor.codeLigatures,
         codeLineWrap: window.siyuan.config.editor.codeLineWrap,
-        codeSyntaxHighlightLineNum: window.siyuan.config.editor.codeSyntaxHighlightLineNum
+        codeSyntaxHighlightLineNum: window.siyuan.config.editor.codeSyntaxHighlightLineNum,
     };
 }
 
@@ -81,11 +81,11 @@ export function getSiyuanConfig(): any {
  */
 export function syncSiyuanConfig(data: any): void {
     const properties = getSiyuanConfig();
-    Object.keys(properties).forEach(key => {
+    Object.keys(properties).forEach((key) => {
         Object.defineProperty(data, key, {
             value: properties[key],
             writable: true,
-            enumerable: true
+            enumerable: true,
         });
     });
 }
@@ -120,9 +120,7 @@ export function getSelectedElements(selector: string): HTMLElement[] {
 
     // 向上查找匹配 selector 的祖先
     let el: Element | null =
-        node.nodeType === Node.ELEMENT_NODE
-        ? (node as Element)
-        : node.parentElement;
+        node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
 
     while (el) {
         if (el.matches(selector)) {

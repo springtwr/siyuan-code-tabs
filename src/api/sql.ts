@@ -1,5 +1,5 @@
-import {Block} from "@/types";
-import {request} from "./request";
+import { Block } from "@/types";
+import { request } from "./request";
 
 export async function sql(sql: string): Promise<any[]> {
     let sqldata = {

@@ -6,7 +6,7 @@
  * Promise 延迟函数
  */
 export function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -26,7 +26,7 @@ export function debounce<T extends Function>(func: T, wait: number) {
 export function shallowEqual(objA: any, objB: any): boolean {
     if (objA === objB) return true;
 
-    if (!objA || !objB || typeof objA !== 'object' || typeof objB !== 'object') {
+    if (!objA || !objB || typeof objA !== "object" || typeof objB !== "object") {
         return false;
     }
 

@@ -1,53 +1,35 @@
 import { CodeBlockStyleSnapshot, ThemeStyle } from "@/modules/theme/types";
 
 export const StyleProbe = (() => {
-
     const SYNC_PROPS = {
         block: [
-            'backgroundColor',
-            'border',
-            'borderLeft',
-            'borderRadius',
-            'boxShadow',
-            'margin',
-            'padding',
-            'maxHeight',
-            'fontSize',
-            'lineHeight',
-            'color'
+            "backgroundColor",
+            "border",
+            "borderLeft",
+            "borderRadius",
+            "boxShadow",
+            "margin",
+            "padding",
+            "maxHeight",
+            "fontSize",
+            "lineHeight",
+            "color",
         ],
-        header: [
-            'position',
-            'height',
-            'padding',
-            'backgroundColor',
-            'borderBottom',
-        ],
-        body: [
-            'fontFamily',
-            'padding',
-            'backgroundColor',
-            'overflowY',
-            'borderTop'
-        ],
-        content: [
-            'backgroundColor',
-            'margin',
-            'padding'
-        ]
-
-    }
+        header: ["position", "height", "padding", "backgroundColor", "borderBottom"],
+        body: ["fontFamily", "padding", "backgroundColor", "overflowY", "borderTop"],
+        content: ["backgroundColor", "margin", "padding"],
+    };
 
     function extract(el, props) {
-        const cs = getComputedStyle(el)
-        const out = {}
-        for (const p of props) out[p] = cs[p]
-        return out
+        const cs = getComputedStyle(el);
+        const out = {};
+        for (const p of props) out[p] = cs[p];
+        return out;
     }
 
     function createVirtualProtyle() {
-        const root = document.createElement('div')
-        root.className = 'protyle'
+        const root = document.createElement("div");
+        root.className = "protyle";
         root.style.cssText = `
             position: fixed;
             top: -9999px;
@@ -55,57 +37,57 @@ export const StyleProbe = (() => {
             visibility: hidden;
             pointer-events: none;
             contain: layout style paint;
-            `
+            `;
 
-        const wysiwyg = document.createElement('div')
-        wysiwyg.className = 'protyle-wysiwyg'
-        wysiwyg.setAttribute('contenteditable', 'true')
+        const wysiwyg = document.createElement("div");
+        wysiwyg.className = "protyle-wysiwyg";
+        wysiwyg.setAttribute("contenteditable", "true");
 
-        const block = document.createElement('div')
-        block.className = 'code-block'
-        block.dataset.type = 'NodeCodeBlock'
-        block.dataset.nodeId = 'virtual'
+        const block = document.createElement("div");
+        block.className = "code-block";
+        block.dataset.type = "NodeCodeBlock";
+        block.dataset.nodeId = "virtual";
 
-        const action = document.createElement('div')
-        action.className = 'protyle-action'
+        const action = document.createElement("div");
+        action.className = "protyle-action";
 
-        const hljs = document.createElement('div')
-        hljs.className = 'hljs'
-        hljs.textContent = 'test'
+        const hljs = document.createElement("div");
+        hljs.className = "hljs";
+        hljs.textContent = "test";
 
-        const content = document.createElement('div')
-        content.setAttribute('contenteditable', 'true')
-        content.setAttribute('spellcheck', 'false')
+        const content = document.createElement("div");
+        content.setAttribute("contenteditable", "true");
+        content.setAttribute("spellcheck", "false");
 
-        hljs.appendChild(content)
-        block.append(action, hljs)
-        wysiwyg.appendChild(block)
-        root.appendChild(wysiwyg)
-        document.body.appendChild(root)
+        hljs.appendChild(content);
+        block.append(action, hljs);
+        wysiwyg.appendChild(block);
+        root.appendChild(wysiwyg);
+        document.body.appendChild(root);
 
-        return { root, block, action, hljs, content }
+        return { root, block, action, hljs, content };
     }
 
     function probe() {
-        const { root, block, action, hljs, content } = createVirtualProtyle()
+        const { root, block, action, hljs, content } = createVirtualProtyle();
 
         const snapshot: CodeBlockStyleSnapshot = {
             block: extract(block, SYNC_PROPS.block),
             header: extract(action, SYNC_PROPS.header),
             body: extract(hljs, SYNC_PROPS.body),
-            content: extract(content, SYNC_PROPS.content)
-        }
+            content: extract(content, SYNC_PROPS.content),
+        };
 
-        root.remove()
-        return snapshot
+        root.remove();
+        return snapshot;
     }
 
     return {
         get() {
-            return probe()
+            return probe();
         },
         getFullStyle(): ThemeStyle {
-            const cache = probe()
+            const cache = probe();
 
             return {
                 blockBg: cache.block.backgroundColor,
@@ -130,8 +112,8 @@ export const StyleProbe = (() => {
                 protyleActionBorderBottom: cache.header.borderBottom,
                 hljsBorderTop: cache.body.borderTop,
                 hljsOverflowY: cache.body.overflowY,
-                hljsMaxHeight: cache.block.maxHeight
-            }
-        }
-    }
-})()
+                hljsMaxHeight: cache.block.maxHeight,
+            };
+        },
+    };
+})();

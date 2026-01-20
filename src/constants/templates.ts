@@ -1,5 +1,14 @@
-import {BACKGROUND_CSS, CODE_STYLE_CSS, CODE_TABS_CSS, COPY_PNG, DATA_PATH, GITHUB_MARKDOWN_CSS, KATEX_CSS, PLUGIN_PATH} from "./paths";
-import {CUSTOM_ATTR} from "./keys";
+import {
+    BACKGROUND_CSS,
+    CODE_STYLE_CSS,
+    CODE_TABS_CSS,
+    COPY_PNG,
+    DATA_PATH,
+    GITHUB_MARKDOWN_CSS,
+    KATEX_CSS,
+    PLUGIN_PATH,
+} from "./paths";
+import { CUSTOM_ATTR } from "./keys";
 
 export const HTML_BLOCK_STYLE = `
 div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { 
@@ -23,7 +32,9 @@ export const htmlBlockStr = `
         <span style="position: absolute"></span>
     </div>
     <div class="protyle-attr" contenteditable="false"></div>
-</div>`.replace(/>\s+</g, "><").trim();
+</div>`
+    .replace(/>\s+</g, "><")
+    .trim();
 
 export const protyleHtmlStr = `
 <div> 
@@ -43,7 +54,10 @@ export const protyleHtmlStr = `
             </span>
         </div>
     </div>
-</div>`.replace(/>\s+</g, "><").replace(/\s+/g, " ").trim();
+</div>`
+    .replace(/>\s+</g, "><")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const settingIconMain = `<svg xmlns="http://www.w3.org/2000/svg"
       t="1767821223789"

@@ -595,7 +595,7 @@ themes:
       .markdown-body {
           counter-reset: h1-counter;
       }
-      
+
       .markdown-body h1 { counter-increment: h1-counter; counter-reset: h2-counter h3-counter h4-counter h5-counter h6-counter; }
       .markdown-body h2 { counter-increment: h2-counter; counter-reset: h3-counter h4-counter h5-counter h6-counter; }
       .markdown-body h3 { counter-increment: h3-counter; counter-reset: h4-counter h5-counter h6-counter; }
@@ -618,7 +618,7 @@ themes:
       .markdown-body h3:not(:empty)::after { background: var(--h3-r-graphic); }
       .markdown-body h4:not(:empty)::after { background: var(--h4-r-graphic); }
       .markdown-body h5:not(:empty)::after { background: var(--h5-r-graphic); }
-      
+
       .markdown-body :is(h1, h2, h3, h4, h5, h6):not(:empty)::after {
           content: "";
           position: absolute;

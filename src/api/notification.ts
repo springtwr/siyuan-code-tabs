@@ -1,4 +1,4 @@
-import {request} from "./request";
+import { request } from "./request";
 
 // /api/notification/pushMsg
 // {
@@ -8,7 +8,7 @@ import {request} from "./request";
 export async function pushMsg(msg: string, timeout: number = 7000) {
     let payload = {
         msg: msg,
-        timeout: timeout
+        timeout: timeout,
     };
     let url = "/api/notification/pushMsg";
     return request(url, payload);
@@ -17,7 +17,7 @@ export async function pushMsg(msg: string, timeout: number = 7000) {
 export async function pushErrMsg(msg: string, timeout: number = 7000) {
     let payload = {
         msg: msg,
-        timeout: timeout
+        timeout: timeout,
     };
     let url = "/api/notification/pushErrMsg";
     return request(url, payload);

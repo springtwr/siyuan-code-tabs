@@ -1,10 +1,10 @@
-import {BlockId} from "@/types";
-import {request} from "./request";
+import { BlockId } from "@/types";
+import { request } from "./request";
 
 export async function setBlockAttrs(id: BlockId, attrs: { [key: string]: string }) {
     let data = {
         id: id,
-        attrs: attrs
+        attrs: attrs,
     };
     let url = "/api/attr/setBlockAttrs";
     return request(url, data);
@@ -12,7 +12,7 @@ export async function setBlockAttrs(id: BlockId, attrs: { [key: string]: string 
 
 export async function getBlockAttrs(id: BlockId): Promise<{ [key: string]: string }> {
     let data = {
-        id: id
+        id: id,
     };
     let url = "/api/attr/getBlockAttrs";
     return request(url, data);

@@ -14,11 +14,11 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 - When exporting to markdown or html, all the code-tabs styles will be lost, only when exporting pdf or image can the
   code-tabs be displayed normally.
 - The style of the code-tabs may appear abnormally when switching themes, then please try the following methods:
-    - change appearance mode
-    - change theme
-    - Close document and reopen it
-    - Try the above method again after restarting SiYuan Notes
-- ***Only SiYuan 3.5.0 and above can be used normally***
+  - change appearance mode
+  - change theme
+  - Close document and reopen it
+  - Try the above method again after restarting SiYuan Notes
+- **_Only SiYuan 3.5.0 and above can be used normally_**
 
 ## Tips
 
@@ -31,10 +31,11 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 1. Insert a code block in the SiYuan document as follows. Use `:::` as the beginning, followed by the `title | language | active` format.
    For example `::: title | language | active`, where `active` indicates that this tab is activated by default when the document is opened. If this flag is not added,
    the first tab is activated by default. The language parameter is optional, if omitted it will use the title as the default language for the code. [Example file](./asset/example.md)
-    - When the language is `markdown-render`, [marked](https://github.com/markedjs/marked) will be used for rendering.
-      Rendering [Katex formulas](https://katex.org)
-      with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks
-      with siyuan's built-in hljs.
+   - When the language is `markdown-render`, [marked](https://github.com/markedjs/marked) will be used for rendering.
+     Rendering [Katex formulas](https://katex.org)
+     with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks
+     with siyuan's built-in hljs.
+
    ```
    ::: this is c | c | active
    #include<stdio.h>
@@ -42,7 +43,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
    printf("hello\n");
    return 0;
    }
-   
+
    ::: python
    def hello_world():
    print("Hello World")

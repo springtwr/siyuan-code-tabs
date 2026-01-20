@@ -1,5 +1,5 @@
-import {IResForwardProxy} from "@/types";
-import {request} from "./request";
+import { IResForwardProxy } from "@/types";
+import { request } from "./request";
 
 export async function forwardProxy(
     url: string,
@@ -15,7 +15,7 @@ export async function forwardProxy(
         timeout: timeout,
         contentType: contentType,
         headers: headers,
-        payload: payload
+        payload: payload,
     };
     let url1 = "/api/network/forwardProxy";
     return request(url1, data);

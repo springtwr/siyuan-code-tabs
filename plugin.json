@@ -4,22 +4,8 @@
   "url": "https://github.com/springtwr/siyuan-code-tabs",
   "version": "0.8.0",
   "minAppVersion": "3.5.0",
-  "backends": [
-    "windows",
-    "linux",
-    "darwin",
-    "harmony",
-    "ios",
-    "android",
-    "docker"
-  ],
-  "frontends": [
-    "desktop",
-    "mobile",
-    "browser-desktop",
-    "browser-mobile",
-    "desktop-window"
-  ],
+  "backends": ["windows", "linux", "darwin", "harmony", "ios", "android", "docker"],
+  "frontends": ["desktop", "mobile", "browser-desktop", "browser-mobile", "desktop-window"],
   "displayName": {
     "en_US": "code-tabs",
     "zh_CN": "code-tabs"
@@ -32,10 +18,5 @@
     "en_US": "README.md",
     "zh_CN": "README_zh_CN.md"
   },
-  "keywords": [
-    "code",
-    "tab",
-    "代码块",
-    "标签"
-  ]
+  "keywords": ["code", "tab", "代码块", "标签"]
 }

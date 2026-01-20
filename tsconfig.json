@@ -3,11 +3,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "Node",
@@ -24,27 +20,14 @@
     "noFallthroughCasesInSwitch": true,
     "allowJs": true,
     "checkJs": true,
-    "types": [
-      "node",
-      "vite/client"
-    ],
+    "types": ["node", "vite/client"],
     // "baseUrl": "./src",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/libs/*": [
-        "./src/libs/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/libs/*": ["./src/libs/*"]
     }
   },
-  "include": [
-    "tools/**/*.ts",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue"
-  ],
+  "include": ["tools/**/*.ts", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
   "references": [
     {
       "path": "./tsconfig.node.json"

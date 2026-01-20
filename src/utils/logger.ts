@@ -1,7 +1,7 @@
 enum LogLevel {
-    INFO = 'info',
-    WARNING = 'warning',
-    ERROR = 'error',
+    INFO = "info",
+    WARNING = "warning",
+    ERROR = "error",
 }
 
 class Logger {
@@ -9,7 +9,7 @@ class Logger {
 
     constructor() {
         // 访问 Vite 环境变量，判断是否处于开发环境
-        this.isDev = process.env.DEV_MODE === 'true';
+        this.isDev = process.env.DEV_MODE === "true";
     }
 
     public info(message: any): void {
@@ -28,7 +28,9 @@ class Logger {
         // 生产环境中只输出错误信息，屏蔽 info 和 warn 信息
         if (!this.isDev) {
             if (level === LogLevel.ERROR) {
-                console.error(`[${new Date().toISOString()}] [code-tabs] [${level.toUpperCase()}]: ${message}`);
+                console.error(
+                    `[${new Date().toISOString()}] [code-tabs] [${level.toUpperCase()}]: ${message}`
+                );
             }
             return;
         }

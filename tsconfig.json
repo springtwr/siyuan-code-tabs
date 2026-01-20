@@ -20,14 +20,21 @@
     "noFallthroughCasesInSwitch": true,
     "allowJs": true,
     "checkJs": true,
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "vitest/globals"],
     // "baseUrl": "./src",
     "paths": {
       "@/*": ["./src/*"],
       "@/libs/*": ["./src/libs/*"]
     }
   },
-  "include": ["tools/**/*.ts", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "include": [
+    "tools/**/*.ts",
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts"
+  ],
   "references": [
     {
       "path": "./tsconfig.node.json"

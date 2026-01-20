@@ -1,7 +1,7 @@
 import { getActiveEditor, Plugin, Setting } from "siyuan";
 import { pushErrMsg, putFile } from "@/api";
 import logger from "@/utils/logger";
-import { CONFIG_JSON, CUSTOM_ATTR, HTML_BLOCK_STYLE, settingIconMain } from "@/constants";
+import { CONFIG_JSON, CUSTOM_ATTR, DEBUG_LOG, HTML_BLOCK_STYLE, settingIconMain } from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
@@ -15,6 +15,8 @@ export default class CodeTabs extends Plugin {
     private tabConverter!: TabConverter;
     private themeObserver?: MutationObserver;
     private injectedStyleEl?: HTMLStyleElement;
+    private logBuffer: string[] = [];
+    private flushLogFile: () => void = () => {};
     private onLoadedProtyleStatic = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
     };
@@ -24,7 +26,10 @@ export default class CodeTabs extends Plugin {
 
     async onload() {
         this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
-        logger.info("loading code-tabs");
+        logger.info("插件加载开始");
+        logger.setDebugEnabled(this.getDebugEnabled());
+        this.initLogWriter();
+        logger.info('如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")');
 
         if (!window.siyuan.config.editor.allowHTMLBLockScript) {
             pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();
@@ -36,6 +41,7 @@ export default class CodeTabs extends Plugin {
         document.head.appendChild(this.injectedStyleEl);
 
         TabManager.initGlobalFunctions(this.i18n);
+        logger.info("全局函数已注册");
         this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
 
         // 添加设置项
@@ -52,6 +58,19 @@ export default class CodeTabs extends Plugin {
             title: `${this.i18n.allTabsToCode}`,
             description: `${this.i18n.allTabsToCodeDes}`,
             actionElement: allTabsToCodeElement,
+        });
+
+        const debugToggle = document.createElement("input");
+        debugToggle.type = "checkbox";
+        debugToggle.className = "b3-switch";
+        debugToggle.checked = this.getDebugEnabled();
+        debugToggle.addEventListener("change", () => {
+            this.setDebugEnabled(debugToggle.checked);
+        });
+        this.setting.addItem({
+            title: `${this.i18n.debugLogSetting}`,
+            description: `${this.i18n.debugLogSettingDesc}`,
+            actionElement: debugToggle,
         });
 
         // 注册快捷方式
@@ -73,10 +92,11 @@ export default class CodeTabs extends Plugin {
                 this.tabConverter.tabToCodeBatch(blockList);
             },
         });
+        logger.info("命令与设置项注册完成");
     }
 
     async onLayoutReady() {
-        logger.info("layout ready");
+        logger.info("布局就绪，开始初始化");
 
         this.addTopBar({
             icon: settingIconMain,
@@ -88,12 +108,14 @@ export default class CodeTabs extends Plugin {
         });
 
         syncSiyuanConfig(this.data);
+        logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
 
         const configFile = await fetchFileFromUrlSimple(
             CONFIG_JSON.replace("/data", ""),
             "config.json"
         );
         if (configFile === undefined || configFile.size === 0) {
+            logger.info("未检测到配置文件，初始化样式文件");
             await ThemeManager.putStyleFile();
             await this.saveConfig();
             ThemeManager.updateAllTabsStyle();
@@ -101,6 +123,7 @@ export default class CodeTabs extends Plugin {
             const data = await loadJsonFromFile(configFile);
             const configFlag = compareConfig(data, this.data);
             if (!configFlag) {
+                logger.info("检测到配置变更，重新生成样式文件");
                 await ThemeManager.putStyleFile();
                 await this.saveConfig();
                 ThemeManager.updateAllTabsStyle();
@@ -170,6 +193,7 @@ export default class CodeTabs extends Plugin {
         this.eventBus.on("loaded-protyle-static", this.onLoadedProtyleStatic);
         this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
         LineNumberManager.scanAll();
+        logger.info("行号扫描完成");
     }
 
     onunload() {
@@ -178,6 +202,7 @@ export default class CodeTabs extends Plugin {
         this.eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
         this.themeObserver?.disconnect();
         this.themeObserver = undefined;
+        logger.setLogWriter(undefined);
         if (this.injectedStyleEl) {
             this.injectedStyleEl.remove();
             this.injectedStyleEl = undefined;
@@ -185,6 +210,7 @@ export default class CodeTabs extends Plugin {
         if (window.pluginCodeTabs) {
             delete window.pluginCodeTabs;
         }
+        logger.info("插件卸载完成");
     }
 
     private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
@@ -246,6 +272,43 @@ export default class CodeTabs extends Plugin {
             type: "application/json",
         });
         await putFile(CONFIG_JSON, false, file);
+    }
+
+    private initLogWriter() {
+        const flush = debounce(() => {
+            if (this.logBuffer.length === 0) return;
+            const content = this.logBuffer.join("\n") + "\n";
+            const file = new File([content], "debug.log", { type: "text/plain" });
+            putFile(DEBUG_LOG, false, file).catch((error) => {
+                console.error("write debug log failed", error);
+            });
+        }, 1000);
+        this.flushLogFile = flush;
+        logger.setLogWriter((line) => {
+            this.logBuffer.push(line);
+            if (this.logBuffer.length > 2000) {
+                this.logBuffer.shift();
+            }
+            this.flushLogFile();
+        });
+    }
+
+    private setDebugEnabled(enabled: boolean): void {
+        try {
+            localStorage.setItem("code-tabs.debug", enabled ? "true" : "false");
+        } catch {
+            logger.warn("无法写入 debug 配置");
+        }
+        logger.setDebugEnabled(enabled);
+        logger.info("调试日志开关变更", { enabled });
+    }
+
+    private getDebugEnabled(): boolean {
+        try {
+            return localStorage.getItem("code-tabs.debug") === "true";
+        } catch {
+            return false;
+        }
     }
 
     private handleProtyleLoaded(evt: unknown) {

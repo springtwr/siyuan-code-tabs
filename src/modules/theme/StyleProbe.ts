@@ -1,4 +1,5 @@
 import { CodeBlockStyleSnapshot, ThemeStyle } from "@/modules/theme/types";
+import logger from "@/utils/logger";
 
 export const StyleProbe = (() => {
     const SYNC_PROPS = {
@@ -84,9 +85,11 @@ export const StyleProbe = (() => {
 
     return {
         get() {
+            logger.debug("采集代码块样式快照");
             return probe();
         },
         getFullStyle(): ThemeStyle {
+            logger.debug("采集完整主题样式");
             const cache = probe();
 
             return {

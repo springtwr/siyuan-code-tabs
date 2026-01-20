@@ -31,6 +31,7 @@ export class TabConverter {
             pushMsg(`${this.i18n.noCodeBlockToConvert}`);
             return { success: 0, failure: 0 };
         }
+        logger.info("开始代码块 -> 标签页 批量转换", { count: blockList.length });
 
         // ===== 分类所有块 =====
         const toProcess: { id: string; codeText: string }[] = [];
@@ -83,7 +84,7 @@ export class TabConverter {
         }
 
         // ===== 对有效块执行异步更新 =====
-        logger.info(`开始转换 ${toProcess.length} 个代码块为 Tabs`);
+        logger.info("进入转换队列的代码块数量", { count: toProcess.length });
         const results = await Promise.allSettled(
             toProcess.map(({ id, codeText }) => {
                 const htmlBlock = TabRenderer.createHtmlBlock(
@@ -102,6 +103,7 @@ export class TabConverter {
             skipped,
             invalid
         );
+        logger.info("代码块 -> 标签页 转换统计", stats);
 
         if (stats.success > 0) {
             this.onSuccess?.();
@@ -122,7 +124,7 @@ export class TabConverter {
             return;
         }
 
-        logger.info(`开始转换 ${codeBlocks.length} 个代码块为 Tabs`);
+        logger.info("当前文档代码块 -> 标签页", { count: codeBlocks.length });
         this.codeToTabsBatch(codeBlocks);
     }
 
@@ -131,7 +133,7 @@ export class TabConverter {
             pushMsg(`${this.i18n.noTabsToConvert}`);
             return { success: 0, failure: 0 };
         }
-        logger.info(`开始转换 ${blockList.length} 个 Tabs 为代码块`);
+        logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
 
         // ===== 分类所有块 =====
         const toProcess: { id: string; codeText: string }[] = [];
@@ -208,6 +210,7 @@ export class TabConverter {
             skipped,
             invalid
         );
+        logger.info("标签页 -> 代码块 转换统计", stats);
 
         return stats;
     }
@@ -219,13 +222,16 @@ export class TabConverter {
             `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
         );
         const blockList = Array.from(nodeList);
+        logger.info("当前文档标签页 -> 代码块", { count: blockList.length });
         this.tabToCodeBatch(blockList);
     }
 
     async allTabsToCode(): Promise<void> {
+        logger.info("全局标签页 -> 代码块 查询开始");
         const blockList = (await sql(
             `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
         )) as SqlBlock[];
+        logger.info("全局标签页 -> 代码块 查询完成", { count: blockList.length });
         this.tabToCodeBatch(blockList);
     }
 
@@ -277,9 +283,12 @@ export class TabConverter {
             logger.info(`格式跳过 - 节点 ${nodeId}: ${reason}`);
         });
 
-        logger.info(
-            `转换完成：${success} 成功，${executionFailures.length} 执行失败，${invalid.length} 数据无效，${skipped.length} 格式跳过`
-        );
+        logger.info("转换完成", {
+            success,
+            executionFailures: executionFailures.length,
+            invalid: invalid.length,
+            skipped: skipped.length,
+        });
 
         // === 4. 用户提示（pushMsg）===
         if (success > 0) {

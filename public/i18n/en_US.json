@@ -31,6 +31,8 @@
   "skippedBlocks": "Skipped: {0}",
   "noTabsToUpgrade": "No legacy code-tabs found to upgrade",
   "upgradeSuccess": "Upgraded count: ",
+  "debugLogSetting": "Debug logs",
+  "debugLogSettingDesc": "Enable debug logs and write to /data/plugins/code-tabs/debug.log",
   "cancel": "Cancel",
   "save": "Save",
   "helloPlugin": "Hello, this is code-tabs!",

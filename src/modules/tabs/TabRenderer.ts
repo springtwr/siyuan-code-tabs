@@ -3,13 +3,16 @@ import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
 import { CodeTab } from "@/modules/tabs/types";
 import { htmlBlockStr, protyleHtmlStr } from "@/constants";
+import logger from "@/utils/logger";
 
 export class TabRenderer {
     static createHtmlBlock(codeArr: CodeTab[], toggleToCode: string): string {
+        logger.debug("开始生成 Tabs HTML 块", { count: codeArr.length });
         const containerDiv = document.createElement("div");
         containerDiv.innerHTML = htmlBlockStr;
         const protyleHtml = containerDiv.querySelector("protyle-html") as HTMLElement;
         protyleHtml.dataset.content = this.createProtyleHtml(codeArr, toggleToCode);
+        logger.debug("Tabs HTML 块生成完成");
         return containerDiv.innerHTML;
     }
 
@@ -76,6 +79,7 @@ export class TabRenderer {
 
         tabs.children[activeIndex].classList.add("tab-item--active");
         tabContents.children[activeIndex + 1].classList.add("tab-content--active");
+        logger.debug("Tabs 内容生成完成", { activeIndex, count: codeArr.length });
 
         const tabToggle = containerDiv.querySelector(".tab-toggle") as HTMLElement;
         tabToggle.setAttribute("onclick", "pluginCodeTabs.toggle(event)");

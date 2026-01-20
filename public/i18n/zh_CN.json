@@ -31,6 +31,8 @@
   "skippedBlocks": "跳过：{0}",
   "noTabsToUpgrade": "没有需要升级的旧版代码标签页",
   "upgradeSuccess": "共升级旧版代码标签页：",
+  "debugLogSetting": "调试日志",
+  "debugLogSettingDesc": "开启后输出 debug 级别日志并写入 /data/plugins/code-tabs/debug.log",
   "cancel": "取消",
   "save": "保存",
   "helloPlugin": "你好，这是code-tabs！",

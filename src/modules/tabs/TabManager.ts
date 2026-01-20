@@ -30,6 +30,7 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
 
 export class TabManager {
     static initGlobalFunctions(i18n: IObject) {
+        logger.debug("初始化全局 Tabs 交互函数");
         window.pluginCodeTabs = {
             codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {
@@ -47,6 +48,7 @@ export class TabManager {
                         tabContents[index].classList.remove("tab-content--active");
                     }
                 });
+                logger.debug("切换标签页", { index: Array.from(tabItems).indexOf(clicked) });
                 LineNumberManager.refreshActive(tabContainer);
             },
 
@@ -54,6 +56,7 @@ export class TabManager {
                 const tabContainer = (evt.target as HTMLElement).closest(".tabs-container");
                 const tabContent = tabContainer.querySelector(".tab-content--active");
                 let textContent = tabContent.textContent;
+                logger.debug("触发复制代码");
 
                 if (
                     tabContent.firstChild instanceof HTMLElement &&

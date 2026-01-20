@@ -1,10 +1,12 @@
 import { pushMsg } from "@/api";
 import { CodeTab } from "@/modules/tabs/types";
 import { IObject } from "siyuan";
+import logger from "@/utils/logger";
 
 export class TabParser {
     static checkCodeText(codeText: string, i18n: IObject): { result: boolean; code: CodeTab[] } {
         codeText = codeText.trim();
+        logger.debug("开始解析代码块语法", { length: codeText.length });
         // 兼容旧语法
         if (codeText.startsWith("tab:::")) {
             return this.parseLegacy(codeText, i18n);
@@ -15,6 +17,7 @@ export class TabParser {
         }
         const firstLine = this.getPreviewLine(codeText);
         pushMsg(`${i18n.headErrWhenCheckCode} | 当前内容: ${firstLine}`).then();
+        logger.warn("语法检查失败：未匹配到可用语法前缀", { preview: firstLine });
         return { result: false, code: [] };
     }
 
@@ -51,6 +54,7 @@ export class TabParser {
         if (parts[0].trim() === "") parts.shift();
 
         const codeResult: CodeTab[] = [];
+        logger.debug("解析新语法标签", { count: parts.length });
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -75,6 +79,7 @@ export class TabParser {
                         headerLine
                     )}`
                 ).then();
+                logger.warn("新语法解析失败：缺少标题", { index: i + 1 });
                 return { result: false, code: [] };
             }
 
@@ -103,6 +108,7 @@ export class TabParser {
                 pushMsg(
                     `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
                 ).then();
+                logger.warn("新语法解析失败：缺少代码内容", { index: i + 1, title });
                 return { result: false, code: [] };
             }
 
@@ -120,6 +126,7 @@ export class TabParser {
                 });
             }
         }
+        logger.debug("新语法解析完成", { count: codeResult.length });
         return { result: true, code: codeResult };
     }
 
@@ -131,6 +138,7 @@ export class TabParser {
         if (!codeArr) return { result: false, code: [] };
 
         const codeResult: CodeTab[] = [];
+        logger.debug("解析旧语法标签", { count: codeArr.length });
         for (let i = 0; i < codeArr.length; i++) {
             const codeSplitArr = codeArr[i].trim().split("\n");
             if (
@@ -142,6 +150,7 @@ export class TabParser {
                         codeSplitArr[0]
                     )}`
                 ).then();
+                logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
                 return { result: false, code: [] };
             }
             if (codeSplitArr[0].length < 7) {
@@ -150,6 +159,7 @@ export class TabParser {
                         codeSplitArr[0]
                     )}`
                 ).then();
+                logger.warn("旧语法解析失败：缺少标题", { index: i + 1 });
                 return { result: false, code: [] };
             }
             const title = codeSplitArr[0].substring(6).trim();
@@ -162,6 +172,7 @@ export class TabParser {
                             languageLine
                         )}`
                     ).then();
+                    logger.warn("旧语法解析失败：语言标记不完整", { index: i + 1 });
                     return { result: false, code: [] };
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
@@ -180,6 +191,7 @@ export class TabParser {
                 code: code,
             });
         }
+        logger.debug("旧语法解析完成", { count: codeResult.length });
         return { result: true, code: codeResult };
     }
 

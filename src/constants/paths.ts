@@ -14,3 +14,4 @@ export const GITHUB_MARKDOWN_LIGHT_CSS = `${PLUGIN_PATH}/asset/github-markdown-l
 export const KATEX_CSS = `${PLUGIN_PATH}/asset/katex.min.css`;
 export const CODE_TABS_CSS = `${PLUGIN_PATH}/asset/code-tabs.css`;
 export const COPY_PNG = `${PLUGIN_PATH}/asset/copy.png`;
+export const DEBUG_LOG = `${DATA_PATH}/debug.log`;

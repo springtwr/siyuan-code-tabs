@@ -1,5 +1,6 @@
 import { CUSTOM_ATTR } from "@/constants";
 import { getActiveEditor } from "siyuan";
+import logger from "@/utils/logger";
 
 export class LineNumberManager {
     private static readonly lineNumClass = "tab-line-num";
@@ -20,6 +21,7 @@ export class LineNumberManager {
         }
         const editor = getActiveEditor(true);
         if (!editor) return;
+        logger.debug("扫描全部标签页行号");
         this.scan(editor.protyle?.contentElement);
     }
 
@@ -31,12 +33,14 @@ export class LineNumberManager {
         const editor = getActiveEditor(true);
         if (!editor) return;
         const scope = root ?? editor.protyle?.contentElement;
+        logger.debug("扫描当前 protyle 行号");
         this.scan(scope);
     }
 
     static refreshAll(): void {
         const editor = getActiveEditor(true);
         if (!editor) return;
+        logger.debug("刷新全部标签页行号");
         this.scanAll();
         requestAnimationFrame(() => {
             document.querySelectorAll<HTMLElement>(".tabs-container").forEach((container) => {
@@ -56,6 +60,7 @@ export class LineNumberManager {
     }
 
     private static disableAll(): void {
+        logger.debug("关闭行号显示");
         document
             .querySelectorAll<HTMLElement>(`.${this.lineNumClass}`)
             .forEach((node) => node.remove());
@@ -83,6 +88,7 @@ export class LineNumberManager {
             `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
         );
         if (nodes.length === 0) return;
+        logger.debug("检测到标签页块，准备渲染行号", { count: nodes.length });
         nodes.forEach((node) => this.attachNode(node));
     }
 

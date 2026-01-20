@@ -17,6 +17,7 @@ import { StyleProbe } from "./StyleProbe";
 
 export class ThemeManager {
     static async putStyleFile() {
+        logger.info("开始生成主题样式文件");
         // 配置代码样式文件
         const codeStyle = document.querySelector("link#protyleHljsStyle")?.getAttribute("href");
         const fileCodeStyle = await fetchFileFromUrl(codeStyle, "code-style.css");
@@ -109,10 +110,13 @@ ${extraCss}
             );
             await putFile(GITHUB_MARKDOWN_CSS, false, lightModeFile);
         }
+        logger.info("主题样式文件生成完成");
     }
 
     static updateAllTabsStyle() {
-        document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`).forEach((node) => {
+        const nodes = document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+        logger.info("刷新标签页样式链接", { count: nodes.length });
+        nodes.forEach((node) => {
             const shadowRoot = node.querySelector("protyle-html").shadowRoot;
             shadowRoot.querySelectorAll("link").forEach((link) => {
                 const currentHref = link.href;
@@ -142,6 +146,10 @@ ${extraCss}
                 return [];
             }
             defaultConfig = defaultConfigRaw;
+        logger.debug("默认主题配置已加载", {
+            version: defaultConfig.version,
+            themeCount: defaultConfig.themes.length,
+        });
         } catch (e) {
             logger.warn(`加载默认主题配置失败: ${e}`);
             return [];
@@ -163,6 +171,10 @@ ${extraCss}
                 let userVersion: string | undefined;
 
                 userVersion = userConfigRaw.version;
+                logger.debug("用户主题配置已加载", {
+                    version: userVersion,
+                    themeCount: userThemes.length,
+                });
 
                 // 2.2 版本检测:如果用户版本低于插件版本,进行合并
                 if (!userVersion || userVersion !== defaultConfig.version) {

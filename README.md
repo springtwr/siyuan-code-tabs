@@ -9,8 +9,6 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ## Known Issues
 
 - Unable to adapt to all third-party themes.
-- There must be at least one open document when changing theme or mode, otherwise the style of the code-tabs won't
-  change with the theme, and you need to open a document and then change theme again.
 - When exporting to markdown or html, all the code-tabs styles will be lost, only when exporting pdf or image can the
   code-tabs be displayed normally.
 - The style of the code-tabs may appear abnormally when switching themes, then please try the following methods:
@@ -71,6 +69,13 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 - The version of SiYuan Notes at the time of testing: 3.5.0
 
 ## Changelog
+
+### v1.0.0
+
+- Refactored theme style collection and application; theme switching no longer requires at least one open document.
+- Added line number display and styling; code tabs now show line numbers when enabled in code blocks.
+- Adapted code block scrollbars for some themes.
+- Partial style adjustments and optimizations.
 
 ### v0.8.0
 

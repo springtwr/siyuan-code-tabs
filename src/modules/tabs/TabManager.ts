@@ -1,11 +1,11 @@
 import ClipboardJS from "clipboard";
 import {getBlockAttrs, pushErrMsg, pushMsg, updateBlock} from "@/api";
-import {CUSTOM_ATTR, TAB_SEPARATOR} from "@/assets/constants";
+import {CUSTOM_ATTR, TAB_SEPARATOR} from "@/constants";
 import {decodeSource} from "@/utils/encoding";
 import logger from "@/utils/logger";
-import {TabParser} from "../parser/TabParser";
+import {TabParser} from "./TabParser";
 import {IObject} from "siyuan";
-import { StyleProbe } from "../theme/StyleProtyle";
+import { StyleProbe } from "../theme/StyleProbe";
 import {LineNumberManager} from "@/modules/line-number/LineNumberManager";
 
 export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {

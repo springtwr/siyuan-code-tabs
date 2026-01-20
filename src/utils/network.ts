@@ -3,7 +3,7 @@
  */
 
 import logger from "@/utils/logger";
-import {CODE_STYLE_CSS, BACKGROUND_CSS, THEME_ADAPTION_YAML} from "@/assets/constants";
+import {BACKGROUND_CSS, CODE_STYLE_CSS, THEME_ADAPTION_YAML} from "@/constants";
 import * as yaml from "js-yaml";
 
 /**

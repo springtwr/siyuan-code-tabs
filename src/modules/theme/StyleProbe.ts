@@ -1,5 +1,4 @@
-import { ThemeStyle } from "@/assets/theme-adaption";
-import { codeBlockStyleSnapshot } from "@/types";
+import { CodeBlockStyleSnapshot, ThemeStyle } from "@/modules/theme/types";
 
 export const StyleProbe = (() => {
 
@@ -90,7 +89,7 @@ export const StyleProbe = (() => {
     function probe() {
         const { root, block, action, hljs, content } = createVirtualProtyle()
 
-        const snapshot: codeBlockStyleSnapshot = {
+        const snapshot: CodeBlockStyleSnapshot = {
             block: extract(block, SYNC_PROPS.block),
             header: extract(action, SYNC_PROPS.header),
             body: extract(hljs, SYNC_PROPS.body),

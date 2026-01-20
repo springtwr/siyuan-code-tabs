@@ -1,11 +1,11 @@
 import {Marked} from "marked";
 import markedKatex from "marked-katex-extension";
 import {markedHighlight} from "marked-highlight";
-import {codeTab} from "@/types";
-import {htmlBlockStr, protyleHtmlStr} from "@/assets/constants";
+import {CodeTab} from "@/modules/tabs/types";
+import {htmlBlockStr, protyleHtmlStr} from "@/constants";
 
 export class TabRenderer {
-    static createHtmlBlock(codeArr: codeTab[], toggleToCode: string): string {
+    static createHtmlBlock(codeArr: CodeTab[], toggleToCode: string): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = htmlBlockStr;
         const protyleHtml = containerDiv.querySelector('protyle-html') as HTMLElement;
@@ -13,7 +13,7 @@ export class TabRenderer {
         return containerDiv.innerHTML;
     }
 
-    private static createProtyleHtml(codeArr: codeTab[], toggleToCode: string): string {
+    private static createProtyleHtml(codeArr: CodeTab[], toggleToCode: string): string {
         const containerDiv = document.createElement('div');
         containerDiv.innerHTML = protyleHtmlStr;
         const tabContainer = containerDiv.querySelector('.tabs-container') as HTMLElement;

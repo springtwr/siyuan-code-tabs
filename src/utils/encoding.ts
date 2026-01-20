@@ -1,4 +1,4 @@
-import {NEWLINE_FLAG} from "@/assets/constants";
+import {NEWLINE_FLAG} from "@/constants";
 
 /**
  * 将源码字符串编码为 Base64（用于安全存储）

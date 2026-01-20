@@ -1,4 +1,4 @@
-import {CUSTOM_ATTR} from "@/assets/constants";
+import {CUSTOM_ATTR} from "@/constants";
 import {getActiveEditor} from "siyuan";
  
 

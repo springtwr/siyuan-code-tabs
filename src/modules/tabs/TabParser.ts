@@ -1,8 +1,8 @@
 import {pushMsg} from "@/api";
-import {codeTab} from "@/types";
+import {CodeTab} from "@/modules/tabs/types";
 
 export class TabParser {
-    static checkCodeText(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
+    static checkCodeText(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
         codeText = codeText.trim();
         // 兼容旧语法
         if (codeText.startsWith('tab:::')) {
@@ -16,7 +16,7 @@ export class TabParser {
         return {result: false, code: []};
     }
 
-    static generateNewSyntax(tabs: codeTab[]): string {
+    static generateNewSyntax(tabs: CodeTab[]): string {
         let result = '';
         for (const tab of tabs) {
             let title = tab.title;
@@ -43,12 +43,12 @@ export class TabParser {
         return result.trim();
     }
 
-    private static parseNew(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
+    private static parseNew(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
         if (parts[0].trim() === '') parts.shift();
 
-        const codeResult: codeTab[] = [];
+        const codeResult: CodeTab[] = [];
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -110,11 +110,11 @@ export class TabParser {
         return {result: true, code: codeResult};
     }
 
-    private static parseLegacy(codeText: string, i18n: any): { result: boolean, code: codeTab[] } {
+    private static parseLegacy(codeText: string, i18n: any): { result: boolean, code: CodeTab[] } {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
         if (!codeArr) return {result: false, code: []};
 
-        const codeResult: codeTab[] = [];
+        const codeResult: CodeTab[] = [];
         for (let i = 0; i < codeArr.length; i++) {
             const codeSplitArr = codeArr[i].trim().split('\n');
             if (codeSplitArr.length === 1 || (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith('lang:::'))) {

@@ -1,10 +1,10 @@
 import {putFile} from "@/api";
 import logger from "@/utils/logger";
-import {CUSTOM_ATTR, CODE_STYLE_CSS, BACKGROUND_CSS, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_YAML, THEME_ADAPTION_ASSET_YAML} from "@/assets/constants";
-import {ThemePatch, ThemeStyle} from "@/assets/theme-adaption";
+import {BACKGROUND_CSS, CODE_STYLE_CSS, CUSTOM_ATTR, GITHUB_MARKDOWN_CSS, GITHUB_MARKDOWN_DARK_CSS, GITHUB_MARKDOWN_LIGHT_CSS, THEME_ADAPTION_ASSET_YAML, THEME_ADAPTION_YAML} from "@/constants";
+import {ThemePatch, ThemeStyle} from "@/modules/theme/types";
 import {fetchFileFromUrl, fetchYamlFromUrl} from "@/utils/network";
 import * as yaml from "js-yaml";
-import { StyleProbe } from "./StyleProtyle";
+import { StyleProbe } from "./StyleProbe";
 
 export class ThemeManager {
     static async putStyleFile() {

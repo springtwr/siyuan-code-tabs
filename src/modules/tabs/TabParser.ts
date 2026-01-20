@@ -13,7 +13,8 @@ export class TabParser {
         if (codeText.startsWith(":::")) {
             return this.parseNew(codeText, i18n);
         }
-        pushMsg(i18n.headErrWhenCheckCode).then();
+        const firstLine = this.getPreviewLine(codeText);
+        pushMsg(`${i18n.headErrWhenCheckCode} | 当前内容: ${firstLine}`).then();
         return { result: false, code: [] };
     }
 
@@ -69,7 +70,11 @@ export class TabParser {
             const title = headerParts[0];
 
             if (!title) {
-                pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
+                pushMsg(
+                    `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        headerLine
+                    )}`
+                ).then();
                 return { result: false, code: [] };
             }
 
@@ -92,6 +97,13 @@ export class TabParser {
             } else {
                 // 校验语言有效性
                 language = this.getLanguage(language);
+            }
+
+            if (!codeContent || codeContent.trim().length === 0) {
+                pushMsg(
+                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                ).then();
+                return { result: false, code: [] };
             }
 
             if (isActive) {
@@ -125,11 +137,19 @@ export class TabParser {
                 codeSplitArr.length === 1 ||
                 (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith("lang:::"))
             ) {
-                pushMsg(`${i18n.noCodeWhenCheckCode} (${i + 1})`).then();
+                pushMsg(
+                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        codeSplitArr[0]
+                    )}`
+                ).then();
                 return { result: false, code: [] };
             }
             if (codeSplitArr[0].length < 7) {
-                pushMsg(`${i18n.noTitleWhenCheckCode} (${i + 1})`).then();
+                pushMsg(
+                    `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        codeSplitArr[0]
+                    )}`
+                ).then();
                 return { result: false, code: [] };
             }
             const title = codeSplitArr[0].substring(6).trim();
@@ -137,7 +157,11 @@ export class TabParser {
             if (codeSplitArr[1].trim().startsWith("lang:::")) {
                 const languageLine = codeSplitArr[1].trim();
                 if (languageLine.length < 8) {
-                    pushMsg(`${i18n.noLangWhenCheckCode} (${i + 1})`).then();
+                    pushMsg(
+                        `${i18n.noLangWhenCheckCode}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
+                            languageLine
+                        )}`
+                    ).then();
                     return { result: false, code: [] };
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
@@ -165,5 +189,11 @@ export class TabParser {
         } else {
             return window.hljs.getLanguage(lang) ? lang.toLowerCase() : "plaintext";
         }
+    }
+
+    private static getPreviewLine(text: string): string {
+        const line = text.split("\n")[0]?.trim() ?? "";
+        if (line.length <= 60) return line || "(空)";
+        return `${line.slice(0, 57)}...`;
     }
 }

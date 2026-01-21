@@ -26,6 +26,8 @@
 - 插件设置中提供“调试日志”开关，开启后会输出 debug 日志。
 - debug 日志会写入 `data/plugins/code-tabs/debug.log`。
 - 日志统一由 `src/utils/logger.ts` 管理，新增日志请使用统一接口。
+- 开发模式下会为 代码块换行/代码块连字/代码块显示行号 注册块菜单选项，方便调试。
+- 开发相关逻辑集中在 `src/modules/developer/`。
 
 ## 生命周期注意事项
 

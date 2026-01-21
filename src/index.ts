@@ -12,6 +12,7 @@ import { TabConverter } from "@/modules/tabs/TabConverter";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { DevToggleManager } from "@/modules/developer/DevToggleManager";
 import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
 import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
 import { debounce } from "@/utils/common";
@@ -264,6 +265,37 @@ export default class CodeTabs extends Plugin {
                 this.tabConverter.tabToCodeInDocument();
             },
         });
+        if (process.env.DEV_MODE === "true") {
+            detail.menu.addItem({
+                iconHTML: "",
+                label: this.i18n.devToggleCodeLineWrap,
+                click: () => {
+                    DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, () =>
+                        this.reloadActivateDocument()
+                    );
+                },
+            });
+            detail.menu.addItem({
+                iconHTML: "",
+                label: this.i18n.devToggleCodeLigatures,
+                click: () => {
+                    DevToggleManager.toggleEditorSetting("codeLigatures", this.data, () =>
+                        this.reloadActivateDocument()
+                    );
+                },
+            });
+            detail.menu.addItem({
+                iconHTML: "",
+                label: this.i18n.devToggleCodeLineNumber,
+                click: () => {
+                    DevToggleManager.toggleEditorSetting(
+                        "codeSyntaxHighlightLineNum",
+                        this.data,
+                        () => this.reloadActivateDocument()
+                    );
+                },
+            });
+        }
     }
 
     private reloadActivateDocument() {

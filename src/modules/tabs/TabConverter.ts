@@ -88,10 +88,7 @@ export class TabConverter {
         logger.info("进入转换队列的代码块数量", { count: toProcess.length });
         const results = await Promise.allSettled(
             toProcess.map(({ id, codeText, codeArr }) => {
-                const htmlBlock = TabRenderer.createHtmlBlock(
-                    codeArr,
-                    this.i18n.toggleToCode
-                );
+                const htmlBlock = TabRenderer.createHtmlBlock(codeArr, this.i18n.toggleToCode);
                 return this.update("dom", htmlBlock, id, codeText);
             })
         );

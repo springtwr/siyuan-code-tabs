@@ -100,6 +100,7 @@ docs/
 - 禁止新增 `any`（必要时使用 `unknown` 并显式收敛）。
 
 ## 8. 测试与调试
+
 - 单元测试：`vitest`，测试文件集中放在 `tests/`。
 - 集成测试：使用 `docs/testing/` 中的样例文档与回归清单。
 - Debug 开关：插件设置中提供“调试日志”，开启后写入 `data/plugins/code-tabs/debug.log`。

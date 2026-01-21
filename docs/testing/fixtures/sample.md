@@ -246,7 +246,8 @@ int main() {
 ```
 
 ## Markdown 渲染示例
-`````tab
+
+````tab
 :::渲染|markdown-render
 
 # 1. 标题 (1-6级)
@@ -355,7 +356,7 @@ c = \pm\sqrt{a^2 + b^2}
 $$
 
 [^1]: 脚注内容。
-`````
+````
 
 ## 切回代码块示例
 
@@ -387,7 +388,7 @@ console.log("should fail")
 ```
 
 ```tab
-:::    
+:::
 console.log("blank title")
 ```
 

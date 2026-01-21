@@ -146,10 +146,10 @@ ${extraCss}
                 return [];
             }
             defaultConfig = defaultConfigRaw;
-        logger.debug("默认主题配置已加载", {
-            version: defaultConfig.version,
-            themeCount: defaultConfig.themes.length,
-        });
+            logger.debug("默认主题配置已加载", {
+                version: defaultConfig.version,
+                themeCount: defaultConfig.themes.length,
+            });
         } catch (e) {
             logger.warn(`加载默认主题配置失败: ${e}`);
             return [];

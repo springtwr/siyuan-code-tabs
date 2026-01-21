@@ -1,7 +1,13 @@
 import { getActiveEditor, Plugin, Setting } from "siyuan";
 import { pushErrMsg, putFile } from "@/api";
 import logger from "@/utils/logger";
-import { CONFIG_JSON, CUSTOM_ATTR, DEBUG_LOG, HTML_BLOCK_STYLE, settingIconMain } from "@/constants";
+import {
+    CONFIG_JSON,
+    CUSTOM_ATTR,
+    DEBUG_LOG,
+    HTML_BLOCK_STYLE,
+    settingIconMain,
+} from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
@@ -29,7 +35,9 @@ export default class CodeTabs extends Plugin {
         logger.info("插件加载开始");
         logger.setDebugEnabled(this.getDebugEnabled());
         this.initLogWriter();
-        logger.info('如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")');
+        logger.info(
+            '如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")'
+        );
 
         if (!window.siyuan.config.editor.allowHTMLBLockScript) {
             pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();

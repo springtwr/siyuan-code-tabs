@@ -76,8 +76,8 @@ class Logger {
             typeof message === "string"
                 ? message
                 : message instanceof Error
-                    ? message.message
-                    : JSON.stringify(message);
+                  ? message.message
+                  : JSON.stringify(message);
         if (!context) return header + text;
         return `${header}${text} | context=${JSON.stringify(context)}`;
     }

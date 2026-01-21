@@ -1,6 +1,6 @@
-import {CUSTOM_ATTR} from "@/assets/constants";
-import {getActiveEditor} from "siyuan";
- 
+import { CUSTOM_ATTR } from "@/constants";
+import { getActiveEditor } from "siyuan";
+import logger from "@/utils/logger";
 
 export class LineNumberManager {
     private static readonly lineNumClass = "tab-line-num";
@@ -21,6 +21,7 @@ export class LineNumberManager {
         }
         const editor = getActiveEditor(true);
         if (!editor) return;
+        logger.debug("扫描全部标签页行号");
         this.scan(editor.protyle?.contentElement);
     }
 
@@ -32,15 +33,17 @@ export class LineNumberManager {
         const editor = getActiveEditor(true);
         if (!editor) return;
         const scope = root ?? editor.protyle?.contentElement;
+        logger.debug("扫描当前 protyle 行号");
         this.scan(scope);
     }
 
     static refreshAll(): void {
         const editor = getActiveEditor(true);
         if (!editor) return;
+        logger.debug("刷新全部标签页行号");
         this.scanAll();
         requestAnimationFrame(() => {
-            document.querySelectorAll<HTMLElement>(".tabs-container").forEach(container => {
+            document.querySelectorAll<HTMLElement>(".tabs-container").forEach((container) => {
                 this.refreshActive(container);
             });
         });
@@ -57,34 +60,36 @@ export class LineNumberManager {
     }
 
     private static disableAll(): void {
+        logger.debug("关闭行号显示");
         document
             .querySelectorAll<HTMLElement>(`.${this.lineNumClass}`)
-            .forEach(node => node.remove());
+            .forEach((node) => node.remove());
         document
             .querySelectorAll<HTMLElement>(`.${this.lineNumEnabledClass}`)
-            .forEach(node => node.classList.remove(this.lineNumEnabledClass));
-        document
-            .querySelectorAll<HTMLElement>(".tab-content .code")
-            .forEach(codeEl => {
-                codeEl.style.paddingLeft = "";
-            });
-        this.resizeObservers.forEach(observer => observer.disconnect());
+            .forEach((node) => node.classList.remove(this.lineNumEnabledClass));
+        document.querySelectorAll<HTMLElement>(".tab-content .code").forEach((codeEl) => {
+            codeEl.style.paddingLeft = "";
+        });
+        this.resizeObservers.forEach((observer) => observer.disconnect());
         this.resizeObservers.clear();
     }
 
     private static attachNode(node: HTMLElement): void {
         const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
         if (!shadowRoot) return;
-        shadowRoot.querySelectorAll<HTMLElement>(".tab-content").forEach(tabContent => {
+        shadowRoot.querySelectorAll<HTMLElement>(".tab-content").forEach((tabContent) => {
             this.ensureLineNumbers(tabContent);
         });
     }
 
     private static scan(scope?: HTMLElement): void {
         if (!scope) return;
-        const nodes = scope.querySelectorAll<HTMLElement>(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+        const nodes = scope.querySelectorAll<HTMLElement>(
+            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+        );
         if (nodes.length === 0) return;
-        nodes.forEach(node => this.attachNode(node));
+        logger.debug("检测到标签页块，准备渲染行号", { count: nodes.length });
+        nodes.forEach((node) => this.attachNode(node));
     }
 
     private static ensureLineNumbers(tabContent: HTMLElement): void {
@@ -131,9 +136,7 @@ export class LineNumberManager {
         lineNumEl.style.fontSize = `${lineNumFontSize}px`;
 
         lineNumEl.innerHTML = "";
-        const heights = active && wrapEnabled
-            ? this.measureLineHeights(codeEl, lines)
-            : null;
+        const heights = active && wrapEnabled ? this.measureLineHeights(codeEl, lines) : null;
         const lineHeight = this.resolveLineHeight(codeEl, lineCount);
 
         for (let i = 0; i < lineCount; i++) {
@@ -156,10 +159,7 @@ export class LineNumberManager {
         return false;
     }
 
-    private static renderTabContent(
-        tabContent: HTMLElement,
-        lineNumEl: HTMLElement
-    ): void {
+    private static renderTabContent(tabContent: HTMLElement, lineNumEl: HTMLElement): void {
         this.applyStyles(lineNumEl);
         this.refreshTabContent(tabContent);
         this.attachResizeObserver(tabContent);
@@ -244,7 +244,6 @@ export class LineNumberManager {
         const step = Math.ceil(0.42 * normalFontSizePx);
         return base + step * (digits - 1);
     }
-
 
     private static parsePx(value: string): number | null {
         const parsed = parseFloat(value);

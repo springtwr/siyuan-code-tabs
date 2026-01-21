@@ -51,7 +51,7 @@ jobs:
       # Build for production, 这一步会生成一个 package.zip
       - name: Build for production
         run: pnpm build
-      
+
       - name: Release
         uses: akkuman/gitea-release-action@v1
         with:
@@ -61,4 +61,3 @@ jobs:
           prerelease: false
           body: |
             ## Release ${{ github.ref_name }}
-          

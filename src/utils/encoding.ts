@@ -1,4 +1,4 @@
-import {NEWLINE_FLAG} from "@/assets/constants";
+import { NEWLINE_FLAG } from "@/constants";
 
 /**
  * 将源码字符串编码为 Base64（用于安全存储）
@@ -8,20 +8,19 @@ import {NEWLINE_FLAG} from "@/assets/constants";
  * @returns Base64 编码的字符串
  */
 export function encodeSource(code: string): string {
-    if (!code) return '';
+    if (!code) return "";
 
     const encoder = new TextEncoder();
     const bytes = encoder.encode(code);
 
     // 构建 binary string（避免低效的 += 拼接）
-    let binary = '';
+    let binary = "";
     const len = bytes.length;
     for (let i = 0; i < len; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
 
     return window.btoa(binary);
-
 }
 
 /**
@@ -33,11 +32,11 @@ export function encodeSource(code: string): string {
  * @returns 解码后的源码字符串
  */
 export function decodeSource(stored: string): string {
-    if (!stored) return '';
+    if (!stored) return "";
 
     // 向后兼容：旧格式使用 [[NEWLINE_FLAG]] 标记换行
     if (stored.includes(NEWLINE_FLAG)) {
-        return stored.replace(new RegExp(NEWLINE_FLAG, 'g'), '\n');
+        return stored.replace(new RegExp(NEWLINE_FLAG, "g"), "\n");
     }
 
     // 尝试 Base64 解码
@@ -49,7 +48,7 @@ export function decodeSource(stored: string): string {
         }
         const decoder = new TextDecoder();
         return decoder.decode(bytes);
-    } catch (error) {
+    } catch {
         // 解码失败：可能是未编码的明文（如用户直接输入的文本）
         // 或损坏数据，此时直接返回原字符串（不 strip）
         return stored;
@@ -67,5 +66,5 @@ export function stripInvisibleChars(str: string): string {
     // \u200c：零宽非连接符（Zero Width Non-Joiner）
     // \u200d：零宽连接符（Zero Width Joiner）
     // \ufeff：BOM（字节顺序标记），有时也会混入
-    return str.replace(/[\u200b-\u200d\ufeff]/g, '');
+    return str.replace(/[\u200b-\u200d\ufeff]/g, "");
 }

@@ -71,3 +71,10 @@ export interface ThemePatch {
      */
     extraCss?: string;
 }
+
+export type CodeBlockStyleSnapshot = {
+    block: Record<string, string>;
+    header: Record<string, string>;
+    body: Record<string, string>;
+    content: Record<string, string>;
+};

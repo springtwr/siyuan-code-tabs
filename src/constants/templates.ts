@@ -1,34 +1,21 @@
-export const CUSTOM_ATTR = 'custom-plugin-code-tabs-sourcecode';
-export const NEWLINE_FLAG = '⤵↩';
-export const TAB_SEPARATOR = '```````````````````````````';
-
-// URL 常量
-export const PLUGIN_PATH = '/plugins/code-tabs';
-export const DATA_PATH = '/data/plugins/code-tabs';
-
-// 配置文件路径
-export const CONFIG_JSON = `${DATA_PATH}/custom/config.json`;
-export const THEME_ADAPTION_YAML = `${DATA_PATH}/custom/theme-adaption.yaml`;
-export const THEME_ADAPTION_ASSET_YAML = `${PLUGIN_PATH}/asset/theme-adaption.yaml`;
-
-// 样式文件路径
-export const CODE_STYLE_CSS = `${DATA_PATH}/custom/code-style.css`;
-export const BACKGROUND_CSS = `${DATA_PATH}/custom/background.css`;
-export const GITHUB_MARKDOWN_CSS = `${DATA_PATH}/custom/github-markdown.css`;
-export const GITHUB_MARKDOWN_DARK_CSS = `${PLUGIN_PATH}/asset/github-markdown-dark.css`;
-export const GITHUB_MARKDOWN_LIGHT_CSS = `${PLUGIN_PATH}/asset/github-markdown-light.css`;
-
-// 其他资源路径
-export const KATEX_CSS = `${PLUGIN_PATH}/asset/katex.min.css`;
-export const CODE_TABS_CSS = `${PLUGIN_PATH}/asset/code-tabs.css`;
-export const COPY_PNG = `${PLUGIN_PATH}/asset/copy.png`;
+import {
+    BACKGROUND_CSS,
+    CODE_STYLE_CSS,
+    CODE_TABS_CSS,
+    COPY_PNG,
+    DATA_PATH,
+    GITHUB_MARKDOWN_CSS,
+    KATEX_CSS,
+    PLUGIN_PATH,
+} from "./paths";
+import { CUSTOM_ATTR } from "./keys";
 
 export const HTML_BLOCK_STYLE = `
 div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { 
     padding: 0 !important; 
     margin: 0 !important; 
     border: none !important;
-}`
+}`;
 
 export const htmlBlockStr = `
 <div data-type="NodeHTMLBlock" class="render-node" data-subtype="block">
@@ -45,7 +32,9 @@ export const htmlBlockStr = `
         <span style="position: absolute"></span>
     </div>
     <div class="protyle-attr" contenteditable="false"></div>
-</div>`.replace(/>\s+</g, '><').trim();
+</div>`
+    .replace(/>\s+</g, "><")
+    .trim();
 
 export const protyleHtmlStr = `
 <div> 
@@ -65,7 +54,10 @@ export const protyleHtmlStr = `
             </span>
         </div>
     </div>
-</div>`.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+</div>`
+    .replace(/>\s+</g, "><")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const settingIconMain = `<svg xmlns="http://www.w3.org/2000/svg"
       t="1767821223789"
@@ -81,4 +73,4 @@ export const settingIconMain = `<svg xmlns="http://www.w3.org/2000/svg"
   <path d="M72.4 974.2c-17.3 0-33.5-6.7-45.7-18.7-12.2-12.1-18.9-28.1-18.9-45.1V113.6c0-35.2 29-63.8 64.6-63.8h169c17.3 0 33.5 6.6 45.7 18.7 12.2 12 18.9 28.1 18.9 45.1V283c0 2 0.8 3.9 2.3 5.4 1.5 1.4 3.4 2.2 5.4 2.2h637.9c17.3 0 33.5 6.6 45.7 18.7 12.2 12 18.9 28 18.9 45.1v556c0 17.1-6.7 33.1-18.9 45.1s-28.4 18.7-45.7 18.7H72.4z m7.7-860.6c-4.3 0-7.7 3.4-7.7 7.6v788.7c0 2 0.8 4 2.3 5.4 1.4 1.4 3.4 2.2 5.4 2.2h871.5c2.1 0 4-0.8 5.4-2.2 1.5-1.4 2.3-3.3 2.3-5.4V350.6c0-2-0.8-3.9-2.2-5.3-1.5-1.5-3.4-2.3-5.4-2.3h-638c-17.3 0-33.5-6.7-45.7-18.7-12.2-12-18.9-28.1-18.9-45.1V121.1c0-2-0.8-3.9-2.3-5.4-1.4-1.4-3.4-2.2-5.4-2.2H80.1z"
         fill="#595959"
         p-id="776" />
-</svg>`
+</svg>`;

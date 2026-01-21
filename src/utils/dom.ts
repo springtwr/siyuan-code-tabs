@@ -41,7 +41,7 @@ export function getNodeId(element: HTMLElement): string | null {
     // 尝试从 Shadow DOM 获取
     const nodeIdFromShadow = getNodeIdFromShadow(element);
     if (nodeIdFromShadow) return nodeIdFromShadow;
-    
+
     // 尝试从普通 DOM 获取
     return element.dataset.nodeId || null;
 }
@@ -49,7 +49,14 @@ export function getNodeId(element: HTMLElement): string | null {
 /**
  * 比较两个对象的配置
  */
-export function compareConfig(pluginConfig: any, siyuanConfig: any): boolean {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+export function compareConfig(pluginConfig: unknown, siyuanConfig: unknown): boolean {
+    if (!isRecord(pluginConfig) || !isRecord(siyuanConfig)) {
+        return false;
+    }
     const pluginKeys = Object.keys(pluginConfig);
     const siyuanKeys = Object.keys(siyuanConfig);
     if (pluginKeys.length !== siyuanKeys.length) return false;
@@ -62,7 +69,7 @@ export function compareConfig(pluginConfig: any, siyuanConfig: any): boolean {
 /**
  * 获取思源配置
  */
-export function getSiyuanConfig(): any {
+export function getSiyuanConfig(): Record<string, unknown> {
     return {
         fontSize: window.siyuan.config.editor.fontSize,
         mode: window.siyuan.config.appearance.mode,
@@ -72,20 +79,20 @@ export function getSiyuanConfig(): any {
         codeBlockThemeDark: window.siyuan.config.appearance.codeBlockThemeDark,
         codeLigatures: window.siyuan.config.editor.codeLigatures,
         codeLineWrap: window.siyuan.config.editor.codeLineWrap,
-        codeSyntaxHighlightLineNum: window.siyuan.config.editor.codeSyntaxHighlightLineNum
+        codeSyntaxHighlightLineNum: window.siyuan.config.editor.codeSyntaxHighlightLineNum,
     };
 }
 
 /**
  * 同步思源配置
  */
-export function syncSiyuanConfig(data: any): void {
+export function syncSiyuanConfig(data: Record<string, unknown>): void {
     const properties = getSiyuanConfig();
-    Object.keys(properties).forEach(key => {
+    Object.keys(properties).forEach((key) => {
         Object.defineProperty(data, key, {
             value: properties[key],
             writable: true,
-            enumerable: true
+            enumerable: true,
         });
     });
 }
@@ -120,9 +127,7 @@ export function getSelectedElements(selector: string): HTMLElement[] {
 
     // 向上查找匹配 selector 的祖先
     let el: Element | null =
-        node.nodeType === Node.ELEMENT_NODE
-        ? (node as Element)
-        : node.parentElement;
+        node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
 
     while (el) {
         if (el.matches(selector)) {

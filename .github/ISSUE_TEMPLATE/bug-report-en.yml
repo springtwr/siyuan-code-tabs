@@ -23,7 +23,7 @@ body:
         - Version: 
         - Operating System: 
         - Appearance mode: 
-        - Theme: 
+        - Theme:
       render: markdown
     validations:
       required: true

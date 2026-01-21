@@ -1,4 +1,4 @@
-import http from 'http';
+import http from "http";
 
 /**
  * 发送思源 API 请求的辅助函数
@@ -7,7 +7,7 @@ import http from 'http';
  * @param {Object} data - 发送的数据
  */
 function sendSiyuanRequest(options, path, data) {
-    const { host = '127.0.0.1', port = 6806, token = '' } = options;
+    const { host = "127.0.0.1", port = 6806, token = "" } = options;
 
     return new Promise((resolve) => {
         const postData = JSON.stringify(data);
@@ -16,17 +16,17 @@ function sendSiyuanRequest(options, path, data) {
             hostname: host,
             port: port,
             path: path,
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${token}`,
-            }
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+            },
         };
 
         const req = http.request(reqOptions, (res) => {
-            let body = '';
-            res.on('data', (chunk) => body += chunk);
-            res.on('end', () => {
+            let body = "";
+            res.on("data", (chunk) => (body += chunk));
+            res.on("end", () => {
                 try {
                     const json = JSON.parse(body);
                     if (json.code === 0) {
@@ -41,7 +41,7 @@ function sendSiyuanRequest(options, path, data) {
             });
         });
 
-        req.on('error', (e) => {
+        req.on("error", (e) => {
             if (options.isWatch) {
                 console.warn(`\x1b[33m[SiYuan Reload]\x1b[0m 请求失败: ${e.message}`);
             }
@@ -61,31 +61,31 @@ function sendSiyuanRequest(options, path, data) {
  * @param {boolean} [options.isWatch=false] - 是否处于监听模式
  */
 export default function siyuanReloadPlugin(options) {
-    const {
-        packageName,
-        frontend = 'all',
-        isWatch = false
-    } = options;
+    const { packageName, frontend = "all", isWatch = false } = options;
 
     return {
-        name: 'vite-plugin-siyuan-reload',
+        name: "vite-plugin-siyuan-reload",
         writeBundle() {
             if (!isWatch) return;
 
             console.log(`\x1b[36m[SiYuan Reload]\x1b[0m 代码已更新，触发思源插件重载...`);
 
             // 直接设置 enabled: true 触发重载
-            sendSiyuanRequest(options, '/api/petal/setPetalEnabled', {
+            sendSiyuanRequest(options, "/api/petal/setPetalEnabled", {
                 packageName,
                 enabled: true,
-                frontend
+                frontend,
             }).then(() => {
                 console.log(`\x1b[32m[SiYuan Reload]\x1b[0m 插件 [${packageName}] 重载完成！`);
                 // 重载插件后重载UI
-                sendSiyuanRequest({token: process.env.SIYUAN_TOKEN || ''}, '/api/ui/reloadUI', {}).then(() => {
+                sendSiyuanRequest(
+                    { token: process.env.SIYUAN_TOKEN || "" },
+                    "/api/ui/reloadUI",
+                    {}
+                ).then(() => {
                     console.log(`\x1b[32m[SiYuan Reload]\x1b[0m UI 重载完成！`);
-                })
+                });
             });
-        }
+        },
     };
 }

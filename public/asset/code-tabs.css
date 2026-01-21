@@ -16,7 +16,7 @@
 }
 
 .tab-item--active::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 4px;
@@ -35,10 +35,11 @@
     border-radius: 5px;
     padding: 2em 4px 1.6em 4px;
     line-height: 1.625;
-    font-family: "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-family:
+        "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 
-.tab-content > :is(.code, .markdown-body){
+.tab-content > :is(.code, .markdown-body) {
     margin-top: 8px;
 }
 
@@ -91,7 +92,7 @@
     border-radius: 5px;
     padding: 5px;
     cursor: pointer;
-    transition: all .2s cubic-bezier(0, 0, .2, 1) 0ms;
+    transition: all 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
 }
 
 .tabs-container:hover .code-tabs--icon_copy {

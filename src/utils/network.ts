@@ -3,24 +3,29 @@
  */
 
 import logger from "@/utils/logger";
-import {CODE_STYLE_CSS, BACKGROUND_CSS, THEME_ADAPTION_YAML} from "@/assets/constants";
+import { BACKGROUND_CSS, CODE_STYLE_CSS, THEME_ADAPTION_YAML } from "@/constants";
 import * as yaml from "js-yaml";
 
 /**
  * 带重试功能的网络请求
  */
-export async function fetchWithRetry(route: string, options: RequestInit = {}, retries: number = 3, delay: number = 1000): Promise<Response> {
+export async function fetchWithRetry(
+    route: string,
+    options: RequestInit = {},
+    retries: number = 3,
+    delay: number = 1000
+): Promise<Response> {
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
-            const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
+            const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
             const url = baseUrl + route;
             const response = await fetch(url, options);
             if (!response.ok) {
                 if (response.status === 404) {
                     const passThroughPaths = [
-                        CODE_STYLE_CSS.replace('/data', '/'),
-                        BACKGROUND_CSS.replace('/data', '/'),
-                        THEME_ADAPTION_YAML.replace('/data', '/')
+                        CODE_STYLE_CSS.replace("/data", "/"),
+                        BACKGROUND_CSS.replace("/data", "/"),
+                        THEME_ADAPTION_YAML.replace("/data", "/"),
                     ];
                     if (passThroughPaths.includes(route)) {
                         return response;
@@ -31,7 +36,7 @@ export async function fetchWithRetry(route: string, options: RequestInit = {}, r
             return response;
         } catch (error) {
             if (attempt < retries - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
+                await new Promise((resolve) => setTimeout(resolve, delay));
             } else {
                 throw error;
             }
@@ -42,20 +47,20 @@ export async function fetchWithRetry(route: string, options: RequestInit = {}, r
 /**
  * 从 URL 获取文件
  */
-export async function fetchFileFromUrl(route: string, fileName: string): Promise<File> {
+export async function fetchFileFromUrl(route: string, fileName: string): Promise<File | undefined> {
     try {
         let file: File;
         if (route === undefined) {
             const emptyContent = new Uint8Array(0);
-            const blob = new Blob([emptyContent], {type: 'text/css'});
-            file = new File([blob], fileName, {type: 'text/css'});
+            const blob = new Blob([emptyContent], { type: "text/css" });
+            file = new File([blob], fileName, { type: "text/css" });
         } else {
             const response = await fetchWithRetry(route, {
-                headers: {'Cache-Control': 'no-cache'}
+                headers: { "Cache-Control": "no-cache" },
             });
             if (!response.ok) return undefined;
             const blob = await response.blob();
-            file = new File([blob], fileName, {type: blob.type});
+            file = new File([blob], fileName, { type: blob.type });
         }
         return file;
     } catch (error) {
@@ -66,15 +71,18 @@ export async function fetchFileFromUrl(route: string, fileName: string): Promise
 /**
  * 从 URL 获取文件（简化版，无重试）
  */
-export async function fetchFileFromUrlSimple(route: string, fileName: string): Promise<File> {
+export async function fetchFileFromUrlSimple(
+    route: string,
+    fileName: string
+): Promise<File | undefined> {
     try {
-        const baseUrl = document.querySelector('base#baseURL')?.getAttribute('href');
+        const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
         const url = baseUrl + route;
-        const response = await fetch(url, {headers: {'Cache-Control': 'no-cache'}});
+        const response = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return undefined;
         const blob = await response.blob();
-        return new File([blob], fileName, {type: blob.type});
-    } catch (e) {
+        return new File([blob], fileName, { type: blob.type });
+    } catch {
         return undefined;
     }
 }
@@ -82,7 +90,7 @@ export async function fetchFileFromUrlSimple(route: string, fileName: string): P
 /**
  * 从文件加载并解析 JSON 数据
  */
-export async function loadJsonFromFile(file: File): Promise<any> {
+export async function loadJsonFromFile(file: File): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -100,7 +108,7 @@ export async function loadJsonFromFile(file: File): Promise<any> {
 /**
  * 从文件加载并解析 YAML 数据
  */
-export async function loadYamlFromFile(file: File): Promise<any> {
+export async function loadYamlFromFile(file: File): Promise<unknown> {
     const text = await file.text();
     return yaml.load(text);
 }
@@ -108,7 +116,7 @@ export async function loadYamlFromFile(file: File): Promise<any> {
 /**
  * 从 URL 获取并解析 YAML 文件
  */
-export async function fetchYamlFromUrl(route: string, fileName: string): Promise<any> {
+export async function fetchYamlFromUrl(route: string, fileName: string): Promise<unknown> {
     try {
         const file = await fetchFileFromUrl(route, fileName);
         if (!file) return undefined;

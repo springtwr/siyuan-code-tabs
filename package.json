@@ -9,21 +9,35 @@
   "license": "MIT",
   "scripts": {
     "make-link": "node  --no-warnings ./scripts/make_dev_link.js",
+    "predev": "pnpm lint && pnpm test",
     "dev": "vite build --watch",
+    "prebuild": "pnpm lint && pnpm test",
     "build": "vite build",
-    "make-install": "vite build && node --no-warnings ./scripts/make_install.js"
+    "make-install": "vite build && node --no-warnings ./scripts/make_install.js",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.0.3",
     "clipboard": "^2.0.11",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
     "fast-glob": "^3.3.3",
+    "globals": "^17.0.0",
     "glob": "^13.0.0",
     "js-yaml": "^4.1.1",
     "marked": "^17.0.1",
     "marked-highlight": "^2.2.3",
     "marked-katex-extension": "^5.1.6",
     "minimist": "^1.2.8",
+    "prettier": "^3.6.2",
     "rollup-plugin-livereload": "^2.0.5",
     "sass": "^1.97.1",
     "siyuan": "1.1.7",
@@ -31,6 +45,8 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-static-copy": "^3.1.4",
-    "vite-plugin-zip-pack": "^1.2.4"
+    "vite-plugin-zip-pack": "^1.2.4",
+    "vitest": "^4.0.17",
+    "jsdom": "^26.1.0"
   }
 }

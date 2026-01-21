@@ -11,11 +11,11 @@
 - 不保证适配所有第三方主题
 - 导出为markdown或html等格式时所有标签页样式会丢失，只有导出pdf或图片时标签页才能正常显示，且无法切换标签页
 - 更换主题时代码标签页的样式可能会出现异常，这时请尝试以下方法：
-    - 切换外观模式
-    - 切换主题
-    - 关闭已打开的文档再重新打开
-    - 重启思源笔记后再次尝试以上方法
-- ***目前仅3.5.0及以上版本可正常使用***
+  - 切换外观模式
+  - 切换主题
+  - 关闭已打开的文档再重新打开
+  - 重启思源笔记后再次尝试以上方法
+- **_目前仅3.5.0及以上版本可正常使用_**
 
 ## 提示
 
@@ -27,10 +27,11 @@
 
 1. 先在思源文档中插入一个代码块，形式如下。使用 `:::` 作为开头，后面接 `标题 | 语言 | active` 的格式。
    其中 `active` 表示打开文档时默认激活这个标签，若没有添加该标志则默认激活第一个标签。
-   语言参数可选，如果省略会将标题作为代码的语言类型。[示例文件](./asset/example.md)
-    - 语言类型为`markdown-render`时会使用[marked](https://github.com/markedjs/marked)
-      进行渲染，使用[marked-katex-extension](https://github.com/UziTech/marked-katex-extension)
-      渲染[Katex](https://katex.org/)公式，使用思源自带的 hljs 渲染代码块。
+   语言参数可选，如果省略会将标题作为代码的语言类型。[示例文件](./docs/example.md)
+   - 语言类型为`markdown-render`时会使用[marked](https://github.com/markedjs/marked)
+     进行渲染，使用[marked-katex-extension](https://github.com/UziTech/marked-katex-extension)
+     渲染[Katex](https://katex.org/)公式，使用思源自带的 hljs 渲染代码块。
+
    ```
    ::: 这是c语言 | c | active
    #include<stdio.h>
@@ -38,21 +39,22 @@
       printf("hello\n");
       return 0;
    }
-   
+
    ::: python
    def hello_world():
       print("Hello World")
    ```
+
 2. 鼠标点击 代码块左上角的块菜单 -> 插件 -> `块：代码块 -> 标签页`，你也可以在 设置 -> 快捷键
    中为该功能设置一个快捷键，转换后效果如下。块菜单中的另外两个功能是基于当前文档进行批量转换和还原。  
-   ![图2](./asset/2.gif)
+   ![图2](./images/2.gif)
 3. 若需要编辑代码，可点击标签页右上角的 **切回代码块**，编辑完成之后再次将代码块转换为标签页即可
-   ![图3](./asset/3.png)
+   ![图3](./images/3.png)
 4. 可以点击右上角的复制按钮一键复制代码  
-   ![图4](./asset/4.png)
+   ![图4](./images/4.png)
 5. 标签过多时一部分标签会被隐藏，桌面端可以将鼠标光标放在标签栏上使用鼠标滚轮滚动查看，移动端可以左右滑动标签栏查看
 6. 效果演示  
-   ![图5](./asset/demo.gif)
+   ![图5](./images/demo.gif)
 7. 由于第三方主题过于复杂，0.7.0版本增加了一个自定义配置文件，可以让用户自行适配需要使用的主题，配置文件的路径在`SiYuan工作空间/data/plugins/code-tabs/custom/theme-adaption.yaml`，仿照其中的示例并配合使用开发者工具即可完成对主题的适配。也可以将自己适配好的主题提交 pr 到本仓库，仓库中适配文件的路径为 `/public/asset/theme-adaption.yaml`
 
 ## 备注

@@ -28,7 +28,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 1. Insert a code block in the SiYuan document as follows. Use `:::` as the beginning, followed by the `title | language | active` format.
    For example `::: title | language | active`, where `active` indicates that this tab is activated by default when the document is opened. If this flag is not added,
-   the first tab is activated by default. The language parameter is optional, if omitted it will use the title as the default language for the code. [Example file](./asset/example.md)
+   the first tab is activated by default. The language parameter is optional, if omitted it will use the title as the default language for the code. [Example file](./docs/example.md)
    - When the language is `markdown-render`, [marked](https://github.com/markedjs/marked) will be used for rendering.
      Rendering [Katex formulas](https://katex.org)
      with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks
@@ -49,18 +49,18 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 2. Click the block menu in the upper-left corner of the code-block -> Plugin -> `Block: code-block -> tabs`, you can also
    set a shortcut key for this function in Settings -> Keymap. The other two functions in the block menu perform batch conversion and restoration based on the current document.
-   ![fig2](./asset/2.gif)
+   ![fig2](./images/2.gif)
 
 3. If you need to edit the code, you can click on "Toggle to code-block" in the upper-right corner of the tab. After
    editing, convert the code block back to code-tabs again.
-   ![fig3](./asset/3.png)
+   ![fig3](./images/3.png)
 4. You can copy the code in one click by clicking the copy button in the upper right corner(Copy plaintext only).  
-   ![fig4](./asset/4.png)
+   ![fig4](./images/4.png)
 5. If there are too many tabs, some of the tabs will be hidden, in the desktop application, you can put the mouse cursor
    on the tabs bar and use the mouse wheel to scroll through them, and in the mobile application, you can slide the tabs
    bar left and right to view them.
 6. Demo.  
-   ![fig5](./asset/demo.gif)
+   ![fig5](./images/demo.gif)
 7. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file that allows users to adapt themes themselves. The configuration file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. You can adapt themes to your needs by following the examples and using developer tools. You can also submit a PR to this repository with your adapted theme, the repository's adaptation file path is `/public/asset/theme-adaption.yaml`
 
 ## Comment

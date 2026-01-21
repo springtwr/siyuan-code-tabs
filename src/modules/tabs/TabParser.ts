@@ -181,6 +181,13 @@ export class TabParser {
             }
             codeSplitArr.shift();
             const code = codeSplitArr.join("\n").trim();
+            if (!code) {
+                pushMsg(
+                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                ).then();
+                logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
+                return { result: false, code: [] };
+            }
             if (language === "") {
                 language = title.split(":::active")[0].trim();
             }

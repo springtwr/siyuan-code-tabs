@@ -4,6 +4,7 @@ import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
 import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
+import { CodeTab } from "./types";
 import { TabRenderer } from "./TabRenderer";
 import { getCodeFromAttribute } from "./TabManager";
 
@@ -34,7 +35,7 @@ export class TabConverter {
         logger.info("开始代码块 -> 标签页 批量转换", { count: blockList.length });
 
         // ===== 分类所有块 =====
-        const toProcess: { id: string; codeText: string }[] = [];
+        const toProcess: { id: string; codeText: string; codeArr: CodeTab[] }[] = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
@@ -67,7 +68,7 @@ export class TabConverter {
             }
 
             // 情况3：有效，加入处理队列
-            toProcess.push({ id, codeText });
+            toProcess.push({ id, codeText, codeArr: checkResult.code });
         }
 
         const codeToTabsMessages = {
@@ -86,9 +87,9 @@ export class TabConverter {
         // ===== 对有效块执行异步更新 =====
         logger.info("进入转换队列的代码块数量", { count: toProcess.length });
         const results = await Promise.allSettled(
-            toProcess.map(({ id, codeText }) => {
+            toProcess.map(({ id, codeText, codeArr }) => {
                 const htmlBlock = TabRenderer.createHtmlBlock(
-                    TabParser.checkCodeText(codeText, this.i18n).code!,
+                    codeArr,
                     this.i18n.toggleToCode
                 );
                 return this.update("dom", htmlBlock, id, codeText);

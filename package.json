@@ -9,7 +9,9 @@
   "license": "MIT",
   "scripts": {
     "make-link": "node  --no-warnings ./scripts/make_dev_link.js",
+    "predev": "pnpm lint && pnpm test",
     "dev": "vite build --watch",
+    "prebuild": "pnpm lint && pnpm test",
     "build": "vite build",
     "make-install": "vite build && node --no-warnings ./scripts/make_install.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",

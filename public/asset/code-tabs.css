@@ -141,6 +141,11 @@
     -ms-overflow-style: none;
 }
 
+.tabs-outer:hover .tabs {
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+}
+
 .tabs::-webkit-scrollbar {
     display: none;
 }

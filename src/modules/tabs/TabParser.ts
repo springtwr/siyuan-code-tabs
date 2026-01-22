@@ -4,19 +4,25 @@ import { IObject } from "siyuan";
 import logger from "@/utils/logger";
 
 export class TabParser {
-    static checkCodeText(codeText: string, i18n: IObject): { result: boolean; code: CodeTab[] } {
+    static checkCodeText(
+        codeText: string,
+        i18n: IObject,
+        silent: boolean = false
+    ): { result: boolean; code: CodeTab[] } {
         codeText = codeText.trim();
         logger.debug("开始解析代码块语法", { length: codeText.length });
         // 兼容旧语法
         if (codeText.startsWith("tab:::")) {
-            return this.parseLegacy(codeText, i18n);
+            return this.parseLegacy(codeText, i18n, silent);
         }
         // 新语法
         if (codeText.startsWith(":::")) {
-            return this.parseNew(codeText, i18n);
+            return this.parseNew(codeText, i18n, silent);
         }
         const firstLine = this.getPreviewLine(codeText);
-        pushMsg(`${i18n.headErrWhenCheckCode} | 当前内容: ${firstLine}`).then();
+        if (!silent) {
+            pushMsg(`${i18n.headErrWhenCheckCode} | 当前内容: ${firstLine}`).then();
+        }
         logger.warn("语法检查失败：未匹配到可用语法前缀", { preview: firstLine });
         return { result: false, code: [] };
     }
@@ -48,7 +54,11 @@ export class TabParser {
         return result.trim();
     }
 
-    private static parseNew(codeText: string, i18n: IObject): { result: boolean; code: CodeTab[] } {
+    private static parseNew(
+        codeText: string,
+        i18n: IObject,
+        silent: boolean
+    ): { result: boolean; code: CodeTab[] } {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
         if (parts[0].trim() === "") parts.shift();
@@ -74,11 +84,13 @@ export class TabParser {
             const title = headerParts[0];
 
             if (!title) {
-                pushMsg(
-                    `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                        headerLine
-                    )}`
-                ).then();
+                if (!silent) {
+                    pushMsg(
+                        `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                            headerLine
+                        )}`
+                    ).then();
+                }
                 logger.warn("新语法解析失败：缺少标题", { index: i + 1 });
                 return { result: false, code: [] };
             }
@@ -105,9 +117,11 @@ export class TabParser {
             }
 
             if (!codeContent || codeContent.trim().length === 0) {
-                pushMsg(
-                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
-                ).then();
+                if (!silent) {
+                    pushMsg(
+                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                    ).then();
+                }
                 logger.warn("新语法解析失败：缺少代码内容", { index: i + 1, title });
                 return { result: false, code: [] };
             }
@@ -132,7 +146,8 @@ export class TabParser {
 
     private static parseLegacy(
         codeText: string,
-        i18n: IObject
+        i18n: IObject,
+        silent: boolean
     ): { result: boolean; code: CodeTab[] } {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
         if (!codeArr) return { result: false, code: [] };
@@ -145,20 +160,24 @@ export class TabParser {
                 codeSplitArr.length === 1 ||
                 (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith("lang:::"))
             ) {
-                pushMsg(
-                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                        codeSplitArr[0]
-                    )}`
-                ).then();
+                if (!silent) {
+                    pushMsg(
+                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                            codeSplitArr[0]
+                        )}`
+                    ).then();
+                }
                 logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
                 return { result: false, code: [] };
             }
             if (codeSplitArr[0].length < 7) {
-                pushMsg(
-                    `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                        codeSplitArr[0]
-                    )}`
-                ).then();
+                if (!silent) {
+                    pushMsg(
+                        `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                            codeSplitArr[0]
+                        )}`
+                    ).then();
+                }
                 logger.warn("旧语法解析失败：缺少标题", { index: i + 1 });
                 return { result: false, code: [] };
             }
@@ -167,11 +186,13 @@ export class TabParser {
             if (codeSplitArr[1].trim().startsWith("lang:::")) {
                 const languageLine = codeSplitArr[1].trim();
                 if (languageLine.length < 8) {
-                    pushMsg(
-                        `${i18n.noLangWhenCheckCode}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
-                            languageLine
-                        )}`
-                    ).then();
+                    if (!silent) {
+                        pushMsg(
+                            `${i18n.noLangWhenCheckCode}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
+                                languageLine
+                            )}`
+                        ).then();
+                    }
                     logger.warn("旧语法解析失败：语言标记不完整", { index: i + 1 });
                     return { result: false, code: [] };
                 }
@@ -182,9 +203,11 @@ export class TabParser {
             codeSplitArr.shift();
             const code = codeSplitArr.join("\n").trim();
             if (!code) {
-                pushMsg(
-                    `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
-                ).then();
+                if (!silent) {
+                    pushMsg(
+                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                    ).then();
+                }
                 logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
                 return { result: false, code: [] };
             }

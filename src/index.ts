@@ -1,4 +1,4 @@
-import { getActiveEditor, Plugin, Setting } from "siyuan";
+import { getActiveEditor, Plugin, Setting, type IMenu } from "siyuan";
 import { pushErrMsg, putFile } from "@/api";
 import logger from "@/utils/logger";
 import {
@@ -68,6 +68,18 @@ export default class CodeTabs extends Plugin {
             description: `${this.i18n.allTabsToCodeDes}`,
             actionElement: allTabsToCodeElement,
         });
+        const allTabsToPlainCodeElement = document.createElement("button");
+        allTabsToPlainCodeElement.className =
+            "b3-button b3-button--outline fn__flex-center fn__size200";
+        allTabsToPlainCodeElement.textContent = `${this.i18n.allTabsToPlainCodeBtn}`;
+        allTabsToPlainCodeElement.addEventListener("click", () => {
+            this.tabConverter.allTabsToPlainCode();
+        });
+        this.setting.addItem({
+            title: `${this.i18n.allTabsToPlainCode}`,
+            description: `${this.i18n.allTabsToPlainCodeDes}`,
+            actionElement: allTabsToPlainCodeElement,
+        });
 
         const debugToggle = document.createElement("input");
         debugToggle.type = "checkbox";
@@ -99,6 +111,24 @@ export default class CodeTabs extends Plugin {
                     `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
                 );
                 this.tabConverter.tabToCodeBatch(blockList);
+            },
+        });
+        this.addCommand({
+            langKey: "tabsToPlainCode",
+            hotkey: "",
+            editorCallback: () => {
+                const blockList = getSelectedElements(
+                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+                );
+                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
+            },
+        });
+        this.addCommand({
+            langKey: "mergeCodeBlocksToTabs",
+            hotkey: "",
+            editorCallback: () => {
+                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
+                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
             },
         });
         logger.info("命令与设置项注册完成");
@@ -251,21 +281,67 @@ export default class CodeTabs extends Plugin {
                 this.tabConverter.tabToCodeBatch(blockList);
             },
         });
+        const submenuItems: IMenu[] = [
+            {
+                iconHTML: "",
+                label: this.i18n.tabsToPlainCode,
+                click: () => {
+                    const blockList: HTMLElement[] = [];
+                    for (const item of detail.blockElements) {
+                        const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
+                        if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
+                            blockList.push(item);
+                        }
+                    }
+                    this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
+                },
+            },
+            {
+                iconHTML: "",
+                label: this.i18n.mergeCodeBlocksToTabs,
+                click: () => {
+                    const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
+                    this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
+                },
+            },
+            {
+                type: "separator" as const,
+            },
+            {
+                iconHTML: "",
+                label: this.i18n.codeToTabsInDocument,
+                click: () => {
+                    this.tabConverter.codeToTabsInDocument();
+                },
+            },
+            {
+                iconHTML: "",
+                label: this.i18n.tabToCodeInDocument,
+                click: () => {
+                    this.tabConverter.tabToCodeInDocument();
+                },
+            },
+            {
+                iconHTML: "",
+                label: this.i18n.tabsToPlainCodeInDocument,
+                click: () => {
+                    this.tabConverter.tabsToPlainCodeInDocument();
+                },
+            },
+        ];
         detail.menu.addItem({
             iconHTML: "",
-            label: this.i18n.codeToTabsInDocument,
-            click: () => {
-                this.tabConverter.codeToTabsInDocument();
-            },
-        });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: this.i18n.tabToCodeInDocument,
-            click: () => {
-                this.tabConverter.tabToCodeInDocument();
-            },
+            label: this.i18n.codeTabsMore,
+            type: "submenu",
+            submenu: submenuItems,
         });
         if (process.env.DEV_MODE === "true") {
+            detail.menu.addItem({ type: "separator" });
+            detail.menu.addItem({
+                iconHTML: "",
+                label: this.i18n.devMenuTitle,
+                type: "readonly",
+            });
             detail.menu.addItem({
                 iconHTML: "",
                 label: this.i18n.devToggleCodeLineWrap,
@@ -366,7 +442,7 @@ export default class CodeTabs extends Plugin {
 
 type BlockIconEventDetail = {
     menu: {
-        addItem: (item: { iconHTML: string; label: string; click: () => void }) => void;
+        addItem: (item: IMenu) => void;
     };
     blockElements: HTMLElement[];
 };

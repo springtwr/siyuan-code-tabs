@@ -233,6 +233,161 @@ export class TabConverter {
         this.tabToCodeBatch(blockList);
     }
 
+    async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${this.i18n.noTabsToSplit}`);
+            return { success: 0, failure: 0 };
+        }
+        logger.info("开始标签页 -> 多个标准代码块 批量转换", { count: blockList.length });
+
+        const toProcess: { id: string; codeArr: CodeTab[] }[] = [];
+        const invalid: { nodeId: string; reason: string }[] = [];
+
+        for (const block of blockList) {
+            let customAttribute = "";
+            let id = "";
+            if ("ial" in block && typeof block.ial === "string") {
+                id = block.id ?? "";
+                customAttribute = block.ial.match(
+                    /custom-plugin-code-tabs-sourcecode="([^"]*)"/
+                )?.[1];
+            } else {
+                const domBlock = block as HTMLElement;
+                id = domBlock.getAttribute("data-node-id") ?? "";
+                customAttribute = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
+            }
+
+            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
+
+            if (!id) {
+                const msg = "缺少 nodeId";
+                invalid.push({ nodeId: "unknown", reason: msg });
+                logger.warn(`tabsToPlainCode: ${msg}`);
+                continue;
+            }
+            if (!customAttribute) {
+                const msg = "未找到插件自定义属性";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+            if (!codeText) {
+                const msg = "未找到源码";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            const parseResult = TabParser.checkCodeText(codeText, this.i18n);
+            if (!parseResult.result || parseResult.code.length === 0) {
+                const msg = "源码解析失败";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            toProcess.push({ id, codeArr: parseResult.code });
+        }
+
+        if (toProcess.length === 0) {
+            if (invalid.length > 0) {
+                pushMsg(`${this.i18n.invalidBlocks.replace("{0}", invalid.length.toString())}`);
+            }
+            return { success: 0, failure: invalid.length };
+        }
+
+        const results = await Promise.allSettled(
+            toProcess.map(({ id, codeArr }) => this.replaceWithPlainCodeBlocks(id, codeArr))
+        );
+
+        const success = results.filter((r) => r.status === "fulfilled").length;
+        const failure = results.length - success;
+        if (success > 0) {
+            pushMsg(`${this.i18n.tabsToPlainCodeCompleted.replace("{0}", success.toString())}`);
+        }
+        if (failure > 0) {
+            pushMsg(`${this.i18n.tabsToPlainCodeFailed.replace("{0}", failure.toString())}`);
+        }
+        logger.info("标签页 -> 多个标准代码块 转换统计", { success, failure });
+        return { success, failure };
+    }
+
+    async mergeCodeBlocksToTabSyntax(blockList: HTMLElement[]): Promise<void> {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${this.i18n.noCodeBlockToMerge}`);
+            return;
+        }
+        if (blockList.length < 2) {
+            pushMsg(`${this.i18n.mergeNeedMultipleBlocks}`);
+            return;
+        }
+
+        const blocks = blockList
+            .map((block) => {
+                const id = block.dataset.nodeId ?? "";
+                const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
+                const languageEl = block.querySelector<HTMLElement>(".protyle-action__language");
+                const languageRaw = languageEl?.textContent?.trim() ?? "";
+                if (!id || !contentEl) return null;
+                const codeText = stripInvisibleChars(contentEl.textContent || "");
+                return { id, codeText, languageRaw };
+            })
+            .filter(Boolean) as Array<{ id: string; codeText: string; languageRaw: string }>;
+
+        if (blocks.length < 2) {
+            pushMsg(`${this.i18n.mergeNeedMultipleBlocks}`);
+            return;
+        }
+
+        const codeArr: CodeTab[] = [];
+        let hasTabSyntaxBlock = false;
+        let fallbackIndex = 1;
+        for (const item of blocks) {
+            const parsed = TabParser.checkCodeText(item.codeText, this.i18n, true);
+            if (parsed.result && parsed.code.length > 0) {
+                codeArr.push(...parsed.code);
+                hasTabSyntaxBlock = true;
+                continue;
+            }
+            const title = item.languageRaw ? item.languageRaw : `Tab${fallbackIndex}`;
+            const language = item.languageRaw ? item.languageRaw : "plaintext";
+            codeArr.push({ title, language, code: item.codeText });
+            fallbackIndex += 1;
+        }
+
+        const codeText = TabParser.generateNewSyntax(codeArr).trim();
+        const flag = TAB_SEPARATOR;
+        const targetId = blocks[0].id;
+        await updateBlock("markdown", `${flag}tab\n${codeText}\n${flag}`, targetId);
+        const restIds = blocks.slice(1).map((item) => item.id);
+        await Promise.all(restIds.map((id) => deleteBlock(id)));
+        logger.info("合并代码块为 tab 语法代码块完成", { count: blocks.length });
+        if (hasTabSyntaxBlock) {
+            pushMsg(`${this.i18n.mergeContainsTabSyntax}`).then();
+        }
+        pushMsg(`${this.i18n.mergeCodeBlocksCompleted.replace("{0}", blocks.length.toString())}`);
+    }
+
+    async tabsToPlainCodeInDocument(): Promise<void> {
+        const currentDocument = getActiveEditor(true);
+        if (!currentDocument) return;
+        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(
+            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+        );
+        const blockList = Array.from(nodeList);
+        logger.info("当前文档标签页 -> 多个标准代码块", { count: blockList.length });
+        this.tabsToPlainCodeBlocksBatch(blockList);
+    }
+
+    async allTabsToPlainCode(): Promise<void> {
+        logger.info("全局标签页 -> 多个标准代码块 查询开始");
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+        )) as SqlBlock[];
+        logger.info("全局标签页 -> 多个标准代码块 查询完成", { count: blockList.length });
+        this.tabsToPlainCodeBlocksBatch(blockList);
+    }
+
     private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
         const new_block = await insertBlock(dataType, data, "", id, "");
         const new_id = new_block[0].doOperations[0].id;
@@ -242,6 +397,39 @@ export class TabConverter {
         await setBlockAttrs(new_id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
         await deleteBlock(id);
         logger.info(`删除旧的代码块, id ${id}`);
+    }
+
+    private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {
+        let previousId = id;
+        for (const tab of codeArr) {
+            const markdown = this.buildCodeBlock(tab.code, tab.language);
+            const result = await insertBlock("markdown", markdown, "", previousId, "");
+            const newId = result[0].doOperations[0].id;
+            previousId = newId;
+        }
+        await deleteBlock(id);
+        logger.info("标签页已拆分为标准代码块", { id, count: codeArr.length });
+    }
+
+    private buildCodeBlock(code: string, language: string): string {
+        const fence = this.resolveFence(code);
+        const lang = language && language !== "plaintext" ? language : "";
+        return `${fence}${lang ? lang : ""}\n${code}\n${fence}`;
+    }
+
+    private resolveFence(code: string): string {
+        let maxRun = 0;
+        let current = 0;
+        for (const ch of code) {
+            if (ch === "`") {
+                current += 1;
+                if (current > maxRun) maxRun = current;
+            } else {
+                current = 0;
+            }
+        }
+        const length = Math.max(3, maxRun + 1);
+        return "`".repeat(length);
     }
 
     private resultCounter(

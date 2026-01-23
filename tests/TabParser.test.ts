@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { TabParser } from "@/modules/tabs/TabParser";
+import type { IObject } from "siyuan";
 
 vi.mock("@/api", () => ({
     pushMsg: vi.fn().mockResolvedValue(undefined),
@@ -10,7 +11,7 @@ const i18n = {
     noTitleWhenCheckCode: "noTitle",
     noLangWhenCheckCode: "noLang",
     noCodeWhenCheckCode: "noCode",
-};
+} as unknown as IObject;
 
 describe("TabParser 语法解析", () => {
     beforeEach(() => {

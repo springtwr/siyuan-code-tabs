@@ -2,6 +2,7 @@ import { pushMsg } from "@/api";
 import { CodeTab } from "@/modules/tabs/types";
 import { IObject } from "siyuan";
 import logger from "@/utils/logger";
+import { t } from "@/utils/i18n";
 
 export class TabParser {
     static checkCodeText(
@@ -21,7 +22,7 @@ export class TabParser {
         }
         const firstLine = this.getPreviewLine(codeText);
         if (!silent) {
-            pushMsg(`${i18n.headErrWhenCheckCode} | 当前内容: ${firstLine}`).then();
+            pushMsg(`${t(i18n, "parser.headErr")} | 当前内容: ${firstLine}`).then();
         }
         logger.warn("语法检查失败：未匹配到可用语法前缀", { preview: firstLine });
         return { result: false, code: [] };
@@ -86,7 +87,7 @@ export class TabParser {
             if (!title) {
                 if (!silent) {
                     pushMsg(
-                        `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        `${t(i18n, "parser.noTitle")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
                             headerLine
                         )}`
                     ).then();
@@ -119,7 +120,7 @@ export class TabParser {
             if (!codeContent || codeContent.trim().length === 0) {
                 if (!silent) {
                     pushMsg(
-                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 标题: ${title}`
                     ).then();
                 }
                 logger.warn("新语法解析失败：缺少代码内容", { index: i + 1, title });
@@ -162,7 +163,7 @@ export class TabParser {
             ) {
                 if (!silent) {
                     pushMsg(
-                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
                             codeSplitArr[0]
                         )}`
                     ).then();
@@ -173,7 +174,7 @@ export class TabParser {
             if (codeSplitArr[0].length < 7) {
                 if (!silent) {
                     pushMsg(
-                        `${i18n.noTitleWhenCheckCode}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
+                        `${t(i18n, "parser.noTitle")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
                             codeSplitArr[0]
                         )}`
                     ).then();
@@ -188,7 +189,7 @@ export class TabParser {
                 if (languageLine.length < 8) {
                     if (!silent) {
                         pushMsg(
-                            `${i18n.noLangWhenCheckCode}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
+                            `${t(i18n, "parser.noLang")}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
                                 languageLine
                             )}`
                         ).then();
@@ -205,7 +206,7 @@ export class TabParser {
             if (!code) {
                 if (!silent) {
                     pushMsg(
-                        `${i18n.noCodeWhenCheckCode}（第 ${i + 1} 个标签） | 标题: ${title}`
+                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 标题: ${title}`
                     ).then();
                 }
                 logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });

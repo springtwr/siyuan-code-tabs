@@ -104,3 +104,9 @@ docs/
 - 单元测试：`vitest`，测试文件集中放在 `tests/`。
 - 集成测试：使用 `docs/testing/` 中的样例文档与回归清单。
 - Debug 开关：插件设置中提供“调试日志”，开启后写入 `data/plugins/code-tabs/debug.log`。
+
+## 9. i18n 规范
+
+- 语言文件：`public/i18n/zh_CN.json`、`public/i18n/en_US.json`，使用扁平 key。
+- 访问方式：统一通过 `src/utils/i18n.ts` 的 `t(i18n, key)`。
+- 新增文案需同时更新两份 JSON，并确保 key 使用正确。

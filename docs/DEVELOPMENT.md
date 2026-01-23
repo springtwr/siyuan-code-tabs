@@ -29,6 +29,12 @@
 - 开发模式下会为 代码块换行/代码块连字/代码块显示行号 注册块菜单选项，方便调试。
 - 开发相关逻辑集中在 `src/modules/developer/`。
 
+## i18n 规范
+
+- 语言文件：`public/i18n/zh_CN.json`、`public/i18n/en_US.json`，使用**扁平 key**（例如 `menu.block.codeToTabs`）。
+- 访问方式：统一通过 `src/utils/i18n.ts` 的 `t(i18n, key)`。
+- 新增文案需同时更新两份 JSON，并在调用处使用正确 key。
+
 ## 生命周期注意事项
 
 - `onload` 只做初始化与注册，不做批量扫描或重计算。

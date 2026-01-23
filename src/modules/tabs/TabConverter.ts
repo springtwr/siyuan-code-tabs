@@ -2,6 +2,7 @@ import { getActiveEditor, IObject } from "siyuan";
 import { deleteBlock, insertBlock, pushMsg, setBlockAttrs, sql, updateBlock } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
 import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
+import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
 import { CodeTab } from "./types";
@@ -29,7 +30,7 @@ export class TabConverter {
 
     async codeToTabsBatch(blockList: HTMLElement[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
-            pushMsg(`${this.i18n.noCodeBlockToConvert}`);
+            pushMsg(`${t(this.i18n, "msg.noCodeBlockToConvert")}`);
             return { success: 0, failure: 0 };
         }
         logger.info("开始代码块 -> 标签页 批量转换", { count: blockList.length });
@@ -72,11 +73,11 @@ export class TabConverter {
         }
 
         const codeToTabsMessages = {
-            completed: this.i18n.allCodeToTabsCompleted,
-            failed: this.i18n.allCodeToTabsCompletedFailed,
-            invalidBlocks: this.i18n.invalidBlocks,
-            noItems: this.i18n.noCodeBlockToConvert,
-            skippedDueToFormat: this.i18n.skippedBlocks,
+            completed: t(this.i18n, "msg.allCodeToTabsCompleted"),
+            failed: t(this.i18n, "msg.allCodeToTabsCompletedFailed"),
+            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
+            noItems: t(this.i18n, "msg.noCodeBlockToConvert"),
+            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
         };
 
         // ===== 如果没有需要处理的项 =====
@@ -88,7 +89,10 @@ export class TabConverter {
         logger.info("进入转换队列的代码块数量", { count: toProcess.length });
         const results = await Promise.allSettled(
             toProcess.map(({ id, codeText, codeArr }) => {
-                const htmlBlock = TabRenderer.createHtmlBlock(codeArr, this.i18n.toggleToCode);
+                const htmlBlock = TabRenderer.createHtmlBlock(
+                    codeArr,
+                    t(this.i18n, "label.toggleToCode")
+                );
                 return this.update("dom", htmlBlock, id, codeText);
             })
         );
@@ -128,7 +132,7 @@ export class TabConverter {
 
     async tabToCodeBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
-            pushMsg(`${this.i18n.noTabsToConvert}`);
+            pushMsg(`${t(this.i18n, "msg.noTabsToConvert")}`);
             return { success: 0, failure: 0 };
         }
         logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
@@ -179,11 +183,11 @@ export class TabConverter {
         }
 
         const tabsToCodeMessages = {
-            completed: this.i18n.allTabsToCodeCompleted,
-            failed: this.i18n.allTabsToCodeCompletedFailed,
-            invalidBlocks: this.i18n.invalidBlocks,
-            noItems: this.i18n.noTabsToConvert,
-            skippedDueToFormat: this.i18n.skippedBlocks,
+            completed: t(this.i18n, "msg.allTabsToCodeCompleted"),
+            failed: t(this.i18n, "msg.allTabsToCodeCompletedFailed"),
+            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
+            noItems: t(this.i18n, "msg.noTabsToConvert"),
+            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
         };
         // ===== 如果没有需要处理的项 =====
         if (toProcess.length === 0) {
@@ -235,7 +239,7 @@ export class TabConverter {
 
     async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
-            pushMsg(`${this.i18n.noTabsToSplit}`);
+            pushMsg(`${t(this.i18n, "msg.noTabsToSplit")}`);
             return { success: 0, failure: 0 };
         }
         logger.info("开始标签页 -> 多个标准代码块 批量转换", { count: blockList.length });
@@ -291,7 +295,9 @@ export class TabConverter {
 
         if (toProcess.length === 0) {
             if (invalid.length > 0) {
-                pushMsg(`${this.i18n.invalidBlocks.replace("{0}", invalid.length.toString())}`);
+                pushMsg(
+                    `${t(this.i18n, "msg.invalidBlocks").replace("{0}", invalid.length.toString())}`
+                );
             }
             return { success: 0, failure: invalid.length };
         }
@@ -303,10 +309,14 @@ export class TabConverter {
         const success = results.filter((r) => r.status === "fulfilled").length;
         const failure = results.length - success;
         if (success > 0) {
-            pushMsg(`${this.i18n.tabsToPlainCodeCompleted.replace("{0}", success.toString())}`);
+            pushMsg(
+                `${t(this.i18n, "msg.tabsToPlainCodeCompleted").replace("{0}", success.toString())}`
+            );
         }
         if (failure > 0) {
-            pushMsg(`${this.i18n.tabsToPlainCodeFailed.replace("{0}", failure.toString())}`);
+            pushMsg(
+                `${t(this.i18n, "msg.tabsToPlainCodeFailed").replace("{0}", failure.toString())}`
+            );
         }
         logger.info("标签页 -> 多个标准代码块 转换统计", { success, failure });
         return { success, failure };
@@ -314,11 +324,11 @@ export class TabConverter {
 
     async mergeCodeBlocksToTabSyntax(blockList: HTMLElement[]): Promise<void> {
         if (!blockList || blockList.length === 0) {
-            pushMsg(`${this.i18n.noCodeBlockToMerge}`);
+            pushMsg(`${t(this.i18n, "msg.noCodeBlockToMerge")}`);
             return;
         }
         if (blockList.length < 2) {
-            pushMsg(`${this.i18n.mergeNeedMultipleBlocks}`);
+            pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
             return;
         }
 
@@ -335,7 +345,7 @@ export class TabConverter {
             .filter(Boolean) as Array<{ id: string; codeText: string; languageRaw: string }>;
 
         if (blocks.length < 2) {
-            pushMsg(`${this.i18n.mergeNeedMultipleBlocks}`);
+            pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
             return;
         }
 
@@ -363,9 +373,14 @@ export class TabConverter {
         await Promise.all(restIds.map((id) => deleteBlock(id)));
         logger.info("合并代码块为 tab 语法代码块完成", { count: blocks.length });
         if (hasTabSyntaxBlock) {
-            pushMsg(`${this.i18n.mergeContainsTabSyntax}`).then();
+            pushMsg(`${t(this.i18n, "msg.mergeContainsTabSyntax")}`).then();
         }
-        pushMsg(`${this.i18n.mergeCodeBlocksCompleted.replace("{0}", blocks.length.toString())}`);
+        pushMsg(
+            `${t(this.i18n, "msg.mergeCodeBlocksCompleted").replace(
+                "{0}",
+                blocks.length.toString()
+            )}`
+        );
     }
 
     async tabsToPlainCodeInDocument(): Promise<void> {

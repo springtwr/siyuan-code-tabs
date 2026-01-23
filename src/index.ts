@@ -16,6 +16,7 @@ import { DevToggleManager } from "@/modules/developer/DevToggleManager";
 import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
 import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
 import { debounce } from "@/utils/common";
+import { t } from "@/utils/i18n";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -41,7 +42,7 @@ export default class CodeTabs extends Plugin {
         );
 
         if (!window.siyuan.config.editor.allowHTMLBLockScript) {
-            pushErrMsg(`${this.i18n.notAllowHtmlBlockScript}`).then();
+            pushErrMsg(`${t(this.i18n, "msg.notAllowHtmlBlockScript")}`).then();
         }
 
         // 注入全局样式，移除 html 块默认的 padding
@@ -59,25 +60,25 @@ export default class CodeTabs extends Plugin {
         });
         const allTabsToCodeElement = document.createElement("button");
         allTabsToCodeElement.className = "b3-button b3-button--outline fn__flex-center fn__size200";
-        allTabsToCodeElement.textContent = `${this.i18n.allTabsToCodeBtn}`;
+        allTabsToCodeElement.textContent = `${t(this.i18n, "setting.allTabsToCode.button")}`;
         allTabsToCodeElement.addEventListener("click", () => {
             this.tabConverter.allTabsToCode();
         });
         this.setting.addItem({
-            title: `${this.i18n.allTabsToCode}`,
-            description: `${this.i18n.allTabsToCodeDes}`,
+            title: `${t(this.i18n, "setting.allTabsToCode.title")}`,
+            description: `${t(this.i18n, "setting.allTabsToCode.desc")}`,
             actionElement: allTabsToCodeElement,
         });
         const allTabsToPlainCodeElement = document.createElement("button");
         allTabsToPlainCodeElement.className =
             "b3-button b3-button--outline fn__flex-center fn__size200";
-        allTabsToPlainCodeElement.textContent = `${this.i18n.allTabsToPlainCodeBtn}`;
+        allTabsToPlainCodeElement.textContent = `${t(this.i18n, "setting.allTabsToPlainCode.button")}`;
         allTabsToPlainCodeElement.addEventListener("click", () => {
             this.tabConverter.allTabsToPlainCode();
         });
         this.setting.addItem({
-            title: `${this.i18n.allTabsToPlainCode}`,
-            description: `${this.i18n.allTabsToPlainCodeDes}`,
+            title: `${t(this.i18n, "setting.allTabsToPlainCode.title")}`,
+            description: `${t(this.i18n, "setting.allTabsToPlainCode.desc")}`,
             actionElement: allTabsToPlainCodeElement,
         });
 
@@ -89,8 +90,8 @@ export default class CodeTabs extends Plugin {
             this.setDebugEnabled(debugToggle.checked);
         });
         this.setting.addItem({
-            title: `${this.i18n.debugLogSetting}`,
-            description: `${this.i18n.debugLogSettingDesc}`,
+            title: `${t(this.i18n, "setting.debug.title")}`,
+            description: `${t(this.i18n, "setting.debug.desc")}`,
             actionElement: debugToggle,
         });
 
@@ -215,7 +216,7 @@ export default class CodeTabs extends Plugin {
         };
 
         const putFileHandler = () => {
-            logger.info(this.i18n.codeStyleChange);
+            logger.info(t(this.i18n, "msg.codeStyleChange"));
             ThemeManager.putStyleFile().then(() => {
                 syncSiyuanConfig(this.data);
                 this.saveConfig();
@@ -255,7 +256,7 @@ export default class CodeTabs extends Plugin {
     private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
         detail.menu.addItem({
             iconHTML: "",
-            label: this.i18n.codeToTabs,
+            label: t(this.i18n, "menu.block.codeToTabs"),
             click: () => {
                 const blockList: HTMLElement[] = [];
                 for (const item of detail.blockElements as HTMLElement[]) {
@@ -269,7 +270,7 @@ export default class CodeTabs extends Plugin {
         });
         detail.menu.addItem({
             iconHTML: "",
-            label: this.i18n.tabToCode,
+            label: t(this.i18n, "menu.block.tabToCode"),
             click: () => {
                 const blockList: HTMLElement[] = [];
                 for (const item of detail.blockElements) {
@@ -284,7 +285,7 @@ export default class CodeTabs extends Plugin {
         const submenuItems: IMenu[] = [
             {
                 iconHTML: "",
-                label: this.i18n.tabsToPlainCode,
+                label: t(this.i18n, "menu.block.tabsToPlainCode"),
                 click: () => {
                     const blockList: HTMLElement[] = [];
                     for (const item of detail.blockElements) {
@@ -298,7 +299,7 @@ export default class CodeTabs extends Plugin {
             },
             {
                 iconHTML: "",
-                label: this.i18n.mergeCodeBlocksToTabs,
+                label: t(this.i18n, "menu.more.mergeCodeBlocks"),
                 click: () => {
                     const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
                     this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
@@ -309,21 +310,21 @@ export default class CodeTabs extends Plugin {
             },
             {
                 iconHTML: "",
-                label: this.i18n.codeToTabsInDocument,
+                label: t(this.i18n, "menu.more.codeToTabsInDocument"),
                 click: () => {
                     this.tabConverter.codeToTabsInDocument();
                 },
             },
             {
                 iconHTML: "",
-                label: this.i18n.tabToCodeInDocument,
+                label: t(this.i18n, "menu.more.tabToCodeInDocument"),
                 click: () => {
                     this.tabConverter.tabToCodeInDocument();
                 },
             },
             {
                 iconHTML: "",
-                label: this.i18n.tabsToPlainCodeInDocument,
+                label: t(this.i18n, "menu.more.tabsToPlainCodeInDocument"),
                 click: () => {
                     this.tabConverter.tabsToPlainCodeInDocument();
                 },
@@ -331,7 +332,7 @@ export default class CodeTabs extends Plugin {
         ];
         detail.menu.addItem({
             iconHTML: "",
-            label: this.i18n.codeTabsMore,
+            label: t(this.i18n, "menu.more.title"),
             type: "submenu",
             submenu: submenuItems,
         });
@@ -339,12 +340,12 @@ export default class CodeTabs extends Plugin {
             detail.menu.addItem({ type: "separator" });
             detail.menu.addItem({
                 iconHTML: "",
-                label: this.i18n.devMenuTitle,
+                label: t(this.i18n, "menu.dev.title"),
                 type: "readonly",
             });
             detail.menu.addItem({
                 iconHTML: "",
-                label: this.i18n.devToggleCodeLineWrap,
+                label: t(this.i18n, "menu.dev.toggleLineWrap"),
                 click: () => {
                     DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, () =>
                         this.reloadActivateDocument()
@@ -353,7 +354,7 @@ export default class CodeTabs extends Plugin {
             });
             detail.menu.addItem({
                 iconHTML: "",
-                label: this.i18n.devToggleCodeLigatures,
+                label: t(this.i18n, "menu.dev.toggleLigatures"),
                 click: () => {
                     DevToggleManager.toggleEditorSetting("codeLigatures", this.data, () =>
                         this.reloadActivateDocument()
@@ -362,7 +363,7 @@ export default class CodeTabs extends Plugin {
             });
             detail.menu.addItem({
                 iconHTML: "",
-                label: this.i18n.devToggleCodeLineNumber,
+                label: t(this.i18n, "menu.dev.toggleLineNumber"),
                 click: () => {
                     DevToggleManager.toggleEditorSetting(
                         "codeSyntaxHighlightLineNum",

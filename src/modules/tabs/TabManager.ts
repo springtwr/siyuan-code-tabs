@@ -3,6 +3,7 @@ import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
 import { decodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
+import { t } from "@/utils/i18n";
 import { TabParser } from "./TabParser";
 import { IObject } from "siyuan";
 import { StyleProbe } from "../theme/StyleProbe";
@@ -12,7 +13,7 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
     let codeText = decodeSource(customAttribute);
     if (!codeText) {
         logger.info(`标签页转为代码块失败，未找到源码: id ${block_id}`);
-        pushErrMsg(`${i18n.allTabsToCodeFailed}: ${block_id}`);
+        pushErrMsg(`${t(i18n, "msg.allTabsToCodeFailed")}: ${block_id}`);
         return;
     }
     // 转换时顺带自动更新语法格式

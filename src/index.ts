@@ -97,7 +97,7 @@ export default class CodeTabs extends Plugin {
 
         // 注册快捷方式
         this.addCommand({
-            langKey: "codeToTabs",
+            langKey: t(this.i18n, "menu.block.codeToTabs"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
@@ -105,7 +105,7 @@ export default class CodeTabs extends Plugin {
             },
         });
         this.addCommand({
-            langKey: "tabToCode",
+            langKey: t(this.i18n, "menu.block.tabToCode"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements(
@@ -115,7 +115,7 @@ export default class CodeTabs extends Plugin {
             },
         });
         this.addCommand({
-            langKey: "tabsToPlainCode",
+            langKey: t(this.i18n, "menu.more.tabsToPlainCode"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements(
@@ -125,7 +125,7 @@ export default class CodeTabs extends Plugin {
             },
         });
         this.addCommand({
-            langKey: "mergeCodeBlocksToTabs",
+            langKey: t(this.i18n, "menu.more.mergeCodeBlocks"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');

@@ -3,6 +3,7 @@ import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
 import { CodeTab } from "@/modules/tabs/types";
 import { htmlBlockStr, protyleHtmlStr } from "@/constants";
+import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 
 export class TabRenderer {
@@ -51,6 +52,7 @@ export class TabRenderer {
             content.dataset.render = "true";
             let hlText = code;
             if (language === "markdown-render") {
+                content.dataset.raw = encodeSource(code);
                 const marked = new Marked(
                     markedHighlight({
                         langPrefix: "hljs language-",

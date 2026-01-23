@@ -28,6 +28,27 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
     return codeText;
 }
 
+async function copyTextToClipboard(text: string, i18n: IObject) {
+    const content = text ?? "";
+    const tryNative = async () => {
+        if (!navigator?.clipboard?.writeText) return false;
+        try {
+            await navigator.clipboard.writeText(content);
+            return true;
+        } catch (error) {
+            logger.warn("调用 clipboard.writeText 失败", { error });
+            return false;
+        }
+    };
+
+    const nativeOk = await tryNative();
+    if (nativeOk) {
+        pushMsg(t(i18n, "msg.copyToClipboard"), 2000).then();
+        return;
+    }
+    pushErrMsg(t(i18n, "msg.copyToClipboardFailed"));
+}
+
 export class TabManager {
     static initGlobalFunctions(i18n: IObject) {
         logger.debug("初始化全局 Tabs 交互函数");
@@ -59,96 +80,22 @@ export class TabManager {
                 if (!tabContainer) return;
                 const tabContent = tabContainer.querySelector<HTMLElement>(".tab-content--active");
                 if (!tabContent) return;
-                let textContent = tabContent.textContent ?? "";
                 logger.debug("触发复制代码");
 
+                const rawEncoded = tabContent.dataset.raw;
+                if (rawEncoded !== undefined) {
+                    await copyTextToClipboard(decodeSource(rawEncoded), i18n);
+                    return;
+                }
+
                 if (tabContent.querySelector(".markdown-body")) {
-                    const tabContents = tabContent.parentNode;
-                    // 获取当前活动标签页的索引，需要排除非内容元素
-                    if (!tabContents) return;
-                    const allContentElements = Array.from(tabContents.children).filter((child) =>
-                        child.classList?.contains("tab-content")
-                    );
-                    const activeContentIndex = allContentElements.indexOf(tabContent);
-
-                    let parent: Node = trigger;
-                    while (parent && parent.parentNode) {
-                        parent = parent.parentNode;
-                    }
-                    if (!parent || !(parent instanceof ShadowRoot)) return;
-                    const host = parent.host;
-                    if (!host || !host.parentNode || !host.parentNode.parentNode) return;
-                    const htmlBlock = host.parentNode.parentNode as HTMLElement;
-                    const nodeId = htmlBlock.dataset.nodeId;
-                    if (!nodeId) return;
-
-                    getBlockAttrs(nodeId).then((res) => {
-                        if (!res) return;
-                        let codeText = decodeSource(res[`${CUSTOM_ATTR}`]);
-                        // 如需要回退检查，尽管 decodeSource 已处理
-                        if (codeText && codeText[codeText.length - 1] !== "\n") {
-                            codeText = codeText + "\n";
-                        }
-
-                        // 尝试解析新语法 (:::) 或旧语法 (tab:::)
-                        let codeArr;
-                        if (codeText.trim().startsWith(":::")) {
-                            // 新语法：使用 ::: 分隔
-                            codeArr = codeText.split(/(?:^|\n):::/g);
-                            codeArr = codeArr.slice(1); // 移除第一个空元素
-                        } else {
-                            // 旧语法：使用 tab::: 分隔
-                            codeArr = codeText.trim().match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
-                        }
-
-                        if (!codeArr || codeArr.length === 0) {
-                            logger.error("无法解析标签页内容");
-                            return;
-                        }
-
-                        // 确保索引在有效范围内
-                        if (activeContentIndex < 0 || activeContentIndex >= codeArr.length) {
-                            logger.error(
-                                `索引超出范围: ${activeContentIndex}, 数组长度: ${codeArr.length}`
-                            );
-                            return;
-                        }
-
-                        textContent = codeArr[activeContentIndex];
-                        const lines = textContent.split("\n");
-                        lines.shift();
-                        if (lines[0] && lines[0].startsWith("lang:::")) {
-                            lines.shift();
-                        }
-                        textContent = lines.join("\n");
-                        void copyTextToClipboard(textContent);
-                    });
-                } else {
-                    const codeEl = tabContent.querySelector(".code");
-                    const codeText = codeEl?.textContent;
-                    await copyTextToClipboard(codeText ?? textContent);
+                    pushErrMsg(t(i18n, "msg.copyNeedRegenTabs"));
+                    return;
                 }
 
-                async function copyTextToClipboard(text: string) {
-                    const content = text ?? "";
-                    const tryNative = async () => {
-                        if (!navigator?.clipboard?.writeText) return false;
-                        try {
-                            await navigator.clipboard.writeText(content);
-                            return true;
-                        } catch (error) {
-                            logger.warn("调用 clipboard.writeText 失败", { error });
-                            return false;
-                        }
-                    };
-
-                    const nativeOk = await tryNative();
-                    if (nativeOk) {
-                        pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
-                        return;
-                    }
-                    pushErrMsg("复制失败：当前环境不支持剪贴板接口");
-                }
+                const codeEl = tabContent.querySelector(".code");
+                const codeText = codeEl?.textContent ?? tabContent.textContent ?? "";
+                await copyTextToClipboard(codeText, i18n);
             },
 
             toggle: (evt: MouseEvent) => {

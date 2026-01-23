@@ -75,6 +75,10 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Changelog
 
+### v1.1.1
+
+- Fixed a text error in the plugin's shortcut settings.
+
 ### v1.1.0
 
 - Added “Tabs → standard code blocks” split (block/document/global entries)

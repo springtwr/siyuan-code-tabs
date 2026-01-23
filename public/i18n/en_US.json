@@ -17,6 +17,9 @@
   "setting.allTabsToPlainCode.title": "Split all code-tabs into standard code blocks",
   "setting.allTabsToPlainCode.desc": "Split all code-tabs in the notebook into standard code blocks",
   "setting.allTabsToPlainCode.button": "Split",
+  "setting.activeColor.title": "Active tab colors",
+  "setting.activeColor.desc": "Customize active tab text and indicator color (shared)",
+  "setting.activeColor.reset": "Reset to default",
   "setting.debug.title": "Debug logs",
   "setting.debug.desc": "Enable debug logs and write to /data/plugins/code-tabs/debug.log",
   "label.toggleToCode": "Toggle to code-block",
@@ -39,10 +42,16 @@
   "msg.allTabsToCodeFailed": "Restore code-tabs to code-block failed",
   "msg.tabsToPlainCodeCompleted": "Split into standard code blocks completed, success count: {0}",
   "msg.tabsToPlainCodeFailed": "Split into standard code blocks completed, failed count: {0}",
+  "msg.batchCancelled": "Batch operation cancelled, processed {0}/{1}",
   "msg.invalidBlocks": "Invalid blocks detected: {0}",
   "msg.skippedBlocks": "Skipped: {0}",
   "msg.noCodeBlockToMerge": "No code blocks to merge",
   "msg.mergeNeedMultipleBlocks": "Select at least two code blocks",
   "msg.mergeContainsTabSyntax": "Detected tab syntax blocks and expanded them before merging",
-  "msg.mergeCodeBlocksCompleted": "Merged code blocks completed, count: {0}"
+  "msg.mergeCodeBlocksCompleted": "Merged code blocks completed, count: {0}",
+  "task.progress.codeToTabs": "Batch: code-block -> tabs",
+  "task.progress.tabsToCode": "Batch: tabs -> code-block",
+  "task.progress.tabsToPlainCode": "Batch: tabs -> standard code blocks",
+  "task.progress.detail": "Progress: {0}/{1}",
+  "task.progress.cancel": "Cancel"
 }

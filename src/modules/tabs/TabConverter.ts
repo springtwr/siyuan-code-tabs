@@ -19,13 +19,153 @@ type ConversionMessages = {
     noItems: string;
 };
 
+type BatchTask = {
+    cancelled: boolean;
+    update: (completed: number, total: number) => void;
+    cancel: () => void;
+    destroy: () => void;
+};
+
+type BatchResult = {
+    results: PromiseSettledResult<unknown>[];
+    cancelledCount: number;
+};
+
 export class TabConverter {
     private readonly i18n: IObject;
     private readonly onSuccess?: () => void;
+    private currentTask?: BatchTask;
+    private static readonly progressThreshold = 20;
 
     constructor(i18n: IObject, onSuccess?: () => void) {
         this.i18n = i18n;
         this.onSuccess = onSuccess;
+    }
+
+    cancelCurrentTask(): void {
+        if (!this.currentTask) return;
+        this.currentTask.cancel();
+        this.currentTask.destroy();
+        this.currentTask = undefined;
+    }
+
+    private formatProgress(completed: number, total: number): string {
+        return t(this.i18n, "task.progress.detail")
+            .replace("{0}", String(completed))
+            .replace("{1}", String(total));
+    }
+
+    private createProgressTask(taskLabel: string, total: number): BatchTask | null {
+        if (!document.body || total < TabConverter.progressThreshold) {
+            return null;
+        }
+        if (this.currentTask) {
+            this.currentTask.cancel();
+            this.currentTask.destroy();
+            this.currentTask = undefined;
+        }
+
+        const container = document.createElement("div");
+        container.style.cssText = [
+            "position: fixed",
+            "right: 16px",
+            "bottom: 16px",
+            "z-index: 9999",
+            "background: var(--b3-theme-background, #fff)",
+            "color: var(--b3-theme-on-surface, #333)",
+            "border: 1px solid var(--b3-theme-surface-lighter, #ddd)",
+            "border-radius: 8px",
+            "box-shadow: 0 4px 18px rgba(0,0,0,0.12)",
+            "padding: 10px 12px",
+            "min-width: 220px",
+            "display: flex",
+            "flex-direction: column",
+            "gap: 6px",
+        ].join(";");
+
+        const titleEl = document.createElement("div");
+        titleEl.textContent = "code-tabs";
+        titleEl.style.fontWeight = "600";
+
+        const labelEl = document.createElement("div");
+        labelEl.textContent = taskLabel;
+        labelEl.style.fontSize = "12px";
+        labelEl.style.opacity = "0.85";
+
+        const progressEl = document.createElement("div");
+        progressEl.textContent = this.formatProgress(0, total);
+        progressEl.style.fontSize = "12px";
+        progressEl.style.opacity = "0.85";
+
+        const cancelButton = document.createElement("button");
+        cancelButton.className = "b3-button b3-button--outline fn__flex-center";
+        cancelButton.textContent = t(this.i18n, "task.progress.cancel");
+
+        container.appendChild(titleEl);
+        container.appendChild(labelEl);
+        container.appendChild(progressEl);
+        container.appendChild(cancelButton);
+        document.body.appendChild(container);
+
+        const task: BatchTask = {
+            cancelled: false,
+            update: (completed, totalCount) => {
+                progressEl.textContent = this.formatProgress(completed, totalCount);
+            },
+            cancel: () => {
+                task.cancelled = true;
+                cancelButton.disabled = true;
+            },
+            destroy: () => {
+                cancelButton.removeEventListener("click", task.cancel);
+                container.remove();
+            },
+        };
+
+        cancelButton.addEventListener("click", task.cancel);
+        this.currentTask = task;
+        return task;
+    }
+
+    private async runBatch<T>(
+        title: string,
+        items: T[],
+        handler: (item: T) => Promise<void>
+    ): Promise<BatchResult> {
+        const total = items.length;
+        const task = this.createProgressTask(title, total);
+        if (task) {
+            task.update(0, total);
+        }
+        const results: PromiseSettledResult<unknown>[] = [];
+        for (const item of items) {
+            if (task?.cancelled) break;
+            try {
+                await handler(item);
+                results.push({ status: "fulfilled", value: undefined });
+            } catch (error) {
+                results.push({ status: "rejected", reason: error });
+            } finally {
+                if (task) {
+                    task.update(results.length, total);
+                }
+            }
+        }
+
+        const cancelledCount = total - results.length;
+        if (cancelledCount > 0) {
+            pushMsg(
+                t(this.i18n, "msg.batchCancelled")
+                    .replace("{0}", String(results.length))
+                    .replace("{1}", String(total))
+            );
+        }
+
+        task?.destroy();
+        if (this.currentTask === task) {
+            this.currentTask = undefined;
+        }
+        return { results, cancelledCount };
     }
 
     async codeToTabsBatch(blockList: HTMLElement[]): Promise<ConversionStats> {
@@ -87,14 +227,16 @@ export class TabConverter {
 
         // ===== 对有效块执行异步更新 =====
         logger.info("进入转换队列的代码块数量", { count: toProcess.length });
-        const results = await Promise.allSettled(
-            toProcess.map(({ id, codeText, codeArr }) => {
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.codeToTabs"),
+            toProcess,
+            async ({ id, codeText, codeArr }) => {
                 const htmlBlock = TabRenderer.createHtmlBlock(
                     codeArr,
                     t(this.i18n, "label.toggleToCode")
                 );
-                return this.update("dom", htmlBlock, id, codeText);
-            })
+                await this.update("dom", htmlBlock, id, codeText);
+            }
         );
 
         // ===== 统计并提示 =====
@@ -195,13 +337,14 @@ export class TabConverter {
         }
 
         // 并行执行所有转换（允许部分失败）
-        const results = await Promise.allSettled(
-            toProcess.map(({ id, codeText }) => {
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.tabsToCode"),
+            toProcess,
+            async ({ id, codeText }) => {
                 const flag = TAB_SEPARATOR;
-                return updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, id).then(() => {
-                    logger.info(`标签页转为代码块: id ${id}`);
-                });
-            })
+                await updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, id);
+                logger.info(`标签页转为代码块: id ${id}`);
+            }
         );
 
         // ===== 统计并提示 =====
@@ -302,8 +445,12 @@ export class TabConverter {
             return { success: 0, failure: invalid.length };
         }
 
-        const results = await Promise.allSettled(
-            toProcess.map(({ id, codeArr }) => this.replaceWithPlainCodeBlocks(id, codeArr))
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.tabsToPlainCode"),
+            toProcess,
+            async ({ id, codeArr }) => {
+                await this.replaceWithPlainCodeBlocks(id, codeArr);
+            }
         );
 
         const success = results.filter((r) => r.status === "fulfilled").length;

@@ -17,6 +17,9 @@
   "setting.allTabsToPlainCode.title": "将所有代码标签页拆分为标准代码块",
   "setting.allTabsToPlainCode.desc": "将所有笔记中的代码标签页拆分为标准代码块",
   "setting.allTabsToPlainCode.button": "拆分",
+  "setting.activeColor.title": "自定义标签颜色",
+  "setting.activeColor.desc": "自定义激活标签文字与指示器颜色",
+  "setting.activeColor.reset": "恢复默认",
   "setting.debug.title": "调试日志",
   "setting.debug.desc": "开启后输出 debug 级别日志并写入 /data/plugins/code-tabs/debug.log",
   "label.toggleToCode": "切回代码块",
@@ -39,10 +42,16 @@
   "msg.allTabsToCodeFailed": "还原代码标签页失败",
   "msg.tabsToPlainCodeCompleted": "拆分为标准代码块完成，成功数量：{0}",
   "msg.tabsToPlainCodeFailed": "拆分为标准代码块完成，失败数量：{0}",
+  "msg.batchCancelled": "已取消批量操作，已处理 {0}/{1}",
   "msg.invalidBlocks": "检测到无效块：{0}",
   "msg.skippedBlocks": "跳过：{0}",
   "msg.noCodeBlockToMerge": "没有可合并的代码块",
   "msg.mergeNeedMultipleBlocks": "至少需要选中两个代码块",
   "msg.mergeContainsTabSyntax": "检测到 tab 语法代码块，已自动展开并合并",
-  "msg.mergeCodeBlocksCompleted": "合并代码块完成，数量：{0}"
+  "msg.mergeCodeBlocksCompleted": "合并代码块完成，数量：{0}",
+  "task.progress.codeToTabs": "批量转换：代码块 → 标签页",
+  "task.progress.tabsToCode": "批量转换：标签页 → 代码块",
+  "task.progress.tabsToPlainCode": "批量转换：标签页 → 标准代码块",
+  "task.progress.detail": "进度：{0}/{1}",
+  "task.progress.cancel": "取消"
 }

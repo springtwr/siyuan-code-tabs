@@ -285,7 +285,7 @@ export default class CodeTabs extends Plugin {
         const submenuItems: IMenu[] = [
             {
                 iconHTML: "",
-                label: t(this.i18n, "menu.block.tabsToPlainCode"),
+                label: t(this.i18n, "menu.more.tabsToPlainCode"),
                 click: () => {
                     const blockList: HTMLElement[] = [];
                     for (const item of detail.blockElements) {

@@ -75,6 +75,10 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Changelog
 
+### v1.1.2
+
+- Fixed an issue where submenus in the block menu would disappear
+
 ### v1.1.1
 
 - Fixed a text error in the plugin's shortcut settings.

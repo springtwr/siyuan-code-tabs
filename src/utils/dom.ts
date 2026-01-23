@@ -57,10 +57,7 @@ export function compareConfig(pluginConfig: unknown, siyuanConfig: unknown): boo
     if (!isRecord(pluginConfig) || !isRecord(siyuanConfig)) {
         return false;
     }
-    const pluginKeys = Object.keys(pluginConfig);
-    const siyuanKeys = Object.keys(siyuanConfig);
-    if (pluginKeys.length !== siyuanKeys.length) return false;
-    for (const key of siyuanKeys) {
+    for (const key of Object.keys(siyuanConfig)) {
         if (pluginConfig[key] !== siyuanConfig[key]) return false;
     }
     return true;

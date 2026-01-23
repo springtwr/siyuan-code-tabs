@@ -11,7 +11,7 @@
 }
 
 .tab-item--active {
-    color: #7f6df2;
+    color: var(--code-tabs-active-color, #7f6df2);
     position: relative;
 }
 
@@ -22,7 +22,7 @@
     left: 4px;
     height: 3px;
     right: 4px;
-    background-color: #7f6df2;
+    background-color: var(--code-tabs-active-color, #7f6df2);
 }
 
 .tab-content {

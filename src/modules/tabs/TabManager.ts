@@ -1,4 +1,3 @@
-import ClipboardJS from "clipboard";
 import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
 import { decodeSource } from "@/utils/encoding";
@@ -53,24 +52,26 @@ export class TabManager {
                 LineNumberManager.refreshActive(tabContainer);
             },
 
-            copyCode: (evt: MouseEvent) => {
-                const tabContainer = (evt.target as HTMLElement).closest(".tabs-container");
-                const tabContent = tabContainer.querySelector(".tab-content--active");
-                let textContent = tabContent.textContent;
+            copyCode: async (evt: MouseEvent) => {
+                const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
+                if (!trigger) return;
+                const tabContainer = trigger.closest(".tabs-container");
+                if (!tabContainer) return;
+                const tabContent = tabContainer.querySelector<HTMLElement>(".tab-content--active");
+                if (!tabContent) return;
+                let textContent = tabContent.textContent ?? "";
                 logger.debug("触发复制代码");
 
-                if (
-                    tabContent.firstChild instanceof HTMLElement &&
-                    tabContent.firstChild.className.includes("markdown")
-                ) {
+                if (tabContent.querySelector(".markdown-body")) {
                     const tabContents = tabContent.parentNode;
                     // 获取当前活动标签页的索引，需要排除非内容元素
-                    const allContentElements = Array.from(tabContents.children).filter(
-                        (child) => child.classList && child.classList.contains("tab-content")
+                    if (!tabContents) return;
+                    const allContentElements = Array.from(tabContents.children).filter((child) =>
+                        child.classList?.contains("tab-content")
                     );
                     const activeContentIndex = allContentElements.indexOf(tabContent);
 
-                    let parent: Node = evt.target as Node;
+                    let parent: Node = trigger;
                     while (parent && parent.parentNode) {
                         parent = parent.parentNode;
                     }
@@ -79,6 +80,7 @@ export class TabManager {
                     if (!host || !host.parentNode || !host.parentNode.parentNode) return;
                     const htmlBlock = host.parentNode.parentNode as HTMLElement;
                     const nodeId = htmlBlock.dataset.nodeId;
+                    if (!nodeId) return;
 
                     getBlockAttrs(nodeId).then((res) => {
                         if (!res) return;
@@ -119,28 +121,33 @@ export class TabManager {
                             lines.shift();
                         }
                         textContent = lines.join("\n");
-                        copyTextToClipboard(textContent);
+                        void copyTextToClipboard(textContent);
                     });
                 } else {
                     const codeEl = tabContent.querySelector(".code");
                     const codeText = codeEl?.textContent;
-                    copyTextToClipboard(codeText ?? textContent);
+                    await copyTextToClipboard(codeText ?? textContent);
                 }
 
-                function copyTextToClipboard(text: string) {
-                    const btn = evt.target as HTMLElement;
-                    const clipboard = new ClipboardJS(btn, {
-                        text: () => text,
-                    });
-                    clipboard.on("success", (e) => {
-                        e.clearSelection();
+                async function copyTextToClipboard(text: string) {
+                    const content = text ?? "";
+                    const tryNative = async () => {
+                        if (!navigator?.clipboard?.writeText) return false;
+                        try {
+                            await navigator.clipboard.writeText(content);
+                            return true;
+                        } catch (error) {
+                            logger.warn("调用 clipboard.writeText 失败", { error });
+                            return false;
+                        }
+                    };
+
+                    const nativeOk = await tryNative();
+                    if (nativeOk) {
                         pushMsg("已复制到剪贴板(Copied to clipboard)", 2000).then();
-                    });
-                    clipboard.on("error", (e) => {
-                        logger.error(e);
-                    });
-                    btn.click();
-                    clipboard.destroy();
+                        return;
+                    }
+                    pushErrMsg("复制失败：当前环境不支持剪贴板接口");
                 }
             },
 

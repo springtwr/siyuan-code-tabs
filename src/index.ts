@@ -242,6 +242,7 @@ export default class CodeTabs extends Plugin {
         this.eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
         this.themeObserver?.disconnect();
         this.themeObserver = undefined;
+        LineNumberManager.cleanup();
         logger.setLogWriter(undefined);
         if (this.injectedStyleEl) {
             this.injectedStyleEl.remove();

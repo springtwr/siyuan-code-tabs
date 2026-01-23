@@ -6,6 +6,22 @@ import logger from "@/utils/logger";
 import { BACKGROUND_CSS, CODE_STYLE_CSS, THEME_ADAPTION_YAML } from "@/constants";
 import * as yaml from "js-yaml";
 
+function resolveUrl(route: string): string {
+    if (!route) return route;
+    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(route)) {
+        return route;
+    }
+    const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
+    if (!baseUrl) {
+        return route;
+    }
+    try {
+        return new URL(route, baseUrl).toString();
+    } catch {
+        return `${baseUrl}${route}`;
+    }
+}
+
 /**
  * 带重试功能的网络请求
  */
@@ -17,8 +33,7 @@ export async function fetchWithRetry(
 ): Promise<Response> {
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
-            const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
-            const url = baseUrl + route;
+            const url = resolveUrl(route);
             const response = await fetch(url, options);
             if (!response.ok) {
                 if (response.status === 404) {
@@ -42,15 +57,19 @@ export async function fetchWithRetry(
             }
         }
     }
+    throw new Error("fetchWithRetry: retries exhausted");
 }
 
 /**
  * 从 URL 获取文件
  */
-export async function fetchFileFromUrl(route: string, fileName: string): Promise<File | undefined> {
+export async function fetchFileFromUrl(
+    route: string | undefined,
+    fileName: string
+): Promise<File | undefined> {
     try {
         let file: File;
-        if (route === undefined) {
+        if (!route) {
             const emptyContent = new Uint8Array(0);
             const blob = new Blob([emptyContent], { type: "text/css" });
             file = new File([blob], fileName, { type: "text/css" });
@@ -76,8 +95,8 @@ export async function fetchFileFromUrlSimple(
     fileName: string
 ): Promise<File | undefined> {
     try {
-        const baseUrl = document.querySelector("base#baseURL")?.getAttribute("href");
-        const url = baseUrl + route;
+        if (!route) return undefined;
+        const url = resolveUrl(route);
         const response = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return undefined;
         const blob = await response.blob();

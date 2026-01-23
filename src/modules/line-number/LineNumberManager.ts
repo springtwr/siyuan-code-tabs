@@ -8,7 +8,7 @@ export class LineNumberManager {
     private static readonly rowClass = "tab-line-num__row";
     private static resizeObservers = new Map<HTMLElement, ResizeObserver>();
     private static rafIds = new WeakMap<HTMLElement, number>();
-    private static measurers = new WeakMap<ShadowRoot, HTMLElement>();
+    private static measurers = new Map<ShadowRoot, HTMLElement>();
 
     static isEnabled(): boolean {
         return window.siyuan?.config?.editor?.codeSyntaxHighlightLineNum === true;
@@ -70,8 +70,19 @@ export class LineNumberManager {
         document.querySelectorAll<HTMLElement>(".tab-content .code").forEach((codeEl) => {
             codeEl.style.paddingLeft = "";
         });
-        this.resizeObservers.forEach((observer) => observer.disconnect());
+        this.resizeObservers.forEach((observer, tabContent) => {
+            const rafId = this.rafIds.get(tabContent);
+            if (rafId) cancelAnimationFrame(rafId);
+            observer.disconnect();
+        });
         this.resizeObservers.clear();
+        this.rafIds = new WeakMap<HTMLElement, number>();
+        this.measurers.forEach((measurer) => measurer.remove());
+        this.measurers.clear();
+    }
+
+    static cleanup(): void {
+        this.disableAll();
     }
 
     private static attachNode(node: HTMLElement): void {

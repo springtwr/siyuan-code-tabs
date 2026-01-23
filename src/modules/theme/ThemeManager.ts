@@ -117,9 +117,11 @@ ${extraCss}
         const nodes = document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
         logger.info("刷新标签页样式链接", { count: nodes.length });
         nodes.forEach((node) => {
-            const shadowRoot = node.querySelector("protyle-html").shadowRoot;
+            const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
+            if (!shadowRoot) return;
             shadowRoot.querySelectorAll("link").forEach((link) => {
                 const currentHref = link.href;
+                if (!currentHref) return;
                 const currentTime = Date.now().toString();
                 const url = new URL(currentHref);
                 url.searchParams.set("t", currentTime);

@@ -47,8 +47,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
    print("Hello World")
    ```
 
-2. Click the block menu in the upper-left corner of the code-block -> Plugin -> `Block: code-block -> tabs`, you can also
-   set a shortcut key for this function in Settings -> Keymap. The other two functions in the block menu perform batch conversion and restoration based on the current document.
+2. Click the block menu in the upper-left corner of the code-block -> Plugin -> `Block: code-block -> tabs`, you can also set a shortcut key for this function in Settings -> Keymap.
    ![fig2](./images/2.gif)
 
 3. If you need to edit the code, you can click on "Toggle to code-block" in the upper-right corner of the tab. After
@@ -56,20 +55,31 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
    ![fig3](./images/3.png)
 4. You can copy the code in one click by clicking the copy button in the upper right corner(Copy plaintext only).  
    ![fig4](./images/4.png)
-5. If there are too many tabs, some of the tabs will be hidden, in the desktop application, you can put the mouse cursor
+5. More block menu actions are available under `More [code-tabs]`:
+   - `Document: code-block -> tabs` / `Document: tabs -> code-block` / `Document: tabs -> standard code blocks`
+   - `Block: merge selected code blocks` (merge multiple code blocks into one tab-syntax code block)
+   - `Block: tabs -> standard code blocks` (split a tabs block into multiple standard code blocks)
+6. The settings panel provides a global entry: `Split all code-tabs into standard code blocks` (for fully exiting the plugin).
+7. If there are too many tabs, some of the tabs will be hidden, in the desktop application, you can put the mouse cursor
    on the tabs bar and use the mouse wheel to scroll through them, and in the mobile application, you can slide the tabs
    bar left and right to view them.
-6. Demo.  
+8. Demo.  
    ![fig5](./images/demo.gif)
-7. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file that allows users to adapt themes themselves. The configuration file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. You can adapt themes to your needs by following the examples and using developer tools. You can also submit a PR to this repository with your adapted theme, the repository's adaptation file path is `/public/asset/theme-adaption.yaml`
+9. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file that allows users to adapt themes themselves. The configuration file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. You can adapt themes to your needs by following the examples and using developer tools. You can also submit a PR to this repository with your adapted theme, the repository's adaptation file path is `/public/asset/theme-adaption.yaml`
 
 ## Comment
 
 - Essentially, this plugin was written with the help of Wenxin Yiyan and ChatGPT.
 - This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- The version of SiYuan Notes at the time of testing: 3.5.0
+- The version of SiYuan Notes at the time of testing: 3.5.3
 
 ## Changelog
+
+### v1.1.0
+
+- Added “Tabs → standard code blocks” split (block/document/global entries)
+- Added “Merge selected code blocks” into tab-syntax code block
+- Added “More [code-tabs]” submenu to organize block menu actions
 
 ### v1.0.0
 

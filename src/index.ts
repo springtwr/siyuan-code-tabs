@@ -440,7 +440,7 @@ export default class CodeTabs extends Plugin {
         const activeEditor = getActiveEditor(true);
         if (activeEditor) {
             logger.info("刷新页面");
-            // activeEditor.reload(true);
+            activeEditor.reload(true);
         }
     }
 

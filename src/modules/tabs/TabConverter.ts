@@ -391,28 +391,70 @@ export class TabConverter {
         return stats;
     }
 
-    async codeToTabsInDocument(): Promise<void> {
-        const currentDocument = getActiveEditor(true);
-        if (!currentDocument) return;
-        const rootId =
-            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
-                ?.protyle?.block?.rootID ??
-            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
-                ?.rootId;
-        if (!rootId) {
-            logger.warn("当前文档代码块 -> 标签页 失败：缺少 rootId");
-            pushErrMsg(t(this.i18n, "msg.noRootId"));
-            return;
+    private extractTabBlockMeta(block: TabBlock): { id: string; customAttribute: string } {
+        if ("ial" in block && typeof block.ial === "string") {
+            return {
+                id: block.id ?? "",
+                customAttribute:
+                    block.ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "",
+            };
         }
-        logger.info("当前文档代码块 -> 标签页 查询开始", { rootId });
-        const blockList = (await sql(
-            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='c'`
-        )) as SqlBlock[];
-        logger.info("当前文档代码块 -> 标签页 查询完成", {
-            count: blockList.length,
-            rootId,
-        });
-        this.codeToTabsBatchBySql(blockList);
+        const domBlock = block as HTMLElement;
+        return {
+            id: domBlock.getAttribute("data-node-id") ?? "",
+            customAttribute: domBlock.getAttribute(CUSTOM_ATTR) ?? "",
+        };
+    }
+
+    private collectTabBlocks(
+        blockList: TabBlock[],
+        parseCode: boolean,
+        context: string
+    ): {
+        toProcess: Array<{ id: string; codeText: string } | { id: string; codeArr: CodeTab[] }>;
+        invalid: { nodeId: string; reason: string }[];
+    } {
+        const toProcess: Array<{ id: string; codeText: string } | { id: string; codeArr: CodeTab[] }> =
+            [];
+        const invalid: { nodeId: string; reason: string }[] = [];
+
+        for (const block of blockList) {
+            const { id, customAttribute } = this.extractTabBlockMeta(block);
+            if (!id) {
+                const msg = "缺少 nodeId";
+                invalid.push({ nodeId: "unknown", reason: msg });
+                logger.warn(`${context}: ${msg}`);
+                continue;
+            }
+            if (!customAttribute) {
+                const msg = "未找到插件自定义属性";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`${context}: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
+            if (!codeText) {
+                const msg = "未找到源码";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`${context}: ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            if (parseCode) {
+                const parseResult = TabParser.checkCodeText(codeText, this.i18n);
+                if (!parseResult.result || parseResult.code.length === 0) {
+                    const msg = "源码解析失败";
+                    invalid.push({ nodeId: id, reason: msg });
+                    logger.warn(`${context}: ${msg} (nodeId: ${id})`);
+                    continue;
+                }
+                toProcess.push({ id, codeArr: parseResult.code });
+            } else {
+                toProcess.push({ id, codeText });
+            }
+        }
+
+        return { toProcess, invalid };
     }
 
     async tabToCodeBatch(blockList: TabBlock[]): Promise<ConversionStats> {
@@ -422,50 +464,15 @@ export class TabConverter {
         }
         logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
 
-        // ===== 分类所有块 =====
-        const toProcess: { id: string; codeText: string }[] = [];
+        const { toProcess, invalid } = this.collectTabBlocks(
+            blockList,
+            false,
+            "tabToCode"
+        ) as {
+            toProcess: { id: string; codeText: string }[];
+            invalid: { nodeId: string; reason: string }[];
+        };
         const skipped: { nodeId: string; reason: string }[] = [];
-        const invalid: { nodeId: string; reason: string }[] = [];
-
-        for (const block of blockList) {
-            let customAttribute = "";
-            let id = "";
-            // 用sql语句查询的结果使用block.ial,用Dom查询的结果使用block.attributes
-            if ("ial" in block && typeof block.ial === "string") {
-                id = block.id ?? "";
-                customAttribute = block.ial.match(
-                    /custom-plugin-code-tabs-sourcecode="([^"]*)"/
-                )?.[1];
-            } else {
-                const domBlock = block as HTMLElement;
-                id = domBlock.getAttribute("data-node-id") ?? "";
-                customAttribute = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
-            }
-            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
-
-            if (!id) {
-                const msg = "缺少 nodeId";
-                invalid.push({ nodeId: "unknown", reason: msg });
-                logger.warn(`tabToCode: ${msg}`);
-                continue;
-            }
-            if (!customAttribute) {
-                const msg = "未找到插件自定义属性";
-                invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`tabToCode: ${msg} (nodeId: ${id})`);
-                continue;
-            }
-
-            if (!codeText) {
-                const msg = "未找到源码";
-                invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`tabToCode: ${msg} (nodeId: ${id})`);
-                continue;
-            }
-
-            // 有效，加入处理队列
-            toProcess.push({ id, codeText });
-        }
 
         const tabsToCodeMessages = {
             completed: t(this.i18n, "msg.allTabsToCodeCompleted"),
@@ -543,54 +550,14 @@ export class TabConverter {
         }
         logger.info("开始标签页 -> 多个标准代码块 批量转换", { count: blockList.length });
 
-        const toProcess: { id: string; codeArr: CodeTab[] }[] = [];
-        const invalid: { nodeId: string; reason: string }[] = [];
-
-        for (const block of blockList) {
-            let customAttribute = "";
-            let id = "";
-            if ("ial" in block && typeof block.ial === "string") {
-                id = block.id ?? "";
-                customAttribute = block.ial.match(
-                    /custom-plugin-code-tabs-sourcecode="([^"]*)"/
-                )?.[1];
-            } else {
-                const domBlock = block as HTMLElement;
-                id = domBlock.getAttribute("data-node-id") ?? "";
-                customAttribute = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
-            }
-
-            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
-
-            if (!id) {
-                const msg = "缺少 nodeId";
-                invalid.push({ nodeId: "unknown", reason: msg });
-                logger.warn(`tabsToPlainCode: ${msg}`);
-                continue;
-            }
-            if (!customAttribute) {
-                const msg = "未找到插件自定义属性";
-                invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
-                continue;
-            }
-            if (!codeText) {
-                const msg = "未找到源码";
-                invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
-                continue;
-            }
-
-            const parseResult = TabParser.checkCodeText(codeText, this.i18n);
-            if (!parseResult.result || parseResult.code.length === 0) {
-                const msg = "源码解析失败";
-                invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`tabsToPlainCode: ${msg} (nodeId: ${id})`);
-                continue;
-            }
-
-            toProcess.push({ id, codeArr: parseResult.code });
-        }
+        const { toProcess, invalid } = this.collectTabBlocks(
+            blockList,
+            true,
+            "tabsToPlainCode"
+        ) as {
+            toProcess: { id: string; codeArr: CodeTab[] }[];
+            invalid: { nodeId: string; reason: string }[];
+        };
 
         if (toProcess.length === 0) {
             if (invalid.length > 0) {

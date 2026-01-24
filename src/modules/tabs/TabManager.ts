@@ -1,9 +1,10 @@
-import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
+import { getBlockAttrs, pushErrMsg, pushMsg, setBlockAttrs, updateBlock } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import { decodeSource } from "@/utils/encoding";
+import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { t } from "@/utils/i18n";
 import { TabParser } from "./TabParser";
+import { TabRenderer } from "./TabRenderer";
 import { IObject } from "siyuan";
 import { StyleProbe } from "../theme/StyleProbe";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
@@ -316,6 +317,77 @@ export class TabManager {
                 const codeEl = tabContent.querySelector(".code");
                 const codeText = codeEl?.textContent ?? tabContent.textContent ?? "";
                 await copyTextToClipboard(codeText, i18n);
+            },
+            setDefault: async (evt: MouseEvent) => {
+                const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
+                if (!trigger) return;
+                const tabContainer = trigger.closest(".tabs-container");
+                if (!tabContainer) return;
+                const activeTab = tabContainer.querySelector<HTMLElement>(".tab-item--active");
+                if (!activeTab) return;
+                const activeId = Number(activeTab.dataset.tabId ?? "");
+                if (Number.isNaN(activeId)) return;
+
+                const htmlBlock = getHtmlBlockFromEventTarget(trigger);
+                const nodeId = htmlBlock?.dataset.nodeId;
+                if (!nodeId) return;
+
+                try {
+                    const attrs = await getBlockAttrs(nodeId);
+                    if (!attrs || !attrs[`${CUSTOM_ATTR}`]) {
+                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
+                        return;
+                    }
+                    const codeText = getCodeFromAttribute(nodeId, attrs[`${CUSTOM_ATTR}`], i18n);
+                    if (!codeText) {
+                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
+                        return;
+                    }
+                    const parsed = TabParser.checkCodeText(codeText, i18n, true);
+                    if (!parsed.result || parsed.code.length === 0) {
+                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
+                        return;
+                    }
+                    if (activeId < 0 || activeId >= parsed.code.length) {
+                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
+                        return;
+                    }
+                    const currentActiveIndex = parsed.code.findIndex((tab) =>
+                        tab.title.includes(":::active")
+                    );
+                    if (currentActiveIndex === activeId) {
+                        logger.debug("默认标签未变化，跳过更新", {
+                            nodeId,
+                            activeId,
+                        });
+                        return;
+                    }
+                    const updated = parsed.code.map((tab, index) => {
+                        const cleanTitle = tab.title.replace(":::active", "").trim();
+                        if (index === activeId) {
+                            return {
+                                ...tab,
+                                title: `${cleanTitle} :::active`,
+                            };
+                        }
+                        return {
+                            ...tab,
+                            title: cleanTitle,
+                        };
+                    });
+                    const newSyntax = TabParser.generateNewSyntax(updated);
+                    const htmlBlock = TabRenderer.createProtyleHtml(
+                        updated,
+                        t(i18n, "label.toggleToCode")
+                    );
+                    await updateBlock("markdown", htmlBlock, nodeId);
+                    await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
+                    pushMsg(t(i18n, "msg.setDefaultActive"));
+                    logger.debug("已设置默认标签", { nodeId, activeId });
+                } catch (error) {
+                    logger.warn("设置默认标签失败", { error, nodeId, activeId });
+                    pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
+                }
             },
             applyReorder: (
                 draggedId: string,

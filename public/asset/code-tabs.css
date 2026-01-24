@@ -104,31 +104,66 @@
     text-align: right;
 }
 
-.code-tabs--icon_copy {
+.code-tabs--icon_group {
     opacity: 0;
     position: absolute;
-    top: 1.2em;
-    right: 5px;
+    top: 1.5em;
+    right: 6px;
     z-index: 3;
-    width: 1em;
-    height: 1em;
-    border-radius: 5px;
-    padding: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 6px;
+    pointer-events: none;
+    background-color: var(--b3-theme-on-surface, #5f6368);
+    transition: opacity 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
+}
+
+.code-tabs--icon_default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
+    transition: background-color 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
+    line-height: 1;
+    color: var(--b3-theme-surface, #fff);
 }
 
-.tabs-container:hover .code-tabs--icon_copy {
-    opacity: 1;
+.code-tabs--icon_copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
+    line-height: 1;
+    color: var(--b3-theme-surface, #fff);
 }
 
-.code-tabs--icon_copy:hover {
-    background-color: #949ba3a0;
+.tabs-container:hover .code-tabs--icon_group {
+    opacity: 0.86;
+    pointer-events: auto;
 }
 
-.code-tabs--icon_copy img {
-    width: 100%;
-    height: 100%;
+.code-tabs--icon_copy:hover,
+.code-tabs--icon_default:hover {
+    background-color: var(--b3-theme-on-background, #222);
+    color: var(--b3-theme-background, #fff);
+}
+
+.code-tabs--icon_copy svg,
+.code-tabs--icon_default svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    stroke: currentColor;
+    display: block;
 }
 
 /* Layout and Container Styles migrated from constants.ts */

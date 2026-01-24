@@ -33,6 +33,8 @@
   "msg.copyToClipboard": "Copied to clipboard",
   "msg.copyToClipboardFailed": "Copy failed: clipboard API not supported in current environment",
   "msg.copyNeedRegenTabs": "Copy failed: switch back to code block, then regenerate tabs and try again",
+  "msg.setDefaultActive": "Default tab set",
+  "msg.setDefaultActiveFailed": "Failed to set default tab",
   "msg.noCodeBlockToConvert": "No code blocks to convert",
   "msg.noTabsToConvert": "No code-tabs found to restore",
   "msg.noTabsToSplit": "No code-tabs found to split",

@@ -33,6 +33,8 @@
   "msg.copyToClipboard": "已复制到剪贴板",
   "msg.copyToClipboardFailed": "复制失败：当前环境不支持剪贴板接口",
   "msg.copyNeedRegenTabs": "复制失败：请切回代码块后重新生成标签页再试",
+  "msg.setDefaultActive": "已设置为默认标签",
+  "msg.setDefaultActiveFailed": "设置默认标签失败",
   "msg.noCodeBlockToConvert": "没有符合语法规则的代码块",
   "msg.noTabsToConvert": "没有需要还原的代码标签页",
   "msg.noTabsToSplit": "没有需要拆分的代码标签页",

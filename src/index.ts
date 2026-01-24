@@ -1,13 +1,7 @@
 import { getActiveEditor, Plugin, Setting, type IMenu } from "siyuan";
 import { pushErrMsg, putFile } from "@/api";
 import logger from "@/utils/logger";
-import {
-    CONFIG_JSON,
-    CUSTOM_ATTR,
-    DEBUG_LOG,
-    HTML_BLOCK_STYLE,
-    settingIconMain,
-} from "@/constants";
+import { CONFIG_JSON, CUSTOM_ATTR, DEBUG_LOG, CODE_TABS_STYLE, settingIconMain } from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
@@ -48,10 +42,17 @@ export default class CodeTabs extends Plugin {
             pushErrMsg(`${t(this.i18n, "msg.notAllowHtmlBlockScript")}`).then();
         }
 
-        // 注入全局样式，移除 html 块默认的 padding
-        this.injectedStyleEl = document.createElement("style");
-        this.injectedStyleEl.innerHTML = HTML_BLOCK_STYLE;
-        document.head.appendChild(this.injectedStyleEl);
+        // 注入全局样式，标记为插件样式
+        const existingStyle = document.getElementById("code-tabs-style");
+        this.injectedStyleEl =
+            existingStyle instanceof HTMLStyleElement
+                ? existingStyle
+                : document.createElement("style");
+        this.injectedStyleEl.id = "code-tabs-style";
+        this.injectedStyleEl.innerHTML = CODE_TABS_STYLE;
+        if (!this.injectedStyleEl.parentElement) {
+            document.head.appendChild(this.injectedStyleEl);
+        }
 
         TabManager.initGlobalFunctions(this.i18n, (nodeId, order) => {
             this.tabConverter.reorderTabsInBlock(nodeId, order);
@@ -90,21 +91,12 @@ export default class CodeTabs extends Plugin {
         });
 
         const activeColorWrapper = document.createElement("div");
-        activeColorWrapper.className = "fn__flex fn__flex-center";
-        activeColorWrapper.style.gap = "6px";
-        activeColorWrapper.style.flexDirection = "column";
-        activeColorWrapper.style.alignItems = "flex-end";
+        activeColorWrapper.className = "fn__flex fn__flex-center code-tabs__setting-color";
 
         const activeColorInput = document.createElement("input");
         activeColorInput.type = "color";
         activeColorInput.value = this.getActiveColorValue() ?? this.defaultActiveColor;
-        activeColorInput.style.width = "200px";
-        activeColorInput.style.height = "28px";
-        activeColorInput.style.padding = "0";
-        activeColorInput.style.border = "none";
-        activeColorInput.style.borderRadius = "6px";
-        activeColorInput.style.background = "transparent";
-        activeColorInput.style.cursor = "pointer";
+        activeColorInput.className = "code-tabs__setting-color-input";
         this.activeColorInput = activeColorInput;
 
         const resetButton = document.createElement("button");

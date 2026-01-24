@@ -2,7 +2,7 @@ import {
     BACKGROUND_CSS,
     CODE_STYLE_CSS,
     CODE_TABS_CSS,
-    COPY_PNG,
+    CODE_TABS_ICONS,
     DATA_PATH,
     GITHUB_MARKDOWN_CSS,
     KATEX_CSS,
@@ -10,12 +10,29 @@ import {
 } from "./paths";
 import { CUSTOM_ATTR } from "./keys";
 
-export const HTML_BLOCK_STYLE = `
+export const CODE_TABS_STYLE = `
 div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { 
     padding: 0 !important; 
     margin: 0 !important; 
     border: none !important;
-}`;
+}
+
+.code-tabs__setting-color {
+    gap: 6px;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.code-tabs__setting-color-input {
+    width: 200px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+}
+`.trim();
 
 export const protyleHtmlStr = `
 <link rel="stylesheet" href="${CODE_STYLE_CSS.replace(DATA_PATH, PLUGIN_PATH)}">  
@@ -29,8 +46,17 @@ export const protyleHtmlStr = `
         <div class="tab-toggle"></div>
     </div>
     <div class="tab-contents">
-        <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)">
-            <img src="${COPY_PNG}" alt="复制">
+        <span class="code-tabs--icon_group">
+            <span class="code-tabs--icon_default" onclick="pluginCodeTabs.setDefault(event)" title="设为默认">
+                <svg>
+                    <use xlink:href="${CODE_TABS_ICONS}#iconStar"></use>
+                </svg>
+            </span>
+            <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)" title="复制">
+                <svg>
+                    <use xlink:href="${CODE_TABS_ICONS}#iconCopy"></use>
+                </svg>
+            </span>
         </span>
     </div>
 </div>`

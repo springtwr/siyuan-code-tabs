@@ -19,6 +19,7 @@ export class TabRenderer {
         tabs.setAttribute("onwheel", "pluginCodeTabs.wheelTag(event)");
         tabs.setAttribute("ontouchstart", "pluginCodeTabs.touchStart(event)");
         tabs.setAttribute("ontouchend", "pluginCodeTabs.touchEnd(event)");
+        tabs.setAttribute("oncontextmenu", "pluginCodeTabs.contextMenu(event)");
         tabs.setAttribute("ondragover", "pluginCodeTabs.dragOver(event)");
         tabs.setAttribute("ondrop", "pluginCodeTabs.dragDrop(event)");
         tabs.setAttribute("ondragleave", "pluginCodeTabs.dragLeave(event)");

@@ -114,11 +114,164 @@ function resolveTabsElement(
 export class TabManager {
     static initGlobalFunctions(i18n: IObject, onReorder?: ReorderHandler) {
         logger.debug("初始化全局 Tabs 交互函数");
+        const longPressDelay = 350;
+        const longPressMoveThreshold = 8;
         let draggingTabId = "";
         let dropHandled = false;
         let dragOverTab: HTMLElement | null = null;
         let dragOverBefore = false;
         let dragOverInTabs = false;
+        let touchDragTab: HTMLElement | null = null;
+        let touchDragTabsEl: HTMLElement | null = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchScrollLeft = 0;
+        let touchIsDragging = false;
+        let touchRafId: number | null = null;
+        let touchReordering = false;
+        let touchMoved = false;
+        let touchLongPressTimer: number | null = null;
+        let touchScrollEnabled = false;
+        let touchScrollPossible = false;
+
+        const touchMove = (evt: TouchEvent) => {
+            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
+            if (!tabs) return;
+
+            const touch = evt.touches[0];
+            const deltaX = touch.pageX - touchStartX;
+            const deltaY = touch.pageY - touchStartY;
+            if (
+                !touchMoved &&
+                (Math.abs(deltaX) > longPressMoveThreshold ||
+                    Math.abs(deltaY) > longPressMoveThreshold)
+            ) {
+                touchMoved = true;
+                if (touchLongPressTimer) {
+                    clearTimeout(touchLongPressTimer);
+                    touchLongPressTimer = null;
+                }
+                if (!touchReordering && touchScrollPossible) {
+                    touchScrollEnabled = true;
+                    touchIsDragging = true;
+                }
+            }
+
+            if (touchReordering) {
+                evt.preventDefault();
+                touchMoved = true;
+                const tabsEl = touchDragTabsEl ?? tabs;
+                if (!tabsEl) return;
+                clearDragIndicators(tabsEl);
+                const candidates = Array.from(
+                    tabsEl.querySelectorAll<HTMLElement>(".tab-item")
+                ).filter((item) => item.dataset.tabId !== draggingTabId);
+                if (candidates.length === 0) {
+                    dragOverTab = null;
+                    dragOverBefore = false;
+                    dragOverInTabs = false;
+                    return;
+                }
+                let targetItem: HTMLElement | null = null;
+                let before = false;
+                for (const item of candidates) {
+                    const rect = item.getBoundingClientRect();
+                    const mid = rect.left + rect.width / 2;
+                    if (touch.clientX < mid) {
+                        targetItem = item;
+                        before = true;
+                        break;
+                    }
+                }
+                if (!targetItem) {
+                    targetItem = candidates[candidates.length - 1];
+                    before = false;
+                }
+                targetItem.classList.add(before ? "tab-item--drop-left" : "tab-item--drop-right");
+                dragOverTab = targetItem;
+                dragOverBefore = before;
+                dragOverInTabs = true;
+                return;
+            }
+
+            if (!touchIsDragging) return;
+            if (touchRafId) cancelAnimationFrame(touchRafId);
+            touchRafId = requestAnimationFrame(() => {
+                tabs.scrollLeft = touchScrollLeft - deltaX;
+            });
+        };
+
+        const touchStart = (evt: TouchEvent) => {
+            evt.stopPropagation();
+            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
+            if (!tabs) return;
+
+            const touch = evt.touches[0];
+            touchStartX = touch.pageX;
+            touchStartY = touch.pageY;
+            touchScrollLeft = tabs.scrollLeft;
+            touchScrollPossible = tabs.scrollWidth > tabs.clientWidth;
+            touchMoved = false;
+            touchScrollEnabled = false;
+            touchIsDragging = false;
+
+            const tabItem = (evt.target as HTMLElement).closest(".tab-item") as HTMLElement | null;
+            const allowLongPress = isCoarsePointer() && tabItem;
+            if (allowLongPress) {
+                if (touchLongPressTimer) {
+                    clearTimeout(touchLongPressTimer);
+                }
+                touchLongPressTimer = window.setTimeout(() => {
+                    const tabId = tabItem?.dataset.tabId ?? "";
+                    if (!tabId) return;
+                    draggingTabId = tabId;
+                    dropHandled = false;
+                    dragOverTab = null;
+                    dragOverBefore = false;
+                    dragOverInTabs = false;
+                    touchDragTab = tabItem;
+                    touchDragTabsEl = tabs;
+                    touchReordering = true;
+                    touchScrollEnabled = false;
+                    touchIsDragging = false;
+                    tabItem.classList.add("tab-item--dragging");
+                    logger.debug("触摸长按进入拖拽", { tabId });
+                }, longPressDelay);
+            } else {
+                touchScrollEnabled = touchScrollPossible;
+                touchIsDragging = touchScrollEnabled;
+            }
+
+            tabs.addEventListener("touchmove", touchMove, { passive: false });
+        };
+
+        const touchEnd = (evt: TouchEvent) => {
+            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
+            tabs?.removeEventListener("touchmove", touchMove);
+            if (touchLongPressTimer) {
+                clearTimeout(touchLongPressTimer);
+                touchLongPressTimer = null;
+            }
+            if (touchReordering) {
+                const tabsEl = touchDragTabsEl ?? resolveTabsElement(evt.target, touchDragTab);
+                if (tabsEl) clearDragIndicators(tabsEl);
+                const draggedId = draggingTabId;
+                if (touchMoved && draggedId && tabsEl && (dragOverTab || dragOverInTabs)) {
+                    pluginCodeTabs.applyReorder(draggedId, tabsEl, dragOverTab, dragOverBefore);
+                }
+                touchDragTab?.classList.remove("tab-item--dragging");
+                touchDragTab = null;
+                touchDragTabsEl = null;
+                draggingTabId = "";
+                dragOverTab = null;
+                dragOverInTabs = false;
+                touchReordering = false;
+            }
+            touchIsDragging = false;
+            touchScrollEnabled = false;
+            touchScrollPossible = false;
+        };
+
         const pluginCodeTabs = {
             codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {
@@ -322,38 +475,14 @@ export class TabManager {
                 }
             },
 
-            startX: 0,
-            scrollLeft: 0,
-            isDragging: false,
-            rafId: null,
-            touchStart: function (evt: TouchEvent) {
+            touchStart,
+            touchMove,
+            touchEnd,
+            contextMenu: (evt: Event) => {
+                if (!isCoarsePointer()) return;
+                evt.preventDefault();
                 evt.stopPropagation();
-                const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-                if (tabs.scrollWidth <= tabs.clientWidth) return;
-
-                const touch = evt.touches[0];
-                this.startX = touch.pageX;
-                this.scrollLeft = tabs.scrollLeft;
-                this.isDragging = true;
-                tabs.addEventListener("touchmove", this.touchMove, { passive: true });
-            },
-
-            touchMove: function (evt: TouchEvent) {
-                const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-                if (!this.isDragging) return;
-
-                const touch = evt.touches[0];
-                const deltaX = touch.pageX - this.startX;
-                if (this.rafId) cancelAnimationFrame(this.rafId);
-                this.rafId = requestAnimationFrame(() => {
-                    tabs.scrollLeft = this.scrollLeft - deltaX;
-                });
-            },
-
-            touchEnd: function (evt: TouchEvent) {
-                const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-                tabs.removeEventListener("touchmove", this.touchMove);
-                this.isDragging = false;
+                logger.debug("移动端标签栏拦截长按菜单");
             },
         };
         window.pluginCodeTabs = pluginCodeTabs;

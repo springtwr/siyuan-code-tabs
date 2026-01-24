@@ -26,13 +26,28 @@ export class TabRenderer {
 
         const tabContents = containerDiv.querySelector(".tab-contents") as HTMLElement;
         let activeIndex = 0;
+        let hasActive = false;
+        const marked = new Marked(
+            markedHighlight({
+                langPrefix: "hljs language-",
+                highlight(code, lang) {
+                    const language = window.hljs.getLanguage(lang) ? lang : "plaintext";
+                    return window.hljs.highlight(code, { language }).value;
+                },
+            })
+        );
+        const options: MarkedKatexOptions = {
+            throwOnError: false,
+        };
+        marked.use(markedKatex(options));
+
         for (let i = 0; i < codeArr.length; i++) {
-            let title = codeArr[i].title;
+            const title = codeArr[i].title;
             const language = codeArr[i].language;
             const code = codeArr[i].code;
-            if (title.split(":::active").length > 1) {
-                title = title.split(":::active")[0].trim();
+            if (codeArr[i].isActive && !hasActive) {
                 activeIndex = i;
+                hasActive = true;
             }
 
             const tab = document.createElement("div");
@@ -53,19 +68,6 @@ export class TabRenderer {
             let hlText = code;
             if (language === "markdown-render") {
                 content.dataset.raw = encodeSource(code);
-                const marked = new Marked(
-                    markedHighlight({
-                        langPrefix: "hljs language-",
-                        highlight(code, lang) {
-                            const language = window.hljs.getLanguage(lang) ? lang : "plaintext";
-                            return window.hljs.highlight(code, { language }).value;
-                        },
-                    })
-                );
-                const options: MarkedKatexOptions = {
-                    throwOnError: false,
-                };
-                marked.use(markedKatex(options));
                 hlText = marked.parse(code) as string;
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {

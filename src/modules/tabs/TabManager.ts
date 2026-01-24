@@ -352,9 +352,7 @@ export class TabManager {
                         pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                         return;
                     }
-                    const currentActiveIndex = parsed.code.findIndex((tab) =>
-                        tab.title.includes(":::active")
-                    );
+                    const currentActiveIndex = parsed.code.findIndex((tab) => tab.isActive);
                     if (currentActiveIndex === activeId) {
                         logger.debug("默认标签未变化，跳过更新", {
                             nodeId,
@@ -363,16 +361,15 @@ export class TabManager {
                         return;
                     }
                     const updated = parsed.code.map((tab, index) => {
-                        const cleanTitle = tab.title.replace(":::active", "").trim();
                         if (index === activeId) {
                             return {
                                 ...tab,
-                                title: `${cleanTitle} :::active`,
+                                isActive: true,
                             };
                         }
                         return {
                             ...tab,
-                            title: cleanTitle,
+                            isActive: false,
                         };
                     });
                     const newSyntax = TabParser.generateNewSyntax(updated);

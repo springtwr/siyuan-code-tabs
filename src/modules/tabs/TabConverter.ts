@@ -652,7 +652,7 @@ export class TabConverter {
             }
             const title = item.languageRaw ? item.languageRaw : `Tab${fallbackIndex}`;
             const language = item.languageRaw ? item.languageRaw : "plaintext";
-            codeArr.push({ title, language, code: item.codeText });
+            codeArr.push({ title, language, code: item.codeText, isActive: false });
             fallbackIndex += 1;
         }
 

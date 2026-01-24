@@ -28,9 +28,9 @@ print("ok")
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(2);
-        expect(result.code[0].title).toContain("active");
+        expect(result.code[0].isActive).toBe(true);
         expect(result.code[0].language).toBe("javascript");
-        expect(result.code[1].title).not.toContain("active");
+        expect(result.code[1].isActive).toBe(false);
         expect(result.code[1].language).toBe("python");
     });
 
@@ -83,7 +83,7 @@ console.log("ok");
 `;
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
-        expect(result.code[0].title).toContain("active");
+        expect(result.code[0].isActive).toBe(true);
     });
 
     it("新语法：多 active 应失败", () => {
@@ -166,7 +166,7 @@ console.log("ok");
 `;
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
-        expect(result.code[0].title).toContain("active");
+        expect(result.code[0].isActive).toBe(true);
         expect(result.code[0].language).toBe("js");
     });
 
@@ -197,14 +197,14 @@ console.log("ok")
         expect(result.result).toBe(false);
     });
 
-    it("旧语法：标题包含 active 标记应保留", () => {
+    it("旧语法：标题包含 active 标记应解析为默认标签", () => {
         const input = `tab::: JS :::active
 lang::: js
 console.log("ok")
 `;
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
-        expect(result.code[0].title).toContain("active");
+        expect(result.code[0].isActive).toBe(true);
     });
 
     it("旧语法：多 active 应失败", () => {

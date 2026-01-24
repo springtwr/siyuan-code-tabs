@@ -32,13 +32,7 @@ export class TabParser {
         let result = "";
         for (const tab of tabs) {
             let title = tab.title;
-            let active = "";
-
-            // 提取标题中的激活标记
-            if (title.includes(":::active")) {
-                title = title.replace(":::active", "").trim();
-                active = " | active";
-            }
+            const active = tab.isActive ? " | active" : "";
 
             let lang = tab.language;
             let header = `::: ${title}`;
@@ -141,15 +135,17 @@ export class TabParser {
                     return { result: false, code: [] };
                 }
                 codeResult.push({
-                    title: `${title} :::active`,
+                    title: title,
                     language: language,
                     code: codeContent,
+                    isActive: true,
                 });
             } else {
                 codeResult.push({
                     title: title,
                     language: language,
                     code: codeContent,
+                    isActive: false,
                 });
             }
         }
@@ -195,7 +191,8 @@ export class TabParser {
                 logger.warn("旧语法解析失败：缺少标题", { index: i + 1 });
                 return { result: false, code: [] };
             }
-            const title = codeSplitArr[0].substring(6).trim();
+            let title = codeSplitArr[0].substring(6).trim();
+            let isActive = false;
             if (title.includes(":::active")) {
                 activeCount += 1;
                 if (activeCount > 1) {
@@ -208,6 +205,8 @@ export class TabParser {
                     });
                     return { result: false, code: [] };
                 }
+                isActive = true;
+                title = title.replace(":::active", "").trim();
             }
             let language = "";
             if (codeSplitArr[1].trim().startsWith("lang:::")) {
@@ -239,13 +238,14 @@ export class TabParser {
                 return { result: false, code: [] };
             }
             if (language === "") {
-                language = title.split(":::active")[0].trim();
+                language = title.trim();
             }
             language = this.getLanguage(language);
             codeResult.push({
                 title: title,
                 language: language,
                 code: code,
+                isActive: isActive,
             });
         }
         logger.debug("旧语法解析完成", { count: codeResult.length });

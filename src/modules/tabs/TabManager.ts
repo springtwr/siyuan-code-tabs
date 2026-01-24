@@ -54,13 +54,28 @@ type ReorderHandler = (nodeId: string, order: string[]) => void;
 
 function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof HTMLElement)) return null;
+    const direct = target.closest('[data-node-id][data-type="NodeHTMLBlock"]');
+    if (direct instanceof HTMLElement) return direct;
     const tabContainer = target.closest(".tabs-container");
     if (!tabContainer) return null;
     const root = tabContainer.getRootNode();
     if (!(root instanceof ShadowRoot)) return null;
     const host = root.host;
-    if (!host || !host.parentNode || !host.parentNode.parentNode) return null;
-    return host.parentNode.parentNode as HTMLElement;
+    return host instanceof HTMLElement ? findHtmlBlockFromHost(host) : null;
+}
+
+function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
+    let current: HTMLElement | null = host;
+    while (current) {
+        if (
+            current.dataset?.nodeId &&
+            (current.dataset.type === "NodeHTMLBlock" || current.hasAttribute(CUSTOM_ATTR))
+        ) {
+            return current;
+        }
+        current = current.parentElement;
+    }
+    return null;
 }
 
 function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): string[] {

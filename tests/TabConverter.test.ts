@@ -17,7 +17,7 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/modules/tabs/TabRenderer", () => ({
     TabRenderer: {
-        createHtmlBlock: vi.fn(() => "<div>mock</div>"),
+        createProtyleHtml: vi.fn(() => "<div>mock</div>"),
     },
 }));
 
@@ -42,13 +42,13 @@ describe("TabConverter", () => {
 
         expect(stats.success).toBe(1);
         expect(stats.failure).toBe(0);
-        expect(TabRenderer.createHtmlBlock).toHaveBeenCalled();
-        expect(api.insertBlock).toHaveBeenCalled();
+        expect(TabRenderer.createProtyleHtml).toHaveBeenCalled();
+        expect(api.updateBlock).toHaveBeenCalledWith("markdown", "<div>mock</div>", "block-1");
         expect(api.setBlockAttrs).toHaveBeenCalledWith(
-            "new-id",
+            "block-1",
             expect.objectContaining({ [CUSTOM_ATTR]: expect.any(String) })
         );
-        expect(api.deleteBlock).toHaveBeenCalledWith("block-1");
+        expect(api.deleteBlock).not.toHaveBeenCalledWith("block-1");
     });
 
     it("tabToCodeBatch: 应将标签页还原为 tab 语法代码块", async () => {

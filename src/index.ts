@@ -53,7 +53,9 @@ export default class CodeTabs extends Plugin {
         this.injectedStyleEl.innerHTML = HTML_BLOCK_STYLE;
         document.head.appendChild(this.injectedStyleEl);
 
-        TabManager.initGlobalFunctions(this.i18n);
+        TabManager.initGlobalFunctions(this.i18n, (nodeId, order) => {
+            this.tabConverter.reorderTabsInBlock(nodeId, order);
+        });
         logger.info("全局函数已注册");
         this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
         this.ensureActiveColorSettings();
@@ -438,7 +440,7 @@ export default class CodeTabs extends Plugin {
         const activeEditor = getActiveEditor(true);
         if (activeEditor) {
             logger.info("刷新页面");
-            activeEditor.reload(true);
+            // activeEditor.reload(true);
         }
     }
 

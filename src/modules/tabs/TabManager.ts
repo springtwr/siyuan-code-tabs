@@ -49,10 +49,77 @@ async function copyTextToClipboard(text: string, i18n: IObject) {
     pushErrMsg(t(i18n, "msg.copyToClipboardFailed"));
 }
 
+type ReorderHandler = (nodeId: string, order: string[]) => void;
+
+function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | null {
+    if (!(target instanceof HTMLElement)) return null;
+    const tabContainer = target.closest(".tabs-container");
+    if (!tabContainer) return null;
+    const root = tabContainer.getRootNode();
+    if (!(root instanceof ShadowRoot)) return null;
+    const host = root.host;
+    if (!host || !host.parentNode || !host.parentNode.parentNode) return null;
+    return host.parentNode.parentNode as HTMLElement;
+}
+
+function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): string[] {
+    const order = Array.from(tabsEl.querySelectorAll<HTMLElement>(".tab-item"))
+        .map((item) => item.dataset.tabId)
+        .filter((id): id is string => Boolean(id));
+    logger.debug("拖拽排序：tab 顺序", { order });
+
+    const contentNodes = Array.from(contentsEl.querySelectorAll<HTMLElement>(".tab-content"));
+    const contentMap = new Map<string, HTMLElement>();
+    contentNodes.forEach((node) => {
+        const id = node.dataset.tabId;
+        if (id) contentMap.set(id, node);
+    });
+    logger.debug("拖拽排序：content 映射", { ids: Array.from(contentMap.keys()) });
+    const copyIcon = contentsEl.querySelector<HTMLElement>(".code-tabs--icon_copy");
+    contentNodes.forEach((node) => node.remove());
+    order.forEach((id) => {
+        const node = contentMap.get(id);
+        if (node) contentsEl.appendChild(node);
+    });
+    if (copyIcon) {
+        contentsEl.insertBefore(copyIcon, contentsEl.firstChild);
+    }
+    return order;
+}
+
+function clearDragIndicators(tabsEl: HTMLElement): void {
+    tabsEl
+        .querySelectorAll(".tab-item--drop-left, .tab-item--drop-right")
+        .forEach((el) => el.classList.remove("tab-item--drop-left", "tab-item--drop-right"));
+}
+
+function isCoarsePointer(): boolean {
+    return (
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches
+    );
+}
+
+function resolveTabsElement(
+    target: EventTarget | null,
+    tabItem: HTMLElement | null
+): HTMLElement | null {
+    if (tabItem?.parentElement instanceof HTMLElement) return tabItem.parentElement;
+    if (!(target instanceof HTMLElement)) return null;
+    const tabsEl = target.closest(".tabs");
+    return tabsEl instanceof HTMLElement ? tabsEl : null;
+}
+
 export class TabManager {
-    static initGlobalFunctions(i18n: IObject) {
+    static initGlobalFunctions(i18n: IObject, onReorder?: ReorderHandler) {
         logger.debug("初始化全局 Tabs 交互函数");
-        window.pluginCodeTabs = {
+        let draggingTabId = "";
+        let dropHandled = false;
+        let dragOverTab: HTMLElement | null = null;
+        let dragOverBefore = false;
+        let dragOverInTabs = false;
+        const pluginCodeTabs = {
             codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {
                 const clicked = evt.target as HTMLElement;
@@ -96,6 +163,133 @@ export class TabManager {
                 const codeEl = tabContent.querySelector(".code");
                 const codeText = codeEl?.textContent ?? tabContent.textContent ?? "";
                 await copyTextToClipboard(codeText, i18n);
+            },
+            applyReorder: (
+                draggedId: string,
+                tabsEl: HTMLElement,
+                tabItem: HTMLElement | null,
+                before: boolean
+            ) => {
+                const draggedEl = tabsEl.querySelector<HTMLElement>(
+                    `.tab-item[data-tab-id="${draggedId}"]`
+                );
+                if (!draggedEl) return;
+                if (tabItem && draggedEl === tabItem) return;
+
+                if (tabItem) {
+                    tabsEl.insertBefore(draggedEl, before ? tabItem : tabItem.nextSibling);
+                    logger.debug("拖拽插入", {
+                        before,
+                        draggedId,
+                        targetId: tabItem.dataset.tabId,
+                    });
+                } else {
+                    tabsEl.appendChild(draggedEl);
+                    logger.debug("拖拽插入到末尾", { draggedId });
+                }
+
+                const tabContainer = tabsEl.closest(".tabs-container");
+                const contentsEl = tabContainer?.querySelector<HTMLElement>(".tab-contents");
+                if (!contentsEl) return;
+                const order = reorderTabContents(tabsEl, contentsEl);
+
+                const htmlBlock = getHtmlBlockFromEventTarget(tabItem || tabsEl);
+                const nodeId = htmlBlock?.dataset.nodeId;
+                logger.debug("拖拽持久化触发", { nodeId, order });
+                if (nodeId && onReorder) {
+                    onReorder(nodeId, order);
+                }
+            },
+            dragStart: (evt: DragEvent) => {
+                if (isCoarsePointer()) return;
+                const target = evt.target as HTMLElement | null;
+                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
+                if (!tabItem) return;
+                const tabId = tabItem.dataset.tabId ?? "";
+                logger.debug("拖拽开始", { tabId });
+                draggingTabId = tabId;
+                dropHandled = false;
+                dragOverTab = null;
+                dragOverBefore = false;
+                dragOverInTabs = false;
+                tabItem.classList.add("tab-item--dragging");
+                if (evt.dataTransfer) {
+                    evt.dataTransfer.effectAllowed = "move";
+                    evt.dataTransfer.setData("text/plain", tabId);
+                }
+            },
+            dragOver: (evt: DragEvent) => {
+                if (isCoarsePointer()) return;
+                evt.preventDefault();
+                if (evt.dataTransfer) {
+                    evt.dataTransfer.dropEffect = "move";
+                }
+                const target = evt.target as HTMLElement | null;
+                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
+                const tabsEl = resolveTabsElement(target, tabItem);
+                if (!tabsEl) return;
+                clearDragIndicators(tabsEl);
+                if (!tabItem) {
+                    dragOverTab = null;
+                    dragOverBefore = false;
+                    dragOverInTabs = true;
+                    return;
+                }
+                const rect = tabItem.getBoundingClientRect();
+                const before = evt.clientX < rect.left + rect.width / 2;
+                tabItem.classList.add(before ? "tab-item--drop-left" : "tab-item--drop-right");
+                dragOverTab = tabItem;
+                dragOverBefore = before;
+                dragOverInTabs = true;
+                logger.debug("拖拽悬停", {
+                    targetId: tabItem.dataset.tabId,
+                    before,
+                });
+            },
+            dragDrop: (evt: DragEvent) => {
+                if (isCoarsePointer()) return;
+                evt.preventDefault();
+                const target = evt.target as HTMLElement | null;
+                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
+                const tabsEl = resolveTabsElement(target, tabItem);
+                if (!tabsEl) return;
+
+                const draggedId = draggingTabId || evt.dataTransfer?.getData("text/plain") || "";
+                logger.debug("拖拽释放", { draggedId, targetId: tabItem?.dataset.tabId ?? "" });
+                if (!draggedId) return;
+                clearDragIndicators(tabsEl);
+                if (tabItem) {
+                    const rect = tabItem.getBoundingClientRect();
+                    const before = evt.clientX < rect.left + rect.width / 2;
+                    pluginCodeTabs.applyReorder(draggedId, tabsEl, tabItem, before);
+                } else {
+                    pluginCodeTabs.applyReorder(draggedId, tabsEl, null, false);
+                }
+                dropHandled = true;
+            },
+            dragEnd: (evt: DragEvent) => {
+                if (isCoarsePointer()) return;
+                const target = evt.target as HTMLElement | null;
+                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
+                tabItem?.classList.remove("tab-item--dragging");
+                const draggedId = draggingTabId;
+                const tabsEl = resolveTabsElement(target, tabItem);
+                if (tabsEl) clearDragIndicators(tabsEl);
+                logger.debug("拖拽结束");
+                if (!dropHandled && tabsEl && (dragOverTab || dragOverInTabs)) {
+                    logger.debug("拖拽结束未触发 drop，执行回退排序");
+                    pluginCodeTabs.applyReorder(draggedId, tabsEl, dragOverTab, dragOverBefore);
+                }
+                draggingTabId = "";
+                dragOverTab = null;
+                dragOverInTabs = false;
+            },
+            dragLeave: (evt: DragEvent) => {
+                if (isCoarsePointer()) return;
+                const target = evt.target as HTMLElement | null;
+                const tabsEl = resolveTabsElement(target, null);
+                if (tabsEl) clearDragIndicators(tabsEl);
+                logger.debug("拖拽离开");
             },
 
             toggle: (evt: MouseEvent) => {
@@ -162,5 +356,6 @@ export class TabManager {
                 this.isDragging = false;
             },
         };
+        window.pluginCodeTabs = pluginCodeTabs;
     }
 }

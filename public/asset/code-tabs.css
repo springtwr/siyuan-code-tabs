@@ -8,6 +8,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
+    position: relative;
 }
 
 .tab-item--active {
@@ -23,6 +24,28 @@
     height: 3px;
     right: 4px;
     background-color: var(--code-tabs-active-color, #7f6df2);
+}
+
+.tab-item--dragging {
+    opacity: 0.5;
+}
+
+.tab-item--drop-left::before,
+.tab-item--drop-right::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: 2px;
+    background-color: var(--b3-theme-primary, #5b8def);
+}
+
+.tab-item--drop-left::before {
+    left: 0;
+}
+
+.tab-item--drop-right::after {
+    right: 0;
 }
 
 .tab-content {

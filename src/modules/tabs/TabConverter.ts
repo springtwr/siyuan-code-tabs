@@ -1,5 +1,14 @@
 import { getActiveEditor, IObject } from "siyuan";
-import { deleteBlock, insertBlock, pushMsg, setBlockAttrs, sql, updateBlock } from "@/api";
+import {
+    deleteBlock,
+    getBlockAttrs,
+    insertBlock,
+    pushErrMsg,
+    pushMsg,
+    setBlockAttrs,
+    sql,
+    updateBlock,
+} from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
 import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
@@ -40,6 +49,58 @@ export class TabConverter {
     constructor(i18n: IObject, onSuccess?: () => void) {
         this.i18n = i18n;
         this.onSuccess = onSuccess;
+    }
+
+    async reorderTabsInBlock(nodeId: string, order: string[]): Promise<void> {
+        if (!nodeId || order.length === 0) return;
+        try {
+            logger.debug("持久化排序开始", { nodeId, order });
+            const attrs = await getBlockAttrs(nodeId);
+            if (!attrs || !attrs[`${CUSTOM_ATTR}`]) {
+                logger.warn("持久化排序失败：缺少自定义属性", { nodeId });
+                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
+                return;
+            }
+            const codeText = getCodeFromAttribute(nodeId, attrs[`${CUSTOM_ATTR}`], this.i18n);
+            if (!codeText) {
+                logger.warn("持久化排序失败：未解析到源码", { nodeId });
+                return;
+            }
+            const parsed = TabParser.checkCodeText(codeText, this.i18n, true);
+            if (!parsed.result || parsed.code.length === 0) {
+                logger.warn("持久化排序失败：源码解析失败", { nodeId });
+                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
+                return;
+            }
+
+            const reordered = order
+                .map((id) => parsed.code[Number(id)])
+                .filter((item) => item !== undefined);
+            if (reordered.length !== parsed.code.length) {
+                logger.warn("持久化排序失败：顺序与源码数量不一致", {
+                    nodeId,
+                    order,
+                    total: parsed.code.length,
+                    mapped: reordered.length,
+                });
+                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
+                return;
+            }
+            logger.debug("持久化排序重排完成", { count: reordered.length });
+
+            const newSyntax = TabParser.generateNewSyntax(reordered);
+            const htmlBlock = TabRenderer.createProtyleHtml(
+                reordered,
+                t(this.i18n, "label.toggleToCode")
+            );
+            logger.debug("持久化排序生成 HTML 完成", { length: htmlBlock.length });
+            await updateBlock("markdown", htmlBlock, nodeId);
+            await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
+            logger.debug("持久化排序完成", { nodeId });
+        } catch (error) {
+            logger.warn("拖拽排序持久化失败", { error });
+            pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
+        }
     }
 
     cancelCurrentTask(): void {
@@ -231,11 +292,11 @@ export class TabConverter {
             t(this.i18n, "task.progress.codeToTabs"),
             toProcess,
             async ({ id, codeText, codeArr }) => {
-                const htmlBlock = TabRenderer.createHtmlBlock(
+                const htmlBlock = TabRenderer.createProtyleHtml(
                     codeArr,
                     t(this.i18n, "label.toggleToCode")
                 );
-                await this.update("dom", htmlBlock, id, codeText);
+                await this.update("markdown", htmlBlock, id, codeText);
             }
         );
 
@@ -551,14 +612,11 @@ export class TabConverter {
     }
 
     private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
-        const new_block = await insertBlock(dataType, data, "", id, "");
-        const new_id = new_block[0].doOperations[0].id;
-        logger.info(`插入新块, id ${new_id}`);
+        await updateBlock(dataType, data, id);
+        logger.info(`更新块, id ${id}`);
         // 使用 Base64 编码保存源码
         const encodedCodeText = encodeSource(codeText);
-        await setBlockAttrs(new_id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
-        await deleteBlock(id);
-        logger.info(`删除旧的代码块, id ${id}`);
+        await setBlockAttrs(id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
     }
 
     private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {

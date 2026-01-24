@@ -2,22 +2,13 @@ import { Marked } from "marked";
 import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
 import { CodeTab } from "@/modules/tabs/types";
-import { htmlBlockStr, protyleHtmlStr } from "@/constants";
+import { protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 
 export class TabRenderer {
-    static createHtmlBlock(codeArr: CodeTab[], toggleToCode: string): string {
+    static createProtyleHtml(codeArr: CodeTab[], toggleToCode: string): string {
         logger.debug("开始生成 Tabs HTML 块", { count: codeArr.length });
-        const containerDiv = document.createElement("div");
-        containerDiv.innerHTML = htmlBlockStr;
-        const protyleHtml = containerDiv.querySelector("protyle-html") as HTMLElement;
-        protyleHtml.dataset.content = this.createProtyleHtml(codeArr, toggleToCode);
-        logger.debug("Tabs HTML 块生成完成");
-        return containerDiv.innerHTML;
-    }
-
-    private static createProtyleHtml(codeArr: CodeTab[], toggleToCode: string): string {
         const containerDiv = document.createElement("div");
         containerDiv.innerHTML = protyleHtmlStr;
         const tabContainer = containerDiv.querySelector(".tabs-container") as HTMLElement;
@@ -28,6 +19,9 @@ export class TabRenderer {
         tabs.setAttribute("onwheel", "pluginCodeTabs.wheelTag(event)");
         tabs.setAttribute("ontouchstart", "pluginCodeTabs.touchStart(event)");
         tabs.setAttribute("ontouchend", "pluginCodeTabs.touchEnd(event)");
+        tabs.setAttribute("ondragover", "pluginCodeTabs.dragOver(event)");
+        tabs.setAttribute("ondrop", "pluginCodeTabs.dragDrop(event)");
+        tabs.setAttribute("ondragleave", "pluginCodeTabs.dragLeave(event)");
 
         const tabContents = containerDiv.querySelector(".tab-contents") as HTMLElement;
         let activeIndex = 0;
@@ -42,13 +36,18 @@ export class TabRenderer {
 
             const tab = document.createElement("div");
             tab.className = "tab-item";
+            tab.dataset.tabId = String(i);
             tab.textContent = title;
             tab.title = title;
             tab.setAttribute("onclick", "pluginCodeTabs.openTag(event)");
+            tab.setAttribute("draggable", "true");
+            tab.setAttribute("ondragstart", "pluginCodeTabs.dragStart(event)");
+            tab.setAttribute("ondragend", "pluginCodeTabs.dragEnd(event)");
             tabs.appendChild(tab);
 
             const content = document.createElement("div");
             content.className = "tab-content hljs";
+            content.dataset.tabId = String(i);
             content.dataset.render = "true";
             let hlText = code;
             if (language === "markdown-render") {
@@ -92,7 +91,9 @@ export class TabRenderer {
 
         tabContainer.appendChild(tabsOuter);
         tabContainer.appendChild(tabContents);
-        return this.escapeHtml(containerDiv.innerHTML);
+        const escaped = this.escapeHtml(containerDiv.innerHTML);
+        logger.debug("Tabs HTML 块生成完成");
+        return `<div>${escaped}</div>`;
     }
 
     private static escapeHtml(input: string): string {

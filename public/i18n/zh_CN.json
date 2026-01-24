@@ -35,6 +35,7 @@
   "msg.copyNeedRegenTabs": "复制失败：请切回代码块后重新生成标签页再试",
   "msg.setDefaultActive": "已设置为默认标签",
   "msg.setDefaultActiveFailed": "设置默认标签失败",
+  "msg.noRootId": "当前文档根节点缺失，请重试或重启思源",
   "msg.noCodeBlockToConvert": "没有符合语法规则的代码块",
   "msg.noTabsToConvert": "没有需要还原的代码标签页",
   "msg.noTabsToSplit": "没有需要拆分的代码标签页",

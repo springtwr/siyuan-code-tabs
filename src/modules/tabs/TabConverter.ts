@@ -317,20 +317,107 @@ export class TabConverter {
         return stats;
     }
 
+    async codeToTabsBatchBySql(blockList: SqlBlock[]): Promise<ConversionStats> {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${t(this.i18n, "msg.noCodeBlockToConvert")}`);
+            return { success: 0, failure: 0 };
+        }
+        logger.info("开始代码块 -> 标签页 批量转换（SQL）", { count: blockList.length });
+
+        const toProcess: { id: string; codeText: string; codeArr: CodeTab[] }[] = [];
+        const skipped: { nodeId: string; reason: string }[] = [];
+        const invalid: { nodeId: string; reason: string }[] = [];
+
+        for (const block of blockList) {
+            const id = block.id ?? "";
+            if (!id) {
+                const msg = "缺少 nodeId";
+                invalid.push({ nodeId: "unknown", reason: msg });
+                logger.warn(`codeToTabs(sql): ${msg}`);
+                continue;
+            }
+
+            const codeText = this.resolveCodeTextFromSql(block);
+            if (!codeText) {
+                const msg = "未找到代码内容";
+                invalid.push({ nodeId: id, reason: msg });
+                logger.warn(`codeToTabs(sql): ${msg} (nodeId: ${id})`);
+                continue;
+            }
+
+            const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+            if (!checkResult.result) {
+                const msg = "代码块不符合 Tab 格式";
+                skipped.push({ nodeId: id, reason: msg });
+                logger.info(`codeToTabs(sql): ${msg}，跳过 (nodeId: ${id})`);
+                continue;
+            }
+            toProcess.push({ id, codeText, codeArr: checkResult.code });
+        }
+
+        const codeToTabsMessages = {
+            completed: t(this.i18n, "msg.allCodeToTabsCompleted"),
+            failed: t(this.i18n, "msg.allCodeToTabsCompletedFailed"),
+            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
+            noItems: t(this.i18n, "msg.noCodeBlockToConvert"),
+            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
+        };
+
+        if (toProcess.length === 0) {
+            return this.resultCounter(codeToTabsMessages, [], [], skipped, invalid);
+        }
+
+        logger.info("进入转换队列的代码块数量（SQL）", { count: toProcess.length });
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.codeToTabs"),
+            toProcess,
+            async ({ id, codeText, codeArr }) => {
+                const htmlBlock = TabRenderer.createProtyleHtml(
+                    codeArr,
+                    t(this.i18n, "label.toggleToCode")
+                );
+                await this.update("markdown", htmlBlock, id, codeText);
+            }
+        );
+
+        const stats = this.resultCounter(
+            codeToTabsMessages,
+            toProcess.map((x) => ({ id: x.id })),
+            results,
+            skipped,
+            invalid
+        );
+        logger.info("代码块 -> 标签页 转换统计（SQL）", stats);
+
+        if (stats.success > 0) {
+            this.onSuccess?.();
+        }
+
+        return stats;
+    }
+
     async codeToTabsInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
         if (!currentDocument) return;
-        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(
-            '[data-type="NodeCodeBlock"]'
-        );
-        const codeBlocks = Array.from(nodeList);
-
-        if (codeBlocks.length === 0) {
+        const rootId =
+            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
+                ?.protyle?.block?.rootID ??
+            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
+                ?.rootId;
+        if (!rootId) {
+            logger.warn("当前文档代码块 -> 标签页 失败：缺少 rootId");
+            pushErrMsg(t(this.i18n, "msg.noRootId"));
             return;
         }
-
-        logger.info("当前文档代码块 -> 标签页", { count: codeBlocks.length });
-        this.codeToTabsBatch(codeBlocks);
+        logger.info("当前文档代码块 -> 标签页 查询开始", { rootId });
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='c'`
+        )) as SqlBlock[];
+        logger.info("当前文档代码块 -> 标签页 查询完成", {
+            count: blockList.length,
+            rootId,
+        });
+        this.codeToTabsBatchBySql(blockList);
     }
 
     async tabToCodeBatch(blockList: TabBlock[]): Promise<ConversionStats> {
@@ -424,11 +511,24 @@ export class TabConverter {
     async tabToCodeInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
         if (!currentDocument) return;
-        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(
-            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
-        );
-        const blockList = Array.from(nodeList);
-        logger.info("当前文档标签页 -> 代码块", { count: blockList.length });
+        const rootId =
+            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
+                ?.protyle?.block?.rootID ??
+            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
+                ?.rootId;
+        if (!rootId) {
+            logger.warn("当前文档标签页 -> 代码块 失败：缺少 rootId");
+            pushErrMsg(t(this.i18n, "msg.noRootId"));
+            return;
+        }
+        logger.info("当前文档标签页 -> 代码块 查询开始", { rootId });
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+        )) as SqlBlock[];
+        logger.info("当前文档标签页 -> 代码块 查询完成", {
+            count: blockList.length,
+            rootId,
+        });
         this.tabToCodeBatch(blockList);
     }
 
@@ -594,11 +694,24 @@ export class TabConverter {
     async tabsToPlainCodeInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
         if (!currentDocument) return;
-        const nodeList = currentDocument.protyle.contentElement.querySelectorAll<HTMLElement>(
-            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
-        );
-        const blockList = Array.from(nodeList);
-        logger.info("当前文档标签页 -> 多个标准代码块", { count: blockList.length });
+        const rootId =
+            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
+                ?.protyle?.block?.rootID ??
+            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
+                ?.rootId;
+        if (!rootId) {
+            logger.warn("当前文档标签页 -> 多个标准代码块 失败：缺少 rootId");
+            pushErrMsg(t(this.i18n, "msg.noRootId"));
+            return;
+        }
+        logger.info("当前文档标签页 -> 多个标准代码块 查询开始", { rootId });
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+        )) as SqlBlock[];
+        logger.info("当前文档标签页 -> 多个标准代码块 查询完成", {
+            count: blockList.length,
+            rootId,
+        });
         this.tabsToPlainCodeBlocksBatch(blockList);
     }
 
@@ -617,6 +730,31 @@ export class TabConverter {
         // 使用 Base64 编码保存源码
         const encodedCodeText = encodeSource(codeText);
         await setBlockAttrs(id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
+    }
+
+    private resolveCodeTextFromSql(block: SqlBlock): string | null {
+        const content = typeof block.content === "string" ? block.content : "";
+        if (content.trim().length > 0) {
+            return stripInvisibleChars(content);
+        }
+        const markdown = typeof block.markdown === "string" ? block.markdown : "";
+        if (markdown.trim().length === 0) return null;
+        const unwrapped = this.stripCodeFence(markdown);
+        return stripInvisibleChars(unwrapped);
+    }
+
+    private stripCodeFence(markdown: string): string {
+        const trimmed = markdown.trim();
+        const lines = trimmed.split("\n");
+        if (lines.length < 2) return trimmed;
+        const fenceMatch = lines[0].match(/^`{3,}/);
+        if (!fenceMatch) return trimmed;
+        const fence = fenceMatch[0];
+        const lastLine = lines[lines.length - 1].trim();
+        if (lastLine.startsWith(fence)) {
+            return lines.slice(1, -1).join("\n");
+        }
+        return lines.slice(1).join("\n");
     }
 
     private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {
@@ -728,6 +866,8 @@ export class TabConverter {
 type SqlBlock = {
     ial?: string;
     id?: string;
+    content?: string;
+    markdown?: string;
 };
 
 type TabBlock = HTMLElement | SqlBlock;

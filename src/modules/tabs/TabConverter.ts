@@ -10,7 +10,11 @@ import {
     updateBlock,
 } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
+import {
+    encodeSource,
+    resolveCodeTextFromSqlBlock,
+    stripInvisibleChars,
+} from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
@@ -27,6 +31,7 @@ type ConversionMessages = {
     skippedDueToFormat: string;
     noItems: string;
 };
+type CodeToTabsProcessItem = { id: string; codeText: string; codeArr: CodeTab[] };
 
 type BatchTask = {
     cancelled: boolean;
@@ -219,8 +224,51 @@ export class TabConverter {
         }
         logger.info("开始代码块 -> 标签页 批量转换", { count: blockList.length });
 
-        // ===== 分类所有块 =====
-        const toProcess: { id: string; codeText: string; codeArr: CodeTab[] }[] = [];
+        const { toProcess, skipped, invalid } = this.collectCodeBlocksFromDom(blockList);
+        return this.runCodeToTabsBatch(toProcess, skipped, invalid, "代码块 -> 标签页");
+    }
+
+    async codeToTabsBatchBySql(blockList: SqlBlock[]): Promise<ConversionStats> {
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${t(this.i18n, "msg.noCodeBlockToConvert")}`);
+            return { success: 0, failure: 0 };
+        }
+        logger.info("开始代码块 -> 标签页 批量转换（SQL）", { count: blockList.length });
+
+        const { toProcess, skipped, invalid } = this.collectCodeBlocksFromSql(blockList);
+        return this.runCodeToTabsBatch(toProcess, skipped, invalid, "代码块 -> 标签页（SQL）");
+    }
+
+    async codeToTabsInDocument(): Promise<void> {
+        const currentDocument = getActiveEditor(true);
+        if (!currentDocument) return;
+        const rootId =
+            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
+                ?.protyle?.block?.rootID ??
+            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
+                ?.rootId;
+        if (!rootId) {
+            logger.warn("当前文档代码块 -> 标签页 失败：缺少 rootId");
+            pushErrMsg(t(this.i18n, "msg.noRootId"));
+            return;
+        }
+        logger.info("当前文档代码块 -> 标签页 查询开始", { rootId });
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='c'`
+        )) as SqlBlock[];
+        logger.info("当前文档代码块 -> 标签页 查询完成", {
+            count: blockList.length,
+            rootId,
+        });
+        this.codeToTabsBatchBySql(blockList);
+    }
+
+    private collectCodeBlocksFromDom(blockList: HTMLElement[]): {
+        toProcess: CodeToTabsProcessItem[];
+        skipped: { nodeId: string; reason: string }[];
+        invalid: { nodeId: string; reason: string }[];
+    } {
+        const toProcess: CodeToTabsProcessItem[] = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
@@ -251,63 +299,18 @@ export class TabConverter {
                 logger.info(`codeToTabs: ${msg}，跳过 (nodeId: ${id})`);
                 continue;
             }
-
-            // 情况3：有效，加入处理队列
             toProcess.push({ id, codeText, codeArr: checkResult.code });
         }
 
-        const codeToTabsMessages = {
-            completed: t(this.i18n, "msg.allCodeToTabsCompleted"),
-            failed: t(this.i18n, "msg.allCodeToTabsCompletedFailed"),
-            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
-            noItems: t(this.i18n, "msg.noCodeBlockToConvert"),
-            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
-        };
-
-        // ===== 如果没有需要处理的项 =====
-        if (toProcess.length === 0) {
-            return this.resultCounter(codeToTabsMessages, [], [], skipped, invalid);
-        }
-
-        // ===== 对有效块执行异步更新 =====
-        logger.info("进入转换队列的代码块数量", { count: toProcess.length });
-        const { results } = await this.runBatch(
-            t(this.i18n, "task.progress.codeToTabs"),
-            toProcess,
-            async ({ id, codeText, codeArr }) => {
-                const htmlBlock = TabRenderer.createProtyleHtml(
-                    codeArr,
-                    t(this.i18n, "label.toggleToCode")
-                );
-                await this.update("markdown", htmlBlock, id, codeText);
-            }
-        );
-
-        // ===== 统计并提示 =====
-        const stats = this.resultCounter(
-            codeToTabsMessages,
-            toProcess.map((x) => ({ id: x.id })), // 只需 id 用于关联错误
-            results,
-            skipped,
-            invalid
-        );
-        logger.info("代码块 -> 标签页 转换统计", stats);
-
-        if (stats.success > 0) {
-            this.onSuccess?.();
-        }
-
-        return stats;
+        return { toProcess, skipped, invalid };
     }
 
-    async codeToTabsBatchBySql(blockList: SqlBlock[]): Promise<ConversionStats> {
-        if (!blockList || blockList.length === 0) {
-            pushMsg(`${t(this.i18n, "msg.noCodeBlockToConvert")}`);
-            return { success: 0, failure: 0 };
-        }
-        logger.info("开始代码块 -> 标签页 批量转换（SQL）", { count: blockList.length });
-
-        const toProcess: { id: string; codeText: string; codeArr: CodeTab[] }[] = [];
+    private collectCodeBlocksFromSql(blockList: SqlBlock[]): {
+        toProcess: CodeToTabsProcessItem[];
+        skipped: { nodeId: string; reason: string }[];
+        invalid: { nodeId: string; reason: string }[];
+    } {
+        const toProcess: CodeToTabsProcessItem[] = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
@@ -320,7 +323,7 @@ export class TabConverter {
                 continue;
             }
 
-            const codeText = this.resolveCodeTextFromSql(block);
+            const codeText = resolveCodeTextFromSqlBlock(block);
             if (!codeText) {
                 const msg = "未找到代码内容";
                 invalid.push({ nodeId: id, reason: msg });
@@ -338,6 +341,15 @@ export class TabConverter {
             toProcess.push({ id, codeText, codeArr: checkResult.code });
         }
 
+        return { toProcess, skipped, invalid };
+    }
+
+    private async runCodeToTabsBatch(
+        toProcess: CodeToTabsProcessItem[],
+        skipped: { nodeId: string; reason: string }[],
+        invalid: { nodeId: string; reason: string }[],
+        label: string
+    ): Promise<ConversionStats> {
         const codeToTabsMessages = {
             completed: t(this.i18n, "msg.allCodeToTabsCompleted"),
             failed: t(this.i18n, "msg.allCodeToTabsCompletedFailed"),
@@ -715,30 +727,6 @@ export class TabConverter {
         await setBlockAttrs(id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
     }
 
-    private resolveCodeTextFromSql(block: SqlBlock): string | null {
-        const content = typeof block.content === "string" ? block.content : "";
-        if (content.trim().length > 0) {
-            return stripInvisibleChars(content);
-        }
-        const markdown = typeof block.markdown === "string" ? block.markdown : "";
-        if (markdown.trim().length === 0) return null;
-        const unwrapped = this.stripCodeFence(markdown);
-        return stripInvisibleChars(unwrapped);
-    }
-
-    private stripCodeFence(markdown: string): string {
-        const trimmed = markdown.trim();
-        const lines = trimmed.split("\n");
-        if (lines.length < 2) return trimmed;
-        const fenceMatch = lines[0].match(/^`{3,}/);
-        if (!fenceMatch) return trimmed;
-        const fence = fenceMatch[0];
-        const lastLine = lines[lines.length - 1].trim();
-        if (lastLine.startsWith(fence)) {
-            return lines.slice(1, -1).join("\n");
-        }
-        return lines.slice(1).join("\n");
-    }
 
     private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {
         let previousId = id;

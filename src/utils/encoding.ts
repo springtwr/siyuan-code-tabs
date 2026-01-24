@@ -68,3 +68,37 @@ export function stripInvisibleChars(str: string): string {
     // \ufeff：BOM（字节顺序标记），有时也会混入
     return str.replace(/[\u200b-\u200d\ufeff]/g, "");
 }
+
+/**
+ * 去除围栏代码块包裹（```），保留内部内容
+ */
+export function stripCodeFence(markdown: string): string {
+    const trimmed = markdown.trim();
+    const lines = trimmed.split("\n");
+    if (lines.length < 2) return trimmed;
+    const fenceMatch = lines[0].match(/^`{3,}/);
+    if (!fenceMatch) return trimmed;
+    const fence = fenceMatch[0];
+    const lastLine = lines[lines.length - 1].trim();
+    if (lastLine.startsWith(fence)) {
+        return lines.slice(1, -1).join("\n");
+    }
+    return lines.slice(1).join("\n");
+}
+
+/**
+ * 从 SQL 查询的块内容中提取代码文本
+ */
+export function resolveCodeTextFromSqlBlock(block: {
+    content?: string;
+    markdown?: string;
+}): string | null {
+    const content = typeof block.content === "string" ? block.content : "";
+    if (content.trim().length > 0) {
+        return stripInvisibleChars(content);
+    }
+    const markdown = typeof block.markdown === "string" ? block.markdown : "";
+    if (markdown.trim().length === 0) return null;
+    const unwrapped = stripCodeFence(markdown);
+    return stripInvisibleChars(unwrapped);
+}

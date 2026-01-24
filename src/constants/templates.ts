@@ -32,6 +32,32 @@ div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] {
     background: transparent;
     cursor: pointer;
 }
+
+.code-tabs__task {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 9999;
+    background: var(--b3-theme-background, #fff);
+    color: var(--b3-theme-on-surface, #333);
+    border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    padding: 10px 12px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.code-tabs__task-title {
+    font-weight: 600;
+}
+
+.code-tabs__task-text {
+    font-size: 12px;
+    opacity: 0.85;
+}
 `.trim();
 
 export const protyleHtmlStr = `

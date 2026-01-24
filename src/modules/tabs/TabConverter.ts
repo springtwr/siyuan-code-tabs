@@ -127,36 +127,19 @@ export class TabConverter {
         }
 
         const container = document.createElement("div");
-        container.style.cssText = [
-            "position: fixed",
-            "right: 16px",
-            "bottom: 16px",
-            "z-index: 9999",
-            "background: var(--b3-theme-background, #fff)",
-            "color: var(--b3-theme-on-surface, #333)",
-            "border: 1px solid var(--b3-theme-surface-lighter, #ddd)",
-            "border-radius: 8px",
-            "box-shadow: 0 4px 18px rgba(0,0,0,0.12)",
-            "padding: 10px 12px",
-            "min-width: 220px",
-            "display: flex",
-            "flex-direction: column",
-            "gap: 6px",
-        ].join(";");
+        container.className = "code-tabs__task";
 
         const titleEl = document.createElement("div");
         titleEl.textContent = "code-tabs";
-        titleEl.style.fontWeight = "600";
+        titleEl.className = "code-tabs__task-title";
 
         const labelEl = document.createElement("div");
         labelEl.textContent = taskLabel;
-        labelEl.style.fontSize = "12px";
-        labelEl.style.opacity = "0.85";
+        labelEl.className = "code-tabs__task-text";
 
         const progressEl = document.createElement("div");
         progressEl.textContent = this.formatProgress(0, total);
-        progressEl.style.fontSize = "12px";
-        progressEl.style.opacity = "0.85";
+        progressEl.className = "code-tabs__task-text";
 
         const cancelButton = document.createElement("button");
         cancelButton.className = "b3-button b3-button--outline fn__flex-center";

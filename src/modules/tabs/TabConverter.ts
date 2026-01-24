@@ -276,7 +276,6 @@ export class TabConverter {
             const id = block.dataset.nodeId;
             const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
 
-            // 情况1：数据异常（应视为“无效”，可能算失败或警告）
             if (!id) {
                 const msg = "缺少 nodeId";
                 invalid.push({ nodeId: "unknown", reason: msg });
@@ -290,8 +289,7 @@ export class TabConverter {
                 continue;
             }
 
-            // 情况2：内容不符合格式（正常跳过）
-            let codeText = stripInvisibleChars(contentEl.textContent || "");
+            const codeText = stripInvisibleChars(contentEl.textContent || "");
             const checkResult = TabParser.checkCodeText(codeText, this.i18n);
             if (!checkResult.result) {
                 const msg = "代码块不符合 Tab 格式";
@@ -362,7 +360,7 @@ export class TabConverter {
             return this.resultCounter(codeToTabsMessages, [], [], skipped, invalid);
         }
 
-        logger.info("进入转换队列的代码块数量（SQL）", { count: toProcess.length });
+        logger.info("进入转换队列的代码块数量", { count: toProcess.length, label });
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.codeToTabs"),
             toProcess,
@@ -382,7 +380,7 @@ export class TabConverter {
             skipped,
             invalid
         );
-        logger.info("代码块 -> 标签页 转换统计（SQL）", stats);
+        logger.info("代码块 -> 标签页 转换统计", { ...stats, label });
 
         if (stats.success > 0) {
             this.onSuccess?.();

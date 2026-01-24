@@ -24,6 +24,7 @@
   "setting.debug.desc": "开启后输出 debug 级别日志并写入 /data/plugins/code-tabs/debug.log",
   "label.toggleToCode": "切回代码块",
   "parser.headErr": "语法错误：标签块必须以 ::: 开头。示例：::: 标题 | 语言 | active（语言可省略，active 可选）",
+  "parser.multiActive": "语法错误：只允许一个 active 标签，请删除多余标记",
   "parser.noTitle": "语法错误：::: 后缺少标题",
   "parser.noLang": "语法错误：::: 后缺少语言类型（可省略并自动推断，或显式写为 js/python 等）",
   "parser.noCode": "语法错误：标签标题下缺少代码内容（至少一行代码）",

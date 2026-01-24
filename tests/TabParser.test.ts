@@ -22,7 +22,7 @@ describe("TabParser 语法解析", () => {
         const input = `::: JS | javascript | active
 console.log("ok");
 
-::: Python | active
+::: Python
 print("ok")
 `;
         const result = TabParser.checkCodeText(input, i18n);
@@ -30,7 +30,7 @@ print("ok")
         expect(result.code.length).toBe(2);
         expect(result.code[0].title).toContain("active");
         expect(result.code[0].language).toBe("javascript");
-        expect(result.code[1].title).toContain("active");
+        expect(result.code[1].title).not.toContain("active");
         expect(result.code[1].language).toBe("python");
     });
 
@@ -84,6 +84,17 @@ console.log("ok");
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
         expect(result.code[0].title).toContain("active");
+    });
+
+    it("新语法：多 active 应失败", () => {
+        const input = `::: JS | active
+console.log("ok");
+
+::: Python | active
+print("ok")
+`;
+        const result = TabParser.checkCodeText(input, i18n);
+        expect(result.result).toBe(false);
     });
 
     it("新语法：标题下为空行应失败", () => {
@@ -194,6 +205,19 @@ console.log("ok")
         const result = TabParser.checkCodeText(input, i18n);
         expect(result.result).toBe(true);
         expect(result.code[0].title).toContain("active");
+    });
+
+    it("旧语法：多 active 应失败", () => {
+        const input = `tab::: JS :::active
+lang::: js
+console.log("ok")
+
+tab::: Python :::active
+lang::: python
+print("ok")
+`;
+        const result = TabParser.checkCodeText(input, i18n);
+        expect(result.result).toBe(false);
     });
 
     it("新语法：多块应全部解析", () => {

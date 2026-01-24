@@ -24,6 +24,7 @@
   "setting.debug.desc": "Enable debug logs and write to /data/plugins/code-tabs/debug.log",
   "label.toggleToCode": "Toggle to code-block",
   "parser.headErr": "Syntax error: blocks must start with :::. Example: ::: title | lang | active (lang optional, active optional)",
+  "parser.multiActive": "Syntax error: only one active tab is allowed. Please remove extra active markers",
   "parser.noTitle": "Syntax error: missing title after :::",
   "parser.noLang": "Syntax error: missing language after ::: (optional, can be inferred or set explicitly like js/python)",
   "parser.noCode": "Syntax error: missing code content under the title (at least one line)",

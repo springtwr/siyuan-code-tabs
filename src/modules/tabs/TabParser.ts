@@ -65,6 +65,7 @@ export class TabParser {
         if (parts[0].trim() === "") parts.shift();
 
         const codeResult: CodeTab[] = [];
+        let activeCount = 0;
         logger.debug("解析新语法标签", { count: parts.length });
 
         for (let i = 0; i < parts.length; i++) {
@@ -128,6 +129,17 @@ export class TabParser {
             }
 
             if (isActive) {
+                activeCount += 1;
+                if (activeCount > 1) {
+                    if (!silent) {
+                        pushMsg(t(i18n, "parser.multiActive")).then();
+                    }
+                    logger.warn("新语法解析失败：active 标签重复", {
+                        index: i + 1,
+                        activeCount,
+                    });
+                    return { result: false, code: [] };
+                }
                 codeResult.push({
                     title: `${title} :::active`,
                     language: language,
@@ -154,6 +166,7 @@ export class TabParser {
         if (!codeArr) return { result: false, code: [] };
 
         const codeResult: CodeTab[] = [];
+        let activeCount = 0;
         logger.debug("解析旧语法标签", { count: codeArr.length });
         for (let i = 0; i < codeArr.length; i++) {
             const codeSplitArr = codeArr[i].trim().split("\n");
@@ -183,6 +196,19 @@ export class TabParser {
                 return { result: false, code: [] };
             }
             const title = codeSplitArr[0].substring(6).trim();
+            if (title.includes(":::active")) {
+                activeCount += 1;
+                if (activeCount > 1) {
+                    if (!silent) {
+                        pushMsg(t(i18n, "parser.multiActive")).then();
+                    }
+                    logger.warn("旧语法解析失败：active 标签重复", {
+                        index: i + 1,
+                        activeCount,
+                    });
+                    return { result: false, code: [] };
+                }
+            }
             let language = "";
             if (codeSplitArr[1].trim().startsWith("lang:::")) {
                 const languageLine = codeSplitArr[1].trim();

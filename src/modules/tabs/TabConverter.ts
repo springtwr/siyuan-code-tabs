@@ -10,11 +10,7 @@ import {
     updateBlock,
 } from "@/api";
 import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import {
-    encodeSource,
-    resolveCodeTextFromSqlBlock,
-    stripInvisibleChars,
-} from "@/utils/encoding";
+import { encodeSource, resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
@@ -413,8 +409,9 @@ export class TabConverter {
         toProcess: Array<{ id: string; codeText: string } | { id: string; codeArr: CodeTab[] }>;
         invalid: { nodeId: string; reason: string }[];
     } {
-        const toProcess: Array<{ id: string; codeText: string } | { id: string; codeArr: CodeTab[] }> =
-            [];
+        const toProcess: Array<
+            { id: string; codeText: string } | { id: string; codeArr: CodeTab[] }
+        > = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
         for (const block of blockList) {
@@ -463,11 +460,7 @@ export class TabConverter {
         }
         logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
 
-        const { toProcess, invalid } = this.collectTabBlocks(
-            blockList,
-            false,
-            "tabToCode"
-        ) as {
+        const { toProcess, invalid } = this.collectTabBlocks(blockList, false, "tabToCode") as {
             toProcess: { id: string; codeText: string }[];
             invalid: { nodeId: string; reason: string }[];
         };
@@ -608,7 +601,10 @@ export class TabConverter {
                 const languageEl = block.querySelector<HTMLElement>(".protyle-action__language");
                 const languageRaw = languageEl?.textContent?.trim() ?? "";
                 if (!id || !contentEl) return null;
-                const codeText = stripInvisibleChars(contentEl.textContent || "").replace(/\n+$/, "");
+                const codeText = stripInvisibleChars(contentEl.textContent || "").replace(
+                    /\n+$/,
+                    ""
+                );
                 return { id, codeText, languageRaw };
             })
             .filter(Boolean) as Array<{ id: string; codeText: string; languageRaw: string }>;
@@ -692,7 +688,6 @@ export class TabConverter {
         const encodedCodeText = encodeSource(codeText);
         await setBlockAttrs(id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
     }
-
 
     private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {
         let previousId = id;

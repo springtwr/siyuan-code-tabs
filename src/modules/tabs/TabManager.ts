@@ -523,7 +523,11 @@ export class TabManager {
                 const tabsEl = resolveTabsElement(target, tabItem);
                 if (tabsEl) clearDragIndicators(tabsEl);
                 logger.debug("拖拽结束");
-                if (!dragState.dropHandled && tabsEl && (dragState.overTab || dragState.overInTabs)) {
+                if (
+                    !dragState.dropHandled &&
+                    tabsEl &&
+                    (dragState.overTab || dragState.overInTabs)
+                ) {
                     logger.debug("拖拽结束未触发 drop，执行回退排序");
                     pluginCodeTabs.applyReorder(
                         draggedId,

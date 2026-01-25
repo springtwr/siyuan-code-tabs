@@ -23,38 +23,115 @@ export default class CodeTabs extends Plugin {
     private activeColorInput?: HTMLInputElement;
     private logBuffer: string[] = [];
     private flushLogFile: () => void = () => {};
-    private onLoadedProtyleStatic = (evt: unknown) => {
-        this.handleProtyleLoaded(evt);
-    };
-    private onLoadedProtyleDynamic = (evt: unknown) => {
+    private onLoadedProtyle = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
     };
 
     async onload() {
-        this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
+        this.registerBlockIconEvent();
+        this.initLogging();
+        this.checkHtmlBlockScriptPermission();
+
+        this.ensureInjectedStyle();
+
+        this.initTabModules();
+
+        this.initSettings();
+        this.registerCommands();
+        logger.info("命令与设置项注册完成");
+    }
+
+    async onLayoutReady() {
+        logger.info("布局就绪，开始初始化");
+
+        this.initTopBar();
+
+        syncSiyuanConfig(this.data);
+        logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
+
+        await this.loadConfigAndApplyTheme();
+        this.initThemeObserver();
+
+        this.registerProtyleEvents();
+        LineNumberManager.scanAll();
+        logger.info("行号扫描完成");
+    }
+
+    onunload() {
+        this.unregisterBlockIconEvent();
+        this.unregisterProtyleEvents();
+        this.themeObserver?.disconnect();
+        this.themeObserver = undefined;
+        this.tabConverter?.cancelCurrentTask();
+        LineNumberManager.cleanup();
+        StyleProbe.cleanup();
+        logger.setLogWriter(undefined);
+        this.removeInjectedStyle();
+        if (window.pluginCodeTabs) {
+            delete window.pluginCodeTabs;
+        }
+        logger.info("插件卸载完成");
+    }
+
+    private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
+        this.buildBlockMenu(detail);
+        this.buildMoreMenu(detail);
+        this.buildDevMenu(detail);
+    }
+
+    private initLogging(): void {
         logger.info("插件加载开始");
         logger.setDebugEnabled(this.getDebugEnabled());
         this.initLogWriter();
         logger.info(
             '如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")'
         );
+    }
 
+    private checkHtmlBlockScriptPermission(): void {
         if (!window.siyuan.config.editor.allowHTMLBLockScript) {
             pushErrMsg(`${t(this.i18n, "msg.notAllowHtmlBlockScript")}`).then();
         }
+    }
 
-        // 注入全局样式，标记为插件样式
-        const existingStyle = document.getElementById("code-tabs-style");
-        this.injectedStyleEl =
-            existingStyle instanceof HTMLStyleElement
-                ? existingStyle
-                : document.createElement("style");
-        this.injectedStyleEl.id = "code-tabs-style";
-        this.injectedStyleEl.innerHTML = CODE_TABS_STYLE;
-        if (!this.injectedStyleEl.parentElement) {
-            document.head.appendChild(this.injectedStyleEl);
+    private registerBlockIconEvent(): void {
+        this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
+    }
+
+    private unregisterBlockIconEvent(): void {
+        this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
+    }
+
+    private initTopBar(): void {
+        this.addTopBar({
+            icon: settingIconMain,
+            title: "code-tabs",
+            position: "right",
+            callback: () => {
+                this.openSetting();
+            },
+        });
+    }
+
+    private registerProtyleEvents(): void {
+        this.eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
+        this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyle);
+    }
+
+    private unregisterProtyleEvents(): void {
+        this.eventBus.off("loaded-protyle-static", this.onLoadedProtyle);
+        this.eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyle);
+    }
+
+    private reloadActivateDocument() {
+        const activeEditor = getActiveEditor(true);
+        if (activeEditor) {
+            logger.info("刷新页面");
+            activeEditor.reload(true);
         }
+    }
 
+    private initTabModules(): void {
         TabManager.initGlobalFunctions(
             this.i18n,
             (nodeId, order) => {
@@ -66,35 +143,136 @@ export default class CodeTabs extends Plugin {
         this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
         this.ensureActiveColorSettings();
         this.applyActiveTabColors();
+    }
 
-        // 添加设置项
+    private async loadConfigAndApplyTheme(): Promise<void> {
+        const configFile = await fetchFileFromUrlSimple(
+            CONFIG_JSON.replace("/data", ""),
+            "config.json"
+        );
+        if (configFile === undefined || configFile.size === 0) {
+            logger.info("未检测到配置文件，初始化样式文件");
+            await this.applyThemeStyles();
+            return;
+        }
+        const data = await loadJsonFromFile(configFile);
+        this.mergeCustomConfig(data);
+        this.ensureActiveColorSettings();
+        this.applyActiveTabColors();
+        this.syncActiveColorInputValue();
+        const configFlag = compareConfig(data, this.data);
+        if (!configFlag) {
+            logger.info("检测到配置变更，重新生成样式文件");
+            await this.applyThemeStyles();
+        }
+    }
+
+    private initThemeObserver(): void {
+        const html = document.documentElement;
+        const head = document.head;
+        const putFileHandler = () => {
+            logger.info(t(this.i18n, "msg.codeStyleChange"));
+            this.applyThemeStyles().then(() => {
+                LineNumberManager.refreshAll();
+            });
+        };
+        const debounced = debounce(putFileHandler, 500);
+        const callback = (mutationsList: MutationRecord[]) => {
+            this.handleThemeMutations(mutationsList, debounced);
+        };
+        this.themeObserver = new MutationObserver(callback);
+        this.themeObserver.observe(html, { attributes: true, childList: false, subtree: false });
+        this.themeObserver.observe(head, { attributes: true, childList: true, subtree: true });
+    }
+
+    private handleThemeMutations(mutationsList: MutationRecord[], onChange: () => void): void {
+        const siyuanConfig = getSiyuanConfig();
+        for (const mutation of mutationsList) {
+            // 1. 检查思源基础配置是否有变动
+            if (!compareConfig(siyuanConfig, this.data)) {
+                onChange();
+                break;
+            }
+
+            if (this.isThemeLinkMutation(mutation)) {
+                onChange();
+                break;
+            }
+        }
+    }
+
+    private isThemeLinkMutation(mutation: MutationRecord): boolean {
+        if (mutation.target === document.documentElement && mutation.type === "attributes") {
+            // html 元素的任何属性变动 (如 data-theme-mode, savor-theme 等)
+            return true;
+        }
+
+        const isThemeLink = (node: Node) => {
+            return node instanceof HTMLLinkElement && node.href.includes("/appearance/themes/");
+        };
+
+        if (mutation.type === "childList") {
+            const nodes = [
+                ...Array.from(mutation.addedNodes as NodeList),
+                ...Array.from(mutation.removedNodes as NodeList),
+            ];
+            return nodes.some((node: Node) => isThemeLink(node));
+        }
+
+        if (mutation.type === "attributes") {
+            return isThemeLink(mutation.target as Node);
+        }
+
+        return false;
+    }
+
+    private async applyThemeStyles(): Promise<void> {
+        await ThemeManager.putStyleFile();
+        syncSiyuanConfig(this.data);
+        await this.saveConfig();
+        ThemeManager.updateAllTabsStyle();
+    }
+
+    private initSettings(): void {
         this.setting = new Setting({
             confirmCallback: () => {},
         });
-        const allTabsToCodeElement = document.createElement("button");
-        allTabsToCodeElement.className = "b3-button b3-button--outline fn__flex-center fn__size200";
-        allTabsToCodeElement.textContent = `${t(this.i18n, "setting.allTabsToCode.button")}`;
-        allTabsToCodeElement.addEventListener("click", () => {
-            this.tabConverter.allTabsToCode();
-        });
+
         this.setting.addItem({
             title: `${t(this.i18n, "setting.allTabsToCode.title")}`,
             description: `${t(this.i18n, "setting.allTabsToCode.desc")}`,
-            actionElement: allTabsToCodeElement,
-        });
-        const allTabsToPlainCodeElement = document.createElement("button");
-        allTabsToPlainCodeElement.className =
-            "b3-button b3-button--outline fn__flex-center fn__size200";
-        allTabsToPlainCodeElement.textContent = `${t(this.i18n, "setting.allTabsToPlainCode.button")}`;
-        allTabsToPlainCodeElement.addEventListener("click", () => {
-            this.tabConverter.allTabsToPlainCode();
+            actionElement: this.createSettingButton("setting.allTabsToCode.button", () => {
+                this.tabConverter.allTabsToCode();
+            }),
         });
         this.setting.addItem({
             title: `${t(this.i18n, "setting.allTabsToPlainCode.title")}`,
             description: `${t(this.i18n, "setting.allTabsToPlainCode.desc")}`,
-            actionElement: allTabsToPlainCodeElement,
+            actionElement: this.createSettingButton("setting.allTabsToPlainCode.button", () => {
+                this.tabConverter.allTabsToPlainCode();
+            }),
         });
+        this.setting.addItem({
+            title: `${t(this.i18n, "setting.activeColor.title")}`,
+            description: `${t(this.i18n, "setting.activeColor.desc")}`,
+            actionElement: this.buildActiveColorSetting(),
+        });
+        this.setting.addItem({
+            title: `${t(this.i18n, "setting.debug.title")}`,
+            description: `${t(this.i18n, "setting.debug.desc")}`,
+            actionElement: this.buildDebugToggle(),
+        });
+    }
 
+    private createSettingButton(textKey: string, onClick: () => void): HTMLButtonElement {
+        const button = document.createElement("button");
+        button.className = "b3-button b3-button--outline fn__flex-center fn__size200";
+        button.textContent = `${t(this.i18n, textKey)}`;
+        button.addEventListener("click", onClick);
+        return button;
+    }
+
+    private buildActiveColorSetting(): HTMLDivElement {
         const activeColorWrapper = document.createElement("div");
         activeColorWrapper.className = "fn__flex fn__flex-center code-tabs__setting-color";
 
@@ -104,9 +282,12 @@ export default class CodeTabs extends Plugin {
         activeColorInput.className = "code-tabs__setting-color-input";
         this.activeColorInput = activeColorInput;
 
-        const resetButton = document.createElement("button");
-        resetButton.className = "b3-button b3-button--outline fn__flex-center fn__size200";
-        resetButton.textContent = `${t(this.i18n, "setting.activeColor.reset")}`;
+        const resetButton = this.createSettingButton("setting.activeColor.reset", () => {
+            this.data[this.activeColorKey] = "";
+            activeColorInput.value = this.defaultActiveColor;
+            this.applyActiveTabColors();
+            this.saveConfig();
+        });
 
         const applyColors = () => {
             this.applyActiveTabColors();
@@ -117,20 +298,13 @@ export default class CodeTabs extends Plugin {
             this.data[this.activeColorKey] = activeColorInput.value;
             applyColors();
         });
-        resetButton.addEventListener("click", () => {
-            this.data[this.activeColorKey] = "";
-            activeColorInput.value = this.defaultActiveColor;
-            applyColors();
-        });
 
         activeColorWrapper.appendChild(activeColorInput);
         activeColorWrapper.appendChild(resetButton);
-        this.setting.addItem({
-            title: `${t(this.i18n, "setting.activeColor.title")}`,
-            description: `${t(this.i18n, "setting.activeColor.desc")}`,
-            actionElement: activeColorWrapper,
-        });
+        return activeColorWrapper;
+    }
 
+    private buildDebugToggle(): HTMLInputElement {
         const debugToggle = document.createElement("input");
         debugToggle.type = "checkbox";
         debugToggle.className = "b3-switch";
@@ -138,13 +312,10 @@ export default class CodeTabs extends Plugin {
         debugToggle.addEventListener("change", () => {
             this.setDebugEnabled(debugToggle.checked);
         });
-        this.setting.addItem({
-            title: `${t(this.i18n, "setting.debug.title")}`,
-            description: `${t(this.i18n, "setting.debug.desc")}`,
-            actionElement: debugToggle,
-        });
+        return debugToggle;
+    }
 
-        // 注册快捷方式
+    private registerCommands(): void {
         this.addCommand({
             langKey: t(this.i18n, "menu.block.codeToTabs"),
             hotkey: "",
@@ -181,149 +352,31 @@ export default class CodeTabs extends Plugin {
                 this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
             },
         });
-        logger.info("命令与设置项注册完成");
     }
 
-    async onLayoutReady() {
-        logger.info("布局就绪，开始初始化");
-
-        this.addTopBar({
-            icon: settingIconMain,
-            title: "code-tabs",
-            position: "right",
-            callback: () => {
-                this.openSetting();
-            },
-        });
-
-        syncSiyuanConfig(this.data);
-        logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
-
-        const configFile = await fetchFileFromUrlSimple(
-            CONFIG_JSON.replace("/data", ""),
-            "config.json"
-        );
-        if (configFile === undefined || configFile.size === 0) {
-            logger.info("未检测到配置文件，初始化样式文件");
-            await ThemeManager.putStyleFile();
-            await this.saveConfig();
-            ThemeManager.updateAllTabsStyle();
-        } else {
-            const data = await loadJsonFromFile(configFile);
-            this.mergeCustomConfig(data);
-            this.ensureActiveColorSettings();
-            this.applyActiveTabColors();
-            if (this.activeColorInput) {
-                const value = this.getActiveColorValue() ?? this.defaultActiveColor;
-                this.activeColorInput.value = value;
-            }
-            const configFlag = compareConfig(data, this.data);
-            if (!configFlag) {
-                logger.info("检测到配置变更，重新生成样式文件");
-                await ThemeManager.putStyleFile();
-                await this.saveConfig();
-                ThemeManager.updateAllTabsStyle();
+    private collectBlockElements(
+        detail: BlockIconEventDetail,
+        predicate: (item: HTMLElement) => boolean
+    ): HTMLElement[] {
+        const blockList: HTMLElement[] = [];
+        for (const item of detail.blockElements) {
+            const element = item as HTMLElement;
+            if (predicate(element)) {
+                blockList.push(element);
             }
         }
-
-        const html = document.documentElement;
-        const head = document.head;
-        const callback = (mutationsList: MutationRecord[]) => {
-            const siyuanConfig = getSiyuanConfig();
-            for (const mutation of mutationsList) {
-                // 1. 检查思源基础配置是否有变动
-                if (!compareConfig(siyuanConfig, this.data)) {
-                    debounced();
-                    break;
-                }
-
-                // 2. 检查 html 元素和 head 中主题相关的变动
-                const isThemeLink = (node: Node) => {
-                    return (
-                        node instanceof HTMLLinkElement && node.href.includes("/appearance/themes/")
-                    );
-                };
-
-                if (
-                    mutation.target === document.documentElement &&
-                    mutation.type === "attributes"
-                ) {
-                    // html 元素的任何属性变动 (如 data-theme-mode, savor-theme 等)
-                    debounced();
-                    break;
-                }
-
-                if (mutation.type === "childList") {
-                    const nodes = [
-                        ...Array.from(mutation.addedNodes as NodeList),
-                        ...Array.from(mutation.removedNodes as NodeList),
-                    ];
-                    if (nodes.some((node: Node) => isThemeLink(node))) {
-                        debounced();
-                        break;
-                    }
-                } else if (mutation.type === "attributes") {
-                    if (isThemeLink(mutation.target as Node)) {
-                        debounced();
-                        break;
-                    }
-                }
-            }
-        };
-
-        const putFileHandler = () => {
-            logger.info(t(this.i18n, "msg.codeStyleChange"));
-            ThemeManager.putStyleFile().then(() => {
-                syncSiyuanConfig(this.data);
-                this.saveConfig();
-                ThemeManager.updateAllTabsStyle();
-                LineNumberManager.refreshAll();
-            });
-        };
-
-        const debounced = debounce(putFileHandler, 500);
-        this.themeObserver = new MutationObserver(callback);
-        this.themeObserver.observe(html, { attributes: true, childList: false, subtree: false });
-        this.themeObserver.observe(head, { attributes: true, childList: true, subtree: true });
-
-        this.eventBus.on("loaded-protyle-static", this.onLoadedProtyleStatic);
-        this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
-        LineNumberManager.scanAll();
-        logger.info("行号扫描完成");
+        return blockList;
     }
 
-    onunload() {
-        this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
-        this.eventBus.off("loaded-protyle-static", this.onLoadedProtyleStatic);
-        this.eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyleDynamic);
-        this.themeObserver?.disconnect();
-        this.themeObserver = undefined;
-        this.tabConverter?.cancelCurrentTask();
-        LineNumberManager.cleanup();
-        StyleProbe.cleanup();
-        logger.setLogWriter(undefined);
-        if (this.injectedStyleEl) {
-            this.injectedStyleEl.remove();
-            this.injectedStyleEl = undefined;
-        }
-        if (window.pluginCodeTabs) {
-            delete window.pluginCodeTabs;
-        }
-        logger.info("插件卸载完成");
-    }
-
-    private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
+    private buildBlockMenu(detail: BlockIconEventDetail): void {
         detail.menu.addItem({
             iconHTML: "",
             label: t(this.i18n, "menu.block.codeToTabs"),
             click: () => {
-                const blockList: HTMLElement[] = [];
-                for (const item of detail.blockElements as HTMLElement[]) {
+                const blockList = this.collectBlockElements(detail, (item) => {
                     const editElement = item.querySelector('[contenteditable="true"]');
-                    if (editElement && item.dataset?.type === "NodeCodeBlock") {
-                        blockList.push(item);
-                    }
-                }
+                    return !!editElement && item.dataset?.type === "NodeCodeBlock";
+                });
                 this.tabConverter.codeToTabsBatch(blockList);
             },
         });
@@ -331,28 +384,29 @@ export default class CodeTabs extends Plugin {
             iconHTML: "",
             label: t(this.i18n, "menu.block.tabToCode"),
             click: () => {
-                const blockList: HTMLElement[] = [];
-                for (const item of detail.blockElements) {
-                    const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
-                    if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
-                        blockList.push(item);
-                    }
-                }
+                const blockList = this.collectBlockElements(detail, (item) => {
+                    return (
+                        item.hasAttribute(`${CUSTOM_ATTR}`) &&
+                        item.dataset?.type === "NodeHTMLBlock"
+                    );
+                });
                 this.tabConverter.tabToCodeBatch(blockList);
             },
         });
+    }
+
+    private buildMoreMenu(detail: BlockIconEventDetail): void {
         const submenuItems: IMenu[] = [
             {
                 iconHTML: "",
                 label: t(this.i18n, "menu.more.tabsToPlainCode"),
                 click: () => {
-                    const blockList: HTMLElement[] = [];
-                    for (const item of detail.blockElements) {
-                        const isCodeTab = (item as HTMLElement).hasAttribute(`${CUSTOM_ATTR}`);
-                        if (isCodeTab && item.dataset?.type === "NodeHTMLBlock") {
-                            blockList.push(item);
-                        }
-                    }
+                    const blockList = this.collectBlockElements(detail, (item) => {
+                        return (
+                            item.hasAttribute(`${CUSTOM_ATTR}`) &&
+                            item.dataset?.type === "NodeHTMLBlock"
+                        );
+                    });
                     this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
                 },
             },
@@ -395,56 +449,57 @@ export default class CodeTabs extends Plugin {
             type: "submenu",
             submenu: submenuItems,
         });
-        if (process.env.DEV_MODE === "true") {
-            detail.menu.addItem({ type: "separator" });
-            detail.menu.addItem({
-                iconHTML: "",
-                label: t(this.i18n, "menu.dev.title"),
-                type: "readonly",
-            });
-            detail.menu.addItem({
-                iconHTML: "",
-                label: t(this.i18n, "menu.dev.toggleLineWrap"),
-                click: () => {
-                    DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, () =>
-                        this.reloadActivateDocument()
-                    );
-                },
-            });
-            detail.menu.addItem({
-                iconHTML: "",
-                label: t(this.i18n, "menu.dev.toggleLigatures"),
-                click: () => {
-                    DevToggleManager.toggleEditorSetting("codeLigatures", this.data, () =>
-                        this.reloadActivateDocument()
-                    );
-                },
-            });
-            detail.menu.addItem({
-                iconHTML: "",
-                label: t(this.i18n, "menu.dev.toggleLineNumber"),
-                click: () => {
-                    DevToggleManager.toggleEditorSetting(
-                        "codeSyntaxHighlightLineNum",
-                        this.data,
-                        () => this.reloadActivateDocument()
-                    );
-                },
-            });
-        }
     }
 
-    private reloadActivateDocument() {
-        const activeEditor = getActiveEditor(true);
-        if (activeEditor) {
-            logger.info("刷新页面");
-            activeEditor.reload(true);
+    private buildDevMenu(detail: BlockIconEventDetail): void {
+        if (process.env.DEV_MODE !== "true") {
+            return;
         }
+        detail.menu.addItem({ type: "separator" });
+        detail.menu.addItem({
+            iconHTML: "",
+            label: t(this.i18n, "menu.dev.title"),
+            type: "readonly",
+        });
+        detail.menu.addItem({
+            iconHTML: "",
+            label: t(this.i18n, "menu.dev.toggleLineWrap"),
+            click: () => {
+                DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, () =>
+                    this.reloadActivateDocument()
+                );
+            },
+        });
+        detail.menu.addItem({
+            iconHTML: "",
+            label: t(this.i18n, "menu.dev.toggleLigatures"),
+            click: () => {
+                DevToggleManager.toggleEditorSetting("codeLigatures", this.data, () =>
+                    this.reloadActivateDocument()
+                );
+            },
+        });
+        detail.menu.addItem({
+            iconHTML: "",
+            label: t(this.i18n, "menu.dev.toggleLineNumber"),
+            click: () => {
+                DevToggleManager.toggleEditorSetting("codeSyntaxHighlightLineNum", this.data, () =>
+                    this.reloadActivateDocument()
+                );
+            },
+        });
     }
 
     private ensureActiveColorSettings(): void {
         if (!(this.activeColorKey in this.data)) {
             this.data[this.activeColorKey] = "";
+        }
+    }
+
+    private syncActiveColorInputValue(): void {
+        if (this.activeColorInput) {
+            const value = this.getActiveColorValue() ?? this.defaultActiveColor;
+            this.activeColorInput.value = value;
         }
     }
 
@@ -533,6 +588,27 @@ export default class CodeTabs extends Plugin {
             }
         )?.detail;
         LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+    }
+
+    private ensureInjectedStyle(): void {
+        // 注入全局样式，标记为插件样式
+        const existingStyle = document.getElementById("code-tabs-style");
+        this.injectedStyleEl =
+            existingStyle instanceof HTMLStyleElement
+                ? existingStyle
+                : document.createElement("style");
+        this.injectedStyleEl.id = "code-tabs-style";
+        this.injectedStyleEl.innerHTML = CODE_TABS_STYLE;
+        if (!this.injectedStyleEl.parentElement) {
+            document.head.appendChild(this.injectedStyleEl);
+        }
+    }
+
+    private removeInjectedStyle(): void {
+        if (this.injectedStyleEl) {
+            this.injectedStyleEl.remove();
+            this.injectedStyleEl = undefined;
+        }
     }
 }
 

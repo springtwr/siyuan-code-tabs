@@ -182,9 +182,7 @@ ${extraCss}
         return defaultConfig.themes;
     }
 
-    private static async loadDefaultThemeConfig(
-        assetPath: string
-    ): Promise<ThemeConfig | null> {
+    private static async loadDefaultThemeConfig(assetPath: string): Promise<ThemeConfig | null> {
         try {
             logger.info("尝试加载默认主题配置...");
             const defaultConfigRaw = await fetchYamlFromUrl(assetPath, "theme-adaption.yaml");

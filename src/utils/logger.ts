@@ -1,3 +1,5 @@
+import { isDevMode } from "@/utils/env";
+
 enum LogLevel {
     DEBUG = "debug",
     INFO = "info",
@@ -11,8 +13,7 @@ class Logger {
     private logWriter?: (line: string) => void;
 
     constructor() {
-        // 访问 Vite 环境变量，判断是否处于开发环境
-        this.isDev = process.env.DEV_MODE === "true";
+        this.isDev = isDevMode();
     }
 
     public debug(message: unknown, context?: Record<string, unknown>): void {

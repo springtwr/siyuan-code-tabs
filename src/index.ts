@@ -12,6 +12,7 @@ import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
 import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
 import { debounce } from "@/utils/common";
 import { t } from "@/utils/i18n";
+import { isDevMode } from "@/utils/env";
 
 export default class CodeTabs extends Plugin {
     private readonly activeColorKey = "codeTabsActiveColor";
@@ -686,7 +687,7 @@ export default class CodeTabs extends Plugin {
     }
 
     private buildDevMenu(detail: BlockIconEventDetail): void {
-        if (process.env.DEV_MODE !== "true") {
+        if (!isDevMode()) {
             return;
         }
         detail.menu.addItem({ type: "separator" });

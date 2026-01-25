@@ -8,5 +8,11 @@
     "emitDeclarationOnly": true,
     "outDir": "node_modules/.cache/tsc-vitest"
   },
-  "include": ["tests/**/*.ts", "vitest.setup.ts", "src/**/*.ts", "src/types/**/*.d.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "vitest.setup.ts",
+    "src/**/*.ts",
+    "src/types/**/*.d.ts",
+    "src/types/vite-env.d.ts"
+  ]
 }

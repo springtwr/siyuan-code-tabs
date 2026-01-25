@@ -78,6 +78,13 @@ export class TabRenderer {
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText;
+            if (language === "markdown-render") {
+                const codeBlocks = content.querySelectorAll<HTMLElement>("code");
+                codeBlocks.forEach((block) => this.encodeTextNodes(block));
+            } else {
+                const codeBlock = content.querySelector<HTMLElement>(".code");
+                if (codeBlock) this.encodeTextNodes(codeBlock);
+            }
             tabContents.appendChild(content);
         }
 
@@ -94,9 +101,30 @@ export class TabRenderer {
 
         tabContainer.appendChild(tabsOuter);
         tabContainer.appendChild(tabContents);
-        const escaped = this.escapeHtml(containerDiv.innerHTML);
+        const escaped = this.normalizeHtmlBlockContent(this.escapeHtml(containerDiv.innerHTML));
         logger.debug("Tabs HTML 块生成完成");
         return `<div>${escaped}</div>`;
+    }
+
+    private static normalizeHtmlBlockContent(input: string): string {
+        return input
+            .split(/\r?\n/)
+            .map((line) => (line.trim().length === 0 ? `${line}&#8203;` : line))
+            .join("\n");
+    }
+
+    private static encodeTextNodes(root: HTMLElement): void {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let current = walker.nextNode() as Text | null;
+        while (current) {
+            if (current.data) {
+                current.data = current.data
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+            }
+            current = walker.nextNode() as Text | null;
+        }
     }
 
     private static escapeHtml(input: string): string {

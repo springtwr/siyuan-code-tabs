@@ -102,6 +102,7 @@ export class TabConverter {
             await updateBlock("markdown", htmlBlock, nodeId);
             await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
             logger.debug("持久化排序完成", { nodeId });
+            this.onSuccess?.();
         } catch (error) {
             logger.warn("拖拽排序持久化失败", { error });
             pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
@@ -607,7 +608,7 @@ export class TabConverter {
                 const languageEl = block.querySelector<HTMLElement>(".protyle-action__language");
                 const languageRaw = languageEl?.textContent?.trim() ?? "";
                 if (!id || !contentEl) return null;
-                const codeText = stripInvisibleChars(contentEl.textContent || "");
+                const codeText = stripInvisibleChars(contentEl.textContent || "").replace(/\n+$/, "");
                 return { id, codeText, languageRaw };
             })
             .filter(Boolean) as Array<{ id: string; codeText: string; languageRaw: string }>;

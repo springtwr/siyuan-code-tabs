@@ -28,6 +28,14 @@ export const StyleProbe = (() => {
         return out;
     }
 
+    let cached: {
+        root: HTMLElement;
+        block: HTMLElement;
+        action: HTMLElement;
+        hljs: HTMLElement;
+        content: HTMLElement;
+    } | null = null;
+
     function createVirtualProtyle() {
         const root = document.createElement("div");
         root.className = "protyle";
@@ -69,8 +77,15 @@ export const StyleProbe = (() => {
         return { root, block, action, hljs, content };
     }
 
+    function getVirtualProtyle() {
+        if (!cached) {
+            cached = createVirtualProtyle();
+        }
+        return cached;
+    }
+
     function probe() {
-        const { root, block, action, hljs, content } = createVirtualProtyle();
+        const { block, action, hljs, content } = getVirtualProtyle();
 
         const snapshot: CodeBlockStyleSnapshot = {
             block: extract(block, SYNC_PROPS.block),
@@ -79,7 +94,6 @@ export const StyleProbe = (() => {
             content: extract(content, SYNC_PROPS.content),
         };
 
-        root.remove();
         return snapshot;
     }
 
@@ -117,6 +131,11 @@ export const StyleProbe = (() => {
                 hljsOverflowY: cache.body.overflowY,
                 hljsMaxHeight: cache.block.maxHeight,
             };
+        },
+        cleanup(): void {
+            if (!cached) return;
+            cached.root.remove();
+            cached = null;
         },
     };
 })();

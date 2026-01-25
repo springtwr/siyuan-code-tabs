@@ -20,8 +20,12 @@ export class ThemeManager {
         logger.info("开始生成主题样式文件");
         // 配置代码样式文件
         const codeStyle = document.querySelector("link#protyleHljsStyle")?.getAttribute("href");
-        const fileCodeStyle = await fetchFileFromUrl(codeStyle, "code-style.css");
-        await putFile(CODE_STYLE_CSS, false, fileCodeStyle);
+        if (!codeStyle) {
+            logger.warn("未找到代码样式链接，跳过 code-style.css 更新");
+        } else {
+            const fileCodeStyle = await fetchFileFromUrl(codeStyle, "code-style.css");
+            await putFile(CODE_STYLE_CSS, false, fileCodeStyle);
+        }
 
         // 获取当前主题 ID
         const html = document.documentElement;
@@ -115,14 +119,15 @@ ${extraCss}
 
     static updateAllTabsStyle() {
         const nodes = document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+        if (nodes.length === 0) return;
         logger.info("刷新标签页样式链接", { count: nodes.length });
+        const currentTime = Date.now().toString();
         nodes.forEach((node) => {
             const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
             if (!shadowRoot) return;
             shadowRoot.querySelectorAll("link").forEach((link) => {
                 const currentHref = link.href;
-                if (!currentHref) return;
-                const currentTime = Date.now().toString();
+                if (!currentHref || !currentHref.includes("/plugins/code-tabs/")) return;
                 const url = new URL(currentHref);
                 url.searchParams.set("t", currentTime);
                 link.href = url.pathname + url.search;
@@ -135,90 +140,90 @@ ${extraCss}
         const storagePath = THEME_ADAPTION_YAML;
         const defaultAssetPath = THEME_ADAPTION_ASSET_YAML;
 
-        // 1. 加载默认配置 (获取最新版本和主题列表)
-        let defaultConfig: ThemeConfig | null = null;
+        const defaultConfig = await this.loadDefaultThemeConfig(defaultAssetPath);
+        if (!defaultConfig) return [];
+
+        const userResult = await this.loadUserThemeConfig(fetchPath);
+        if (userResult.config) {
+            const userThemes = userResult.config.themes || [];
+            const userVersion = userResult.config.version;
+
+            if (!userVersion || userVersion !== defaultConfig.version) {
+                logger.info(
+                    `检测到版本变化: ${userVersion || "旧版本"} → ${defaultConfig.version}`
+                );
+                logger.info("自动合并新主题配置...");
+
+                const mergedThemes = this.mergeThemeConfigs(userThemes, defaultConfig.themes);
+                if (mergedThemes.hasChanges) {
+                    logger.info("发现新主题,已合并到配置");
+                }
+
+                const newConfig = {
+                    version: defaultConfig.version,
+                    themes: mergedThemes.config,
+                };
+                await this.saveYamlThemeConfig(newConfig, storagePath);
+                logger.info("已更新用户主题配置到最新版本");
+                return mergedThemes.config;
+            }
+
+            logger.info("配置版本一致,使用用户主题配置");
+            return userThemes;
+        }
+
+        if (userResult.invalid) {
+            logger.warn("用户主题配置格式不正确，使用默认配置");
+        }
+
+        logger.info("首次安装,初始化主题配置文件...");
+        await this.saveYamlThemeConfig(defaultConfig, storagePath);
+        logger.info("已初始化用户主题配置");
+        return defaultConfig.themes;
+    }
+
+    private static async loadDefaultThemeConfig(
+        assetPath: string
+    ): Promise<ThemeConfig | null> {
         try {
             logger.info("尝试加载默认主题配置...");
-            const defaultConfigRaw = await fetchYamlFromUrl(
-                defaultAssetPath,
-                "theme-adaption.yaml"
-            );
+            const defaultConfigRaw = await fetchYamlFromUrl(assetPath, "theme-adaption.yaml");
             if (!isThemeConfig(defaultConfigRaw)) {
                 logger.error("默认主题配置格式不正确");
-                return [];
+                return null;
             }
-            defaultConfig = defaultConfigRaw;
             logger.debug("默认主题配置已加载", {
-                version: defaultConfig.version,
-                themeCount: defaultConfig.themes.length,
+                version: defaultConfigRaw.version,
+                themeCount: defaultConfigRaw.themes.length,
             });
+            return defaultConfigRaw;
         } catch (e) {
             logger.warn(`加载默认主题配置失败: ${e}`);
-            return [];
+            return null;
         }
+    }
 
-        if (!defaultConfig) {
-            logger.error("默认配置为空");
-            return [];
-        }
-
-        // 2. 尝试加载用户配置
+    private static async loadUserThemeConfig(fetchPath: string): Promise<{
+        config?: ThemeConfig;
+        invalid?: boolean;
+    }> {
         try {
             logger.info("尝试从数据目录加载用户主题配置...");
             const userConfigRaw = await fetchYamlFromUrl(fetchPath, "theme-adaption.yaml");
-
             if (isThemeConfig(userConfigRaw)) {
-                // 2.1 检查用户配置格式
-                let userThemes: ThemePatch[] = userConfigRaw.themes || [];
-                let userVersion: string | undefined;
-
-                userVersion = userConfigRaw.version;
                 logger.debug("用户主题配置已加载", {
-                    version: userVersion,
-                    themeCount: userThemes.length,
+                    version: userConfigRaw.version,
+                    themeCount: userConfigRaw.themes.length,
                 });
-
-                // 2.2 版本检测:如果用户版本低于插件版本,进行合并
-                if (!userVersion || userVersion !== defaultConfig.version) {
-                    logger.info(
-                        `检测到版本变化: ${userVersion || "旧版本"} → ${defaultConfig.version}`
-                    );
-                    logger.info("自动合并新主题配置...");
-
-                    const mergedThemes = this.mergeThemeConfigs(userThemes, defaultConfig.themes);
-
-                    if (mergedThemes.hasChanges) {
-                        logger.info("发现新主题,已合并到配置");
-                    }
-
-                    // 保存合并后的配置 (更新版本号)
-                    const newConfig = {
-                        version: defaultConfig.version,
-                        themes: mergedThemes.config,
-                    };
-                    await this.saveYamlThemeConfig(newConfig, storagePath);
-                    logger.info("已更新用户主题配置到最新版本");
-
-                    return mergedThemes.config;
-                }
-
-                // 2.3 版本一致,直接使用用户配置
-                logger.info("配置版本一致,使用用户主题配置");
-                return userThemes;
+                return { config: userConfigRaw };
             }
             if (userConfigRaw) {
-                logger.warn("用户主题配置格式不正确，使用默认配置");
+                return { invalid: true };
             }
         } catch {
             logger.info("未检测到用户配置文件");
         }
-
-        // 3. 用户配置不存在,首次安装,初始化配置
-        logger.info("首次安装,初始化主题配置文件...");
-        await this.saveYamlThemeConfig(defaultConfig, storagePath);
-        logger.info("已初始化用户主题配置");
-
-        return defaultConfig.themes;
+        return {};
     }
 
     /**

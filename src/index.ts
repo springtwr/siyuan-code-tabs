@@ -7,6 +7,7 @@ import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DevToggleManager } from "@/modules/developer/DevToggleManager";
+import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
 import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
 import { debounce } from "@/utils/common";
@@ -299,6 +300,7 @@ export default class CodeTabs extends Plugin {
         this.themeObserver = undefined;
         this.tabConverter?.cancelCurrentTask();
         LineNumberManager.cleanup();
+        StyleProbe.cleanup();
         logger.setLogWriter(undefined);
         if (this.injectedStyleEl) {
             this.injectedStyleEl.remove();

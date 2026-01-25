@@ -78,10 +78,14 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     return null;
 }
 
-function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): string[] {
-    const order = Array.from(tabsEl.querySelectorAll<HTMLElement>(".tab-item"))
+function getTabOrder(tabsEl: HTMLElement): string[] {
+    return Array.from(tabsEl.querySelectorAll<HTMLElement>(".tab-item"))
         .map((item) => item.dataset.tabId)
         .filter((id): id is string => Boolean(id));
+}
+
+function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): string[] {
+    const order = getTabOrder(tabsEl);
     logger.debug("拖拽排序：tab 顺序", { order });
 
     const contentNodes = Array.from(contentsEl.querySelectorAll<HTMLElement>(".tab-content"));
@@ -101,6 +105,14 @@ function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): strin
         contentsEl.insertBefore(copyIcon, contentsEl.firstChild);
     }
     return order;
+}
+
+function isSameOrder(a: string[], b: string[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
 }
 
 function clearDragIndicators(tabsEl: HTMLElement): void {
@@ -422,6 +434,7 @@ export class TabManager {
                 );
                 if (!draggedEl) return;
                 if (tabItem && draggedEl === tabItem) return;
+                const beforeOrder = getTabOrder(tabsEl);
 
                 if (tabItem) {
                     tabsEl.insertBefore(draggedEl, before ? tabItem : tabItem.nextSibling);
@@ -438,6 +451,11 @@ export class TabManager {
                 const tabContainer = tabsEl.closest(".tabs-container");
                 const contentsEl = tabContainer?.querySelector<HTMLElement>(".tab-contents");
                 if (!contentsEl) return;
+                const afterOrder = getTabOrder(tabsEl);
+                if (isSameOrder(beforeOrder, afterOrder)) {
+                    logger.debug("拖拽排序未变化，跳过处理", { order: afterOrder });
+                    return;
+                }
                 const order = reorderTabContents(tabsEl, contentsEl);
 
                 const htmlBlock = getHtmlBlockFromEventTarget(tabItem || tabsEl);

@@ -18,6 +18,7 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
     }
     // 转换时顺带自动更新语法格式
     if (codeText.trim().startsWith("tab:::")) {
+        codeText = decodeLegacyHtmlEntities(codeText);
         const parsed = TabParser.checkCodeText(codeText, i18n);
         if (parsed.result) {
             codeText = TabParser.generateNewSyntax(parsed.code);
@@ -27,6 +28,13 @@ export function getCodeFromAttribute(block_id: string, customAttribute: string, 
         codeText = codeText + "\n";
     }
     return codeText;
+}
+
+function decodeLegacyHtmlEntities(input: string): string {
+    if (!input.includes("&")) return input;
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = input;
+    return textarea.value;
 }
 
 async function copyTextToClipboard(text: string, i18n: IObject) {

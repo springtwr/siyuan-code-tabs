@@ -9,6 +9,7 @@ export class LineNumberManager {
     private static resizeObservers = new Map<HTMLElement, ResizeObserver>();
     private static rafIds = new WeakMap<HTMLElement, number>();
     private static measurers = new Map<ShadowRoot, HTMLElement>();
+    private static attachedNodes = new WeakSet<HTMLElement>();
 
     static isEnabled(): boolean {
         return window.siyuan?.config?.editor?.codeSyntaxHighlightLineNum === true;
@@ -38,6 +39,10 @@ export class LineNumberManager {
     }
 
     static refreshAll(): void {
+        if (!this.isEnabled()) {
+            this.disableAll();
+            return;
+        }
         const editor = getActiveEditor(true);
         if (!editor) return;
         logger.debug("刷新全部标签页行号");
@@ -79,6 +84,7 @@ export class LineNumberManager {
         this.rafIds = new WeakMap<HTMLElement, number>();
         this.measurers.forEach((measurer) => measurer.remove());
         this.measurers.clear();
+        this.attachedNodes = new WeakSet<HTMLElement>();
     }
 
     static cleanup(): void {
@@ -86,11 +92,16 @@ export class LineNumberManager {
     }
 
     private static attachNode(node: HTMLElement): void {
+        if (this.attachedNodes.has(node)) return;
         const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
         if (!shadowRoot) return;
-        shadowRoot.querySelectorAll<HTMLElement>(".tab-content").forEach((tabContent) => {
-            this.ensureLineNumbers(tabContent);
-        });
+        const activeTab =
+            shadowRoot.querySelector<HTMLElement>(".tab-content--active") ??
+            shadowRoot.querySelector<HTMLElement>(".tab-content");
+        if (activeTab) {
+            this.ensureLineNumbers(activeTab);
+        }
+        this.attachedNodes.add(node);
     }
 
     private static scan(scope?: HTMLElement): void {
@@ -100,7 +111,10 @@ export class LineNumberManager {
         );
         if (nodes.length === 0) return;
         logger.debug("检测到标签页块，准备渲染行号", { count: nodes.length });
-        nodes.forEach((node) => this.attachNode(node));
+        nodes.forEach((node) => {
+            if (this.attachedNodes.has(node)) return;
+            this.attachNode(node);
+        });
     }
 
     private static ensureLineNumbers(tabContent: HTMLElement): void {

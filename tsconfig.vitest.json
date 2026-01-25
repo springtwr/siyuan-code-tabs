@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "vitest/globals"],
+    "composite": true,
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "node_modules/.cache/tsc-vitest"
+  },
+  "include": ["tests/**/*.ts", "vitest.setup.ts", "src/**/*.ts", "src/types/**/*.d.ts"]
+}

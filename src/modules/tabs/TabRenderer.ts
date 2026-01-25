@@ -36,9 +36,9 @@ export class TabRenderer {
                 },
             })
         );
-        const options: MarkedKatexOptions = {
+        const options = {
             throwOnError: false,
-        };
+        } as MarkedKatexOptions;
         marked.use(markedKatex(options));
 
         for (let i = 0; i < codeArr.length; i++) {

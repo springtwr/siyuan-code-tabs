@@ -67,7 +67,7 @@ export default defineConfig({
     // https://github.com/vitejs/vite/discussions/3058#discussioncomment-2115319
     // 在这里自定义变量
     define: {
-        "process.env.DEV_MODE": `"${isWatch}"`,
+        "process.env.DEV_MODE": JSON.stringify(isWatch),
         "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
     },
 
@@ -77,7 +77,7 @@ export default defineConfig({
         emptyOutDir: isWatch,
 
         // 构建后是否生成 source map 文件
-        sourcemap: false,
+        sourcemap: isWatch,
 
         // 设置为 false 可以禁用最小化混淆
         // 或是用来指定是应用哪种混淆器

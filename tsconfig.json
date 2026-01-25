@@ -18,26 +18,22 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "allowJs": true,
-    "checkJs": true,
-    "types": ["node", "vite/client", "vitest/globals"],
+    "types": ["node", "vite/client"],
     // "baseUrl": "./src",
     "paths": {
       "@/*": ["./src/*"],
       "@/libs/*": ["./src/libs/*"]
     }
   },
-  "include": [
-    "tools/**/*.ts",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "tests/**/*.ts"
-  ],
+  "files": ["src/types/katex.d.ts"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "**/node_modules/**", "dist", "dev", "src/**/*.d.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.vitest.json"
     }
   ],
   "root": "."

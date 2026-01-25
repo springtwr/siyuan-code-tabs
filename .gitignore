@@ -10,3 +10,6 @@ dev
 dist
 build
 tmp
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js

@@ -16,6 +16,7 @@ if (!globalThis.window.hljs) {
 
 if (!globalThis.window.siyuan) {
     globalThis.window.siyuan = {
+        appearance: {},
         config: {
             editor: {
                 fontSize: 16,
@@ -32,6 +33,14 @@ if (!globalThis.window.siyuan) {
                 codeBlockThemeDark: "default",
             },
         },
+        notebooks: {},
+        menus: {},
+        dialogs: {},
+        blockPanels: {},
+        storage: {},
+        user: {},
+        ws: {},
+        languages: {},
     };
 }
 

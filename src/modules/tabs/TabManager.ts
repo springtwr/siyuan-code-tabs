@@ -571,12 +571,12 @@ export class TabManager {
             },
 
             wheelTag: (evt: WheelEvent) => {
-                let tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-                evt.preventDefault();
+                const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement | null;
+                if (!tabs) return;
                 const hasHorizontalScroll = tabs.scrollWidth > tabs.clientWidth;
-                if (hasHorizontalScroll) {
-                    tabs.scrollLeft += evt.deltaY;
-                }
+                if (!hasHorizontalScroll) return;
+                evt.preventDefault();
+                tabs.scrollLeft += evt.deltaY;
             },
 
             touchStart,

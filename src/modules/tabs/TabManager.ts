@@ -128,7 +128,7 @@ function resolveTabsElement(
 }
 
 export class TabManager {
-    static initGlobalFunctions(i18n: IObject, onReorder?: ReorderHandler) {
+    static initGlobalFunctions(i18n: IObject, onReorder?: ReorderHandler, onReload?: () => void) {
         logger.debug("初始化全局 Tabs 交互函数");
         const longPressDelay = 350;
         const longPressMoveThreshold = 8;
@@ -405,6 +405,7 @@ export class TabManager {
                     await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
                     pushMsg(t(i18n, "msg.setDefaultActive"));
                     logger.debug("已设置默认标签", { nodeId, activeId });
+                    onReload?.();
                 } catch (error) {
                     logger.warn("设置默认标签失败", { error, nodeId, activeId });
                     pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));

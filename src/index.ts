@@ -54,9 +54,13 @@ export default class CodeTabs extends Plugin {
             document.head.appendChild(this.injectedStyleEl);
         }
 
-        TabManager.initGlobalFunctions(this.i18n, (nodeId, order) => {
-            this.tabConverter.reorderTabsInBlock(nodeId, order);
-        });
+        TabManager.initGlobalFunctions(
+            this.i18n,
+            (nodeId, order) => {
+                this.tabConverter.reorderTabsInBlock(nodeId, order);
+            },
+            () => this.reloadActivateDocument()
+        );
         logger.info("全局函数已注册");
         this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
         this.ensureActiveColorSettings();

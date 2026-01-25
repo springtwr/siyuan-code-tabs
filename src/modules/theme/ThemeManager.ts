@@ -4,9 +4,11 @@ import {
     BACKGROUND_CSS,
     CODE_STYLE_CSS,
     CUSTOM_ATTR,
+    DATA_PATH,
     GITHUB_MARKDOWN_CSS,
     GITHUB_MARKDOWN_DARK_CSS,
     GITHUB_MARKDOWN_LIGHT_CSS,
+    PLUGIN_PATH,
     THEME_ADAPTION_ASSET_YAML,
     THEME_ADAPTION_YAML,
 } from "@/constants";
@@ -15,48 +17,100 @@ import { fetchFileFromUrl, fetchYamlFromUrl } from "@/utils/network";
 import * as yaml from "js-yaml";
 import { StyleProbe } from "./StyleProbe";
 
+export type ThemeUpdateResult = {
+    codeStyle: boolean;
+    background: boolean;
+    markdown: boolean;
+    changed: boolean;
+};
+
+type ThemeUpdateOptions = {
+    forceProbe?: boolean;
+    update?: Partial<Pick<ThemeUpdateResult, "codeStyle" | "background" | "markdown">>;
+};
+
 export class ThemeManager {
-    static async putStyleFile() {
+    private static lastCodeStyleHref?: string;
+    private static lastMarkdownMode?: "light" | "dark";
+    private static lastBackgroundHash?: string;
+    private static cachedThemeConfig?: {
+        version: string;
+        themes: ThemePatch[];
+    };
+    private static lastThemeKey?: string;
+
+    static async putStyleFile(options: ThemeUpdateOptions = {}): Promise<ThemeUpdateResult> {
         logger.info("开始生成主题样式文件");
+        const update = {
+            codeStyle: true,
+            background: true,
+            markdown: true,
+            ...options.update,
+        };
+        const result: ThemeUpdateResult = {
+            codeStyle: false,
+            background: false,
+            markdown: false,
+            changed: false,
+        };
         // 配置代码样式文件
-        const codeStyle = document.querySelector("link#protyleHljsStyle")?.getAttribute("href");
-        if (!codeStyle) {
-            logger.warn("未找到代码样式链接，跳过 code-style.css 更新");
-        } else {
-            const fileCodeStyle = await fetchFileFromUrl(codeStyle, "code-style.css");
-            await putFile(CODE_STYLE_CSS, false, fileCodeStyle);
+        if (update.codeStyle) {
+            const codeStyle = document.querySelector("link#protyleHljsStyle")?.getAttribute("href");
+            if (!codeStyle) {
+                logger.warn("未找到代码样式链接，跳过 code-style.css 更新");
+                this.lastCodeStyleHref = undefined;
+            } else if (codeStyle === this.lastCodeStyleHref) {
+                logger.debug("code-style.css 未变化，跳过更新");
+            } else {
+                const fileCodeStyle = await fetchFileFromUrl(codeStyle, "code-style.css");
+                if (fileCodeStyle) {
+                    await putFile(CODE_STYLE_CSS, false, fileCodeStyle);
+                    this.lastCodeStyleHref = codeStyle;
+                    result.codeStyle = true;
+                    result.changed = true;
+                } else {
+                    logger.warn("获取 code-style.css 失败，跳过更新");
+                }
+            }
         }
 
         // 获取当前主题 ID
         const html = document.documentElement;
-        const mode = html.getAttribute("data-theme-mode"); // "light" or "dark"
-        const currentThemeId =
-            mode === "dark"
-                ? html.getAttribute("data-dark-theme")
-                : html.getAttribute("data-light-theme");
+        const mode = html.getAttribute("data-theme-mode") === "dark" ? "dark" : "light";
 
-        // 加载外部主题适配配置
-        const themePatches = await this.loadThemeConfig();
-        const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
+        if (update.background) {
+            const currentThemeId =
+                mode === "dark"
+                    ? html.getAttribute("data-dark-theme")
+                    : html.getAttribute("data-light-theme");
+            const themeKey = `${mode}:${currentThemeId || ""}`;
 
-        // 获取代码块换行和连字设置
-        const codeLigatures =
-            window.siyuan.config.editor.codeLigatures === true ? "normal" : "none";
-        const codeLineWrap = window.siyuan.config.editor.codeLineWrap === true ? "pre-wrap" : "pre";
+            // 加载外部主题适配配置
+            const themePatches = await this.loadThemeConfig();
+            const patch = themePatches.find((p: ThemePatch) => p.id === currentThemeId);
 
-        let style: ThemeStyle;
-        let extraCss = patch?.extraCss || "";
+            // 获取代码块换行和连字设置
+            const codeLigatures =
+                window.siyuan.config.editor.codeLigatures === true ? "normal" : "none";
+            const codeLineWrap =
+                window.siyuan.config.editor.codeLineWrap === true ? "pre-wrap" : "pre";
 
-        if (patch && patch.fullStyle) {
-            // 如果有完整补丁，直接使用，跳过 getCodeBlockStyle
-            logger.info(`使用外部主题适配: ${patch.name}`);
-            style = patch.fullStyle;
-        } else {
-            // 否则回退到自动采集逻辑
-            style = StyleProbe.getFullStyle();
-        }
+            let style: ThemeStyle;
+            let extraCss = patch?.extraCss || "";
 
-        const cssContent = `
+            if (patch && patch.fullStyle) {
+                // 如果有完整补丁，直接使用，跳过 getCodeBlockStyle
+                logger.info(`使用外部主题适配: ${patch.name}`);
+                style = patch.fullStyle;
+            } else if (!options.forceProbe && this.lastThemeKey === themeKey) {
+                style = StyleProbe.getCachedStyle();
+            } else {
+                // 否则回退到自动采集逻辑
+                style = StyleProbe.getFullStyle();
+                this.lastThemeKey = themeKey;
+            }
+
+            const cssContent = `
 .tabs-container {
   font-size: ${style.fontSize};
   line-height: ${style.lineHeight};
@@ -97,27 +151,49 @@ export class ThemeManager {
 }
 ${extraCss}
 `;
-        const blob = new Blob([cssContent], { type: "text/css" });
-        const fileBackgroundStyle = new File([blob], "styles.css", { type: "text/css" });
-        await putFile(BACKGROUND_CSS, false, fileBackgroundStyle);
-        // 配置代码中markdown的样式文件
-        if (mode === "dark") {
-            const darkModeFile = await fetchFileFromUrl(
-                GITHUB_MARKDOWN_DARK_CSS,
-                "github-markdown.css"
-            );
-            await putFile(GITHUB_MARKDOWN_CSS, false, darkModeFile);
-        } else {
-            const lightModeFile = await fetchFileFromUrl(
-                GITHUB_MARKDOWN_LIGHT_CSS,
-                "github-markdown.css"
-            );
-            await putFile(GITHUB_MARKDOWN_CSS, false, lightModeFile);
+            const backgroundHash = this.hashString(cssContent);
+            if (backgroundHash !== this.lastBackgroundHash) {
+                const blob = new Blob([cssContent], { type: "text/css" });
+                const fileBackgroundStyle = new File([blob], "styles.css", { type: "text/css" });
+                await putFile(BACKGROUND_CSS, false, fileBackgroundStyle);
+                this.lastBackgroundHash = backgroundHash;
+                result.background = true;
+                result.changed = true;
+            } else {
+                logger.debug("background.css 未变化，跳过更新");
+            }
         }
-        logger.info("主题样式文件生成完成");
+        // 配置代码中markdown的样式文件
+        if (update.markdown) {
+            if (mode !== this.lastMarkdownMode) {
+                const markdownCssUrl =
+                    mode === "dark" ? GITHUB_MARKDOWN_DARK_CSS : GITHUB_MARKDOWN_LIGHT_CSS;
+                const markdownFile = await fetchFileFromUrl(markdownCssUrl, "github-markdown.css");
+                if (markdownFile) {
+                    await putFile(GITHUB_MARKDOWN_CSS, false, markdownFile);
+                    this.lastMarkdownMode = mode;
+                    result.markdown = true;
+                    result.changed = true;
+                } else {
+                    logger.warn("获取 markdown 样式失败，跳过更新");
+                }
+            } else {
+                logger.debug("markdown 样式未变化，跳过更新");
+            }
+        }
+        logger.info("主题样式文件生成完成", { changed: result.changed });
+        return result;
     }
 
-    static updateAllTabsStyle() {
+    static invalidateStyleProbe(): void {
+        this.lastThemeKey = undefined;
+        StyleProbe.resetCachedStyle();
+    }
+
+    static updateAllTabsStyle(changes?: ThemeUpdateResult) {
+        if (changes && !changes.changed) {
+            return;
+        }
         const nodes = document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
         if (nodes.length === 0) return;
         logger.info("刷新标签页样式链接", { count: nodes.length });
@@ -129,16 +205,56 @@ ${extraCss}
                 const currentHref = link.href;
                 if (!currentHref || !currentHref.includes("/plugins/code-tabs/")) return;
                 const url = new URL(currentHref);
+                const pathname = url.pathname;
+                if (
+                    changes &&
+                    !this.shouldUpdateLink(pathname, {
+                        codeStyle: changes.codeStyle,
+                        background: changes.background,
+                        markdown: changes.markdown,
+                    })
+                ) {
+                    return;
+                }
                 url.searchParams.set("t", currentTime);
                 link.href = url.pathname + url.search;
             });
         });
     }
 
+    private static shouldUpdateLink(
+        pathname: string,
+        changes: Pick<ThemeUpdateResult, "codeStyle" | "background" | "markdown">
+    ): boolean {
+        if (pathname.endsWith(CODE_STYLE_CSS.replace(DATA_PATH, PLUGIN_PATH))) {
+            return changes.codeStyle;
+        }
+        if (pathname.endsWith(BACKGROUND_CSS.replace(DATA_PATH, PLUGIN_PATH))) {
+            return changes.background;
+        }
+        if (pathname.endsWith(GITHUB_MARKDOWN_CSS.replace(DATA_PATH, PLUGIN_PATH))) {
+            return changes.markdown;
+        }
+        return false;
+    }
+
+    private static hashString(input: string): string {
+        let hash = 2166136261;
+        for (let i = 0; i < input.length; i++) {
+            hash ^= input.charCodeAt(i);
+            hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        return (hash >>> 0).toString(16);
+    }
+
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = THEME_ADAPTION_YAML.replace("/data", "");
         const storagePath = THEME_ADAPTION_YAML;
         const defaultAssetPath = THEME_ADAPTION_ASSET_YAML;
+
+        if (this.cachedThemeConfig) {
+            return this.cachedThemeConfig.themes;
+        }
 
         const defaultConfig = await this.loadDefaultThemeConfig(defaultAssetPath);
         if (!defaultConfig) return [];
@@ -165,10 +281,15 @@ ${extraCss}
                 };
                 await this.saveYamlThemeConfig(newConfig, storagePath);
                 logger.info("已更新用户主题配置到最新版本");
-                return mergedThemes.config;
+                this.cachedThemeConfig = newConfig;
+                return newConfig.themes;
             }
 
             logger.info("配置版本一致,使用用户主题配置");
+            this.cachedThemeConfig = {
+                version: userResult.config.version,
+                themes: userThemes,
+            };
             return userThemes;
         }
 
@@ -179,6 +300,10 @@ ${extraCss}
         logger.info("首次安装,初始化主题配置文件...");
         await this.saveYamlThemeConfig(defaultConfig, storagePath);
         logger.info("已初始化用户主题配置");
+        this.cachedThemeConfig = {
+            version: defaultConfig.version,
+            themes: defaultConfig.themes,
+        };
         return defaultConfig.themes;
     }
 

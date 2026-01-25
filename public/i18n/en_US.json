@@ -29,7 +29,7 @@
   "parser.noLang": "Syntax error: missing language after ::: (optional, can be inferred or set explicitly like js/python)",
   "parser.noCode": "Syntax error: missing code content under the title (at least one line)",
   "msg.notAllowHtmlBlockScript": "(code-tabs) please turn on: Allow execution of scripts within HTML blocks,  otherwise tabs will not be displayed properly",
-  "msg.codeStyleChange": "code background or style changes and reconfigure code-tabs stylesheet",
+  "msg.codeStyleChange": "Detected style changes, updating code-tabs theme styles",
   "msg.copyToClipboard": "Copied to clipboard",
   "msg.copyToClipboardFailed": "Copy failed: clipboard API not supported in current environment",
   "msg.copyNeedRegenTabs": "Copy failed: switch back to code block, then regenerate tabs and try again",

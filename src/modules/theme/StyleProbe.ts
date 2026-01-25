@@ -35,6 +35,7 @@ export const StyleProbe = (() => {
         hljs: HTMLElement;
         content: HTMLElement;
     } | null = null;
+    let lastStyle: ThemeStyle | null = null;
 
     function createVirtualProtyle() {
         const root = document.createElement("div");
@@ -106,7 +107,7 @@ export const StyleProbe = (() => {
             logger.debug("采集完整主题样式");
             const cache = probe();
 
-            return {
+            const style: ThemeStyle = {
                 blockBg: cache.block.backgroundColor,
                 protyleActionBg: cache.header.backgroundColor,
                 hljsBg: cache.body.backgroundColor,
@@ -131,11 +132,21 @@ export const StyleProbe = (() => {
                 hljsOverflowY: cache.body.overflowY,
                 hljsMaxHeight: cache.block.maxHeight,
             };
+            lastStyle = style;
+            return style;
+        },
+        getCachedStyle(): ThemeStyle {
+            if (lastStyle) return lastStyle;
+            return this.getFullStyle();
+        },
+        resetCachedStyle(): void {
+            lastStyle = null;
         },
         cleanup(): void {
             if (!cached) return;
             cached.root.remove();
             cached = null;
+            lastStyle = null;
         },
     };
 })();

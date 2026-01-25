@@ -17,8 +17,10 @@ export class DevToggleManager {
 
         syncSiyuanConfig(data);
         ThemeManager.putStyleFile()
-            .then(() => {
-                ThemeManager.updateAllTabsStyle();
+            .then((result) => {
+                if (result.changed) {
+                    ThemeManager.updateAllTabsStyle(result);
+                }
                 LineNumberManager.refreshAll();
                 LineNumberManager.scanAll();
                 onReload();

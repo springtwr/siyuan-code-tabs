@@ -29,7 +29,7 @@
   "parser.noLang": "语法错误：::: 后缺少语言类型（可省略并自动推断，或显式写为 js/python 等）",
   "parser.noCode": "语法错误：标签标题下缺少代码内容（至少一行代码）",
   "msg.notAllowHtmlBlockScript": "(code-tabs)请打开编辑器选项：允许执行HTML块内脚本，否则标签页将无法正常显示",
-  "msg.codeStyleChange": "监测到代码块背景或样式改变，重新配置code-tabs样式文件",
+  "msg.codeStyleChange": "监测到样式相关变更，开始更新 code-tabs 主题样式",
   "msg.copyToClipboard": "已复制到剪贴板",
   "msg.copyToClipboardFailed": "复制失败：当前环境不支持剪贴板接口",
   "msg.copyNeedRegenTabs": "复制失败：请切回代码块后重新生成标签页再试",

@@ -65,6 +65,11 @@ export class LineNumberManager {
     }
 
     private static disableAll(): void {
+        const hasLineNumbers = document.querySelector(`.${this.lineNumClass}`);
+        const hasEnabledTab = document.querySelector(`.${this.lineNumEnabledClass}`);
+        if (!hasLineNumbers && !hasEnabledTab && this.resizeObservers.size === 0) {
+            return;
+        }
         logger.debug("关闭行号显示");
         document
             .querySelectorAll<HTMLElement>(`.${this.lineNumClass}`)

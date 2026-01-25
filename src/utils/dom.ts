@@ -6,12 +6,8 @@
  * 获取 ShadowRoot
  */
 export function getShadowRoot(element: HTMLElement): ShadowRoot | null {
-    let parent: Node = element;
-    while (parent && parent.parentNode) {
-        parent = parent.parentNode;
-    }
-    if (!parent || !(parent instanceof ShadowRoot)) return null;
-    return parent as ShadowRoot;
+    const root = element.getRootNode();
+    return root instanceof ShadowRoot ? root : null;
 }
 
 /**

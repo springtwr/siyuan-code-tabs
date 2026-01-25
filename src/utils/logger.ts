@@ -72,14 +72,44 @@ class Logger {
         context?: Record<string, unknown>
     ): string {
         const header = this.formatHeader(level);
-        const text =
-            typeof message === "string"
-                ? message
-                : message instanceof Error
-                  ? message.message
-                  : JSON.stringify(message);
+        const text = this.formatValue(message);
         if (!context) return header + text;
-        return `${header}${text} | context=${JSON.stringify(context)}`;
+        return `${header}${text} | context=${this.safeStringify(context)}`;
+    }
+
+    private formatValue(value: unknown): string {
+        if (typeof value === "string") return value;
+        if (value instanceof Error) return value.message;
+        return this.safeStringify(value);
+    }
+
+    private safeStringify(value: unknown): string {
+        const seen = new WeakSet();
+        try {
+            return JSON.stringify(value, (_key, current) => {
+                if (typeof current === "bigint") {
+                    return current.toString();
+                }
+                if (current instanceof Error) {
+                    return {
+                        name: current.name,
+                        message: current.message,
+                        stack: current.stack,
+                    };
+                }
+                if (typeof current === "object" && current !== null) {
+                    if (seen.has(current)) return "[Circular]";
+                    seen.add(current);
+                }
+                return current;
+            });
+        } catch {
+            try {
+                return String(value);
+            } catch {
+                return "[Unserializable]";
+            }
+        }
     }
 
     public setDebugEnabled(enabled: boolean): void {

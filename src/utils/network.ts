@@ -3,6 +3,7 @@
  */
 
 import logger from "@/utils/logger";
+import { delay } from "@/utils/common";
 import { BACKGROUND_CSS, CODE_STYLE_CSS, THEME_ADAPTION_YAML } from "@/constants";
 import * as yaml from "js-yaml";
 
@@ -29,7 +30,7 @@ export async function fetchWithRetry(
     route: string,
     options: RequestInit = {},
     retries: number = 3,
-    delay: number = 1000
+    delayMs: number = 1000
 ): Promise<Response> {
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
@@ -51,13 +52,28 @@ export async function fetchWithRetry(
             return response;
         } catch (error) {
             if (attempt < retries - 1) {
-                await new Promise((resolve) => setTimeout(resolve, delay));
+                await delay(delayMs);
             } else {
                 throw error;
             }
         }
     }
     throw new Error("fetchWithRetry: retries exhausted");
+}
+
+const NO_CACHE_HEADERS = { "Cache-Control": "no-cache" };
+
+async function fetchFileFromUrlCore(
+    route: string,
+    fileName: string,
+    useRetry: boolean
+): Promise<File | undefined> {
+    const response = useRetry
+        ? await fetchWithRetry(route, { headers: NO_CACHE_HEADERS })
+        : await fetch(resolveUrl(route), { headers: NO_CACHE_HEADERS });
+    if (!response.ok) return undefined;
+    const blob = await response.blob();
+    return new File([blob], fileName, { type: blob.type });
 }
 
 /**
@@ -74,12 +90,9 @@ export async function fetchFileFromUrl(
             const blob = new Blob([emptyContent], { type: "text/css" });
             file = new File([blob], fileName, { type: "text/css" });
         } else {
-            const response = await fetchWithRetry(route, {
-                headers: { "Cache-Control": "no-cache" },
-            });
-            if (!response.ok) return undefined;
-            const blob = await response.blob();
-            file = new File([blob], fileName, { type: blob.type });
+            const result = await fetchFileFromUrlCore(route, fileName, true);
+            if (!result) return undefined;
+            file = result;
         }
         return file;
     } catch (error) {
@@ -96,11 +109,7 @@ export async function fetchFileFromUrlSimple(
 ): Promise<File | undefined> {
     try {
         if (!route) return undefined;
-        const url = resolveUrl(route);
-        const response = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
-        if (!response.ok) return undefined;
-        const blob = await response.blob();
-        return new File([blob], fileName, { type: blob.type });
+        return await fetchFileFromUrlCore(route, fileName, false);
     } catch {
         return undefined;
     }

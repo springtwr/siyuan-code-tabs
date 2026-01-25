@@ -74,12 +74,12 @@ export const protyleHtmlStr = `
     <div class="tab-contents">
         <span class="code-tabs--icon_group">
             <span class="code-tabs--icon_default" onclick="pluginCodeTabs.setDefault(event)" title="设为默认">
-                <svg>
+                <svg width="14" height="14" style="display:block">
                     <use xlink:href="${CODE_TABS_ICONS}#iconStar"></use>
                 </svg>
             </span>
             <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)" title="复制">
-                <svg>
+                <svg width="14" height="14" style="display:block">
                     <use xlink:href="${CODE_TABS_ICONS}#iconCopy"></use>
                 </svg>
             </span>

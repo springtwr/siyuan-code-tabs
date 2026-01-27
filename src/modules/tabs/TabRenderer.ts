@@ -53,6 +53,7 @@ export class TabRenderer {
             content.className = "tab-content hljs";
             content.dataset.tabId = String(i);
             content.dataset.render = "true";
+            content.dataset.lang = language;
             let hlText = code;
             if (language === "markdown-render") {
                 content.dataset.raw = encodeSource(code);
@@ -66,6 +67,9 @@ export class TabRenderer {
                 hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
             }
             content.innerHTML = hlText;
+            if (i === activeIndex) {
+                content.classList.add("tab-content--active");
+            }
             if (language === "markdown-render") {
                 const codeBlocks = content.querySelectorAll<HTMLElement>("code");
                 codeBlocks.forEach((block) => this.encodeTextNodes(block));
@@ -74,13 +78,10 @@ export class TabRenderer {
                 if (codeBlock) this.encodeTextNodes(codeBlock);
             }
             tabContents.appendChild(content);
-        }
 
-        if (tabs.children[activeIndex]) {
-            tabs.children[activeIndex].classList.add("tab-item--active");
-        }
-        if (tabContents.children[activeIndex + 1]) {
-            tabContents.children[activeIndex + 1].classList.add("tab-content--active");
+            if (i === activeIndex) {
+                tab.classList.add("tab-item--active");
+            }
         }
         logger.debug("Tabs 内容生成完成", { activeIndex, count: data.tabs.length });
 

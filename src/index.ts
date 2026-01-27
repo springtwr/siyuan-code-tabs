@@ -114,9 +114,10 @@ export default class CodeTabs extends Plugin {
     }
 
     private initTabModules(): void {
-        TabManager.initGlobalFunctions(this.i18n, () =>
+        const pluginApi = TabManager.initGlobalFunctions(this.i18n, () =>
             this.editorRefreshManager.reloadActiveDocument()
         );
+        this.editorRefreshManager.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
         this.tabConverter = new TabConverter(this.i18n, () =>
             this.editorRefreshManager.reloadActiveDocument()

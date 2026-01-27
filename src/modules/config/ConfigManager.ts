@@ -10,6 +10,10 @@ export type ConfigManagerOptions = {
     onAfterLoad: () => void;
 };
 
+const CONFIG_VERSION_KEY = "configVersion";
+const CURRENT_CONFIG_VERSION = 1;
+const DEPRECATED_CONFIG_KEYS: string[] = [];
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
 }
@@ -27,7 +31,20 @@ export function mergeCustomConfig(
 }
 
 export function buildConfigPayload(data: Record<string, unknown>): string {
-    return JSON.stringify(data);
+    const payload = {
+        ...data,
+        [CONFIG_VERSION_KEY]: CURRENT_CONFIG_VERSION,
+    };
+    return JSON.stringify(payload);
+}
+
+function cleanupDeprecatedKeys(target: Record<string, unknown>): void {
+    if (DEPRECATED_CONFIG_KEYS.length === 0) return;
+    DEPRECATED_CONFIG_KEYS.forEach((key) => {
+        if (key in target) {
+            delete target[key];
+        }
+    });
 }
 
 export class ConfigManager {
@@ -53,6 +70,8 @@ export class ConfigManager {
         }
         const data = await loadJsonFromFile(configFile);
         mergeCustomConfig(this.data, data, getSiyuanConfig());
+        this.data[CONFIG_VERSION_KEY] = CURRENT_CONFIG_VERSION;
+        cleanupDeprecatedKeys(this.data);
         this.onAfterLoad();
         const configFlag = compareConfig(data, this.data);
         if (!configFlag) {

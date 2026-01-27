@@ -95,7 +95,12 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
 
 
 export class TabManager {
-    static initGlobalFunctions(i18n: IObject, onReload?: () => void) {
+    static initGlobalFunctions(
+        i18n: IObject,
+        onReload?: () => void
+    ): {
+        refreshOverflow: (root?: HTMLElement | ShadowRoot) => void;
+    } {
         logger.debug("初始化全局 Tabs 交互函数");
         const activateTabById = (tabContainer: HTMLElement, tabId: string) => {
             const tabItems = tabContainer.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]");
@@ -336,5 +341,6 @@ export class TabManager {
             refreshOverflow,
         };
         window.pluginCodeTabs = pluginCodeTabs;
+        return pluginCodeTabs;
     }
 }

@@ -60,9 +60,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
 export class TabEditor {
     static open(options: EditorOptions): void {
         const state: EditorState = {
-            data: TabDataManager.normalize(
-                JSON.parse(JSON.stringify(options.data)) as TabsData
-            ),
+            data: TabDataManager.clone(options.data),
             currentIndex: Math.min(
                 Math.max(options.currentIndex, 0),
                 Math.max(options.data.tabs.length - 1, 0)
@@ -122,7 +120,7 @@ export class TabEditor {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
             tab.title = inputTitle.value.trim();
-            tab.lang = inputLang.value.trim() || "plaintext";
+            tab.lang = TabDataManager.normalizeLanguage(inputLang.value);
             tab.code = inputCode.value;
             renderList();
         };

@@ -123,6 +123,13 @@ export class LineNumberManager {
     }
 
     private static ensureLineNumbers(tabContent: HTMLElement): void {
+        if (tabContent.dataset.lang === "markdown-render") {
+            tabContent.classList.remove(this.lineNumEnabledClass);
+            tabContent
+                .querySelectorAll<HTMLElement>(`.${this.lineNumClass}`)
+                .forEach((node) => node.remove());
+            return;
+        }
         const codeEl = tabContent.querySelector<HTMLElement>(".code");
         if (!codeEl) return;
 

@@ -24,6 +24,6 @@ describe("ConfigManager helpers", () => {
 
     it("buildConfigPayload 生成 JSON 字符串", () => {
         const payload = buildConfigPayload({ a: 1, b: "x" });
-        expect(JSON.parse(payload)).toEqual({ a: 1, b: "x" });
+        expect(JSON.parse(payload)).toEqual({ a: 1, b: "x", configVersion: 1 });
     });
 });

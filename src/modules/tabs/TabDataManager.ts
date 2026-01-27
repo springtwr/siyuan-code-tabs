@@ -10,7 +10,7 @@ function normalizeTabs(tabs: TabDataItem[]): TabDataItem[] {
     return tabs
         .map((tab) => ({
             title: tab.title?.trim() ?? "",
-            lang: tab.lang?.trim() ?? "plaintext",
+            lang: TabDataManager.normalizeLanguage(tab.lang ?? ""),
             code: tab.code ?? "",
         }))
         .filter((tab) => tab.title.length > 0);
@@ -24,6 +24,16 @@ function decodeLegacyHtmlEntities(input: string): string {
 }
 
 export class TabDataManager {
+    static clone(data: TabsData): TabsData {
+        let cloned: TabsData;
+        if (typeof structuredClone === "function") {
+            cloned = structuredClone(data) as TabsData;
+        } else {
+            cloned = JSON.parse(JSON.stringify(data)) as TabsData;
+        }
+        return this.normalize(cloned);
+    }
+
     static createDefaultData(titleIndex: number = 1): TabsData {
         return {
             version: CURRENT_VERSION,
@@ -87,6 +97,13 @@ export class TabDataManager {
             active,
             tabs,
         };
+    }
+
+    static normalizeLanguage(input: string): string {
+        const lang = (input ?? "").trim().toLowerCase();
+        if (lang === "markdown-render") return "markdown-render";
+        if (!lang) return "plaintext";
+        return window.hljs.getLanguage(lang) ? lang : "plaintext";
     }
 
     static encode(data: TabsData): string {

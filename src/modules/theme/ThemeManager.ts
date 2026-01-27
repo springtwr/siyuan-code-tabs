@@ -3,6 +3,7 @@ import logger from "@/utils/logger";
 import {
     BACKGROUND_CSS,
     CODE_STYLE_CSS,
+    CODE_TABS_DATA_ATTR,
     CUSTOM_ATTR,
     DATA_PATH,
     GITHUB_MARKDOWN_CSS,
@@ -194,7 +195,9 @@ ${extraCss}
         if (changes && !changes.changed) {
             return;
         }
-        const nodes = document.querySelectorAll(`[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`);
+        const nodes = document.querySelectorAll(
+            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
+        );
         if (nodes.length === 0) return;
         logger.info("刷新标签页样式链接", { count: nodes.length });
         const currentTime = Date.now().toString();

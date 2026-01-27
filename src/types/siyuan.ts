@@ -186,6 +186,7 @@ type SiyuanGlobal = {
             codeLigatures: boolean;
             codeLineWrap: boolean;
             codeSyntaxHighlightLineNum: boolean;
+            codeTabSpaces?: number;
             allowHTMLBLockScript?: boolean;
         };
         appearance: {

@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
 import { TabConverter } from "@/modules/tabs/TabConverter";
-import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import { encodeSource } from "@/utils/encoding";
+import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR } from "@/constants";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import * as api from "@/api";
+import { TabDataManager } from "@/modules/tabs/TabDataManager";
 
 vi.mock("@/api", () => ({
     deleteBlock: vi.fn().mockResolvedValue(undefined),
+    getBlockAttrs: vi.fn().mockResolvedValue(undefined),
     insertBlock: vi.fn().mockResolvedValue([{ doOperations: [{ id: "new-id" }] }]),
     pushMsg: vi.fn().mockResolvedValue(undefined),
     setBlockAttrs: vi.fn().mockResolvedValue(undefined),
@@ -46,36 +47,49 @@ describe("TabConverter", () => {
         expect(api.updateBlock).toHaveBeenCalledWith("markdown", "<div>mock</div>", "block-1");
         expect(api.setBlockAttrs).toHaveBeenCalledWith(
             "block-1",
-            expect.objectContaining({ [CUSTOM_ATTR]: expect.any(String) })
+            expect.objectContaining({ [CODE_TABS_DATA_ATTR]: expect.any(String) })
         );
         expect(api.deleteBlock).not.toHaveBeenCalledWith("block-1");
     });
 
-    it("tabToCodeBatch: 应将标签页还原为 tab 语法代码块", async () => {
+    it("tabToCodeBatch: 应将标签页还原为多个标准代码块", async () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "tab-1";
         block.dataset.type = "NodeHTMLBlock";
-        const codeText = "::: JS | js\nconsole.log('ok')\n";
-        block.setAttribute(CUSTOM_ATTR, encodeSource(codeText));
+        const data = TabDataManager.createDefaultData();
+        data.tabs = [
+            { title: "Custom1", lang: "js", code: "console.log('ok')" },
+            { title: "Custom2", lang: "python", code: "print('b')" },
+        ];
+        vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
+            [CODE_TABS_DATA_ATTR]: TabDataManager.encode(data),
+        });
 
         const converter = new TabConverter(i18n);
         const stats = await converter.tabToCodeBatch([block]);
 
         expect(stats.success).toBe(1);
         expect(stats.failure).toBe(0);
-        expect(api.updateBlock).toHaveBeenCalledWith(
-            "markdown",
-            expect.stringContaining(`${TAB_SEPARATOR}tab\n`),
-            "tab-1"
+        expect(api.insertBlock).toHaveBeenCalledTimes(2);
+        expect(api.setBlockAttrs).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ [CODE_TAB_TITLE_ATTR]: expect.any(String) })
         );
+        expect(api.deleteBlock).toHaveBeenCalledWith("tab-1");
     });
 
     it("tabsToPlainCodeBlocksBatch: 应拆分为多个标准代码块", async () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "tab-2";
         block.dataset.type = "NodeHTMLBlock";
-        const codeText = `::: JS | js\nconsole.log('a')\n\n::: PY | python\nprint('b')\n`;
-        block.setAttribute(CUSTOM_ATTR, encodeSource(codeText));
+        const data = TabDataManager.createDefaultData();
+        data.tabs = [
+            { title: "Custom1", lang: "js", code: "console.log('a')" },
+            { title: "Custom2", lang: "python", code: "print('b')" },
+        ];
+        vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
+            [CODE_TABS_DATA_ATTR]: TabDataManager.encode(data),
+        });
 
         const converter = new TabConverter(i18n);
         const stats = await converter.tabsToPlainCodeBlocksBatch([block]);
@@ -85,7 +99,7 @@ describe("TabConverter", () => {
         expect(api.deleteBlock).toHaveBeenCalledWith("tab-2");
     });
 
-    it("mergeCodeBlocksToTabSyntax: 应合并并删除多余块", async () => {
+    it("mergeCodeBlocksToTabSyntax: 应合并为标签页并删除多余块", async () => {
         const makeBlock = (id: string, language: string, code: string) => {
             const block = document.createElement("div");
             block.dataset.nodeId = id;
@@ -109,7 +123,7 @@ describe("TabConverter", () => {
 
         expect(api.updateBlock).toHaveBeenCalledWith(
             "markdown",
-            expect.stringContaining(`${TAB_SEPARATOR}tab`),
+            expect.any(String),
             "a"
         );
         expect(api.deleteBlock).toHaveBeenCalledWith("b");

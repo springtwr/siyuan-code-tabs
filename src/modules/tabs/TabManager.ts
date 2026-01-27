@@ -1,41 +1,49 @@
-import { getBlockAttrs, pushErrMsg, pushMsg, setBlockAttrs, updateBlock } from "@/api";
-import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import { decodeSource, encodeSource } from "@/utils/encoding";
+import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
+import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
+import { decodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { t } from "@/utils/i18n";
-import { TabParser } from "./TabParser";
 import { TabRenderer } from "./TabRenderer";
-import { IObject } from "siyuan";
+import { IObject, Menu } from "siyuan";
 import { StyleProbe } from "../theme/StyleProbe";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { TabDataManager } from "./TabDataManager";
+import { TabEditor } from "./TabEditor";
+import type { TabsData } from "./types";
 
-export function getCodeFromAttribute(block_id: string, customAttribute: string, i18n: IObject) {
-    let codeText = decodeSource(customAttribute);
-    if (!codeText) {
-        logger.info(`标签页转为代码块失败，未找到源码: id ${block_id}`);
-        pushErrMsg(`${t(i18n, "msg.allTabsToCodeFailed")}: ${block_id}`);
-        return;
-    }
-    // 转换时顺带自动更新语法格式
-    if (codeText.trim().startsWith("tab:::")) {
-        codeText = decodeLegacyHtmlEntities(codeText);
-        const parsed = TabParser.checkCodeText(codeText, i18n);
-        if (parsed.result) {
-            codeText = TabParser.generateNewSyntax(parsed.code);
+
+async function resolveTabsData(
+    nodeId: string,
+    htmlBlock: HTMLElement | null,
+    i18n: IObject
+): Promise<TabsData | null> {
+    const dataFromDom = TabDataManager.readFromElement(htmlBlock);
+    if (dataFromDom) return dataFromDom;
+    const attrs = await getBlockAttrs(nodeId);
+    const dataFromAttr = TabDataManager.readFromAttrs(attrs);
+    if (dataFromAttr) return dataFromAttr;
+    const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
+    if (legacy) {
+        const migrated = TabDataManager.migrateFromLegacy(legacy, i18n);
+        if (migrated) {
+            await TabDataManager.writeToBlock(nodeId, migrated);
+            return migrated;
         }
     }
-    if (codeText[codeText.length - 1] !== "\n") {
-        codeText = codeText + "\n";
-    }
-    return codeText;
+    return null;
 }
 
-function decodeLegacyHtmlEntities(input: string): string {
-    if (!input.includes("&")) return input;
-    const textarea = document.createElement("textarea");
-    textarea.innerHTML = input;
-    return textarea.value;
+async function persistTabsData(
+    nodeId: string,
+    data: TabsData,
+    onReload?: () => void
+): Promise<void> {
+    const htmlBlock = TabRenderer.createProtyleHtml(data);
+    await updateBlock("markdown", htmlBlock, nodeId);
+    await TabDataManager.writeToBlock(nodeId, data);
+    onReload?.();
 }
+
 
 async function copyTextToClipboard(text: string, i18n: IObject) {
     const content = text ?? "";
@@ -58,8 +66,6 @@ async function copyTextToClipboard(text: string, i18n: IObject) {
     pushErrMsg(t(i18n, "msg.copyToClipboardFailed"));
 }
 
-type ReorderHandler = (nodeId: string, order: string[]) => void;
-
 function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof HTMLElement)) return null;
     const direct = target.closest('[data-node-id][data-type="NodeHTMLBlock"]');
@@ -77,7 +83,9 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     while (current) {
         if (
             current.dataset?.nodeId &&
-            (current.dataset.type === "NodeHTMLBlock" || current.hasAttribute(CUSTOM_ATTR))
+            (current.dataset.type === "NodeHTMLBlock" ||
+                current.hasAttribute(CUSTOM_ATTR) ||
+                current.hasAttribute(CODE_TABS_DATA_ATTR))
         ) {
             return current;
         }
@@ -86,235 +94,141 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     return null;
 }
 
-function getTabOrder(tabsEl: HTMLElement): string[] {
-    return Array.from(tabsEl.querySelectorAll<HTMLElement>(".tab-item"))
-        .map((item) => item.dataset.tabId)
-        .filter((id): id is string => Boolean(id));
-}
-
-function reorderTabContents(tabsEl: HTMLElement, contentsEl: HTMLElement): string[] {
-    const order = getTabOrder(tabsEl);
-    logger.debug("拖拽排序：tab 顺序", { order });
-
-    const contentNodes = Array.from(contentsEl.querySelectorAll<HTMLElement>(".tab-content"));
-    const contentMap = new Map<string, HTMLElement>();
-    contentNodes.forEach((node) => {
-        const id = node.dataset.tabId;
-        if (id) contentMap.set(id, node);
-    });
-    logger.debug("拖拽排序：content 映射", { ids: Array.from(contentMap.keys()) });
-    const copyIcon = contentsEl.querySelector<HTMLElement>(".code-tabs--icon_copy");
-    contentNodes.forEach((node) => node.remove());
-    order.forEach((id) => {
-        const node = contentMap.get(id);
-        if (node) contentsEl.appendChild(node);
-    });
-    if (copyIcon) {
-        contentsEl.insertBefore(copyIcon, contentsEl.firstChild);
-    }
-    return order;
-}
-
-function isSameOrder(a: string[], b: string[]): boolean {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false;
-    }
-    return true;
-}
-
-function clearDragIndicators(tabsEl: HTMLElement): void {
-    tabsEl
-        .querySelectorAll(".tab-item--drop-left, .tab-item--drop-right")
-        .forEach((el) => el.classList.remove("tab-item--drop-left", "tab-item--drop-right"));
-}
-
-function isCoarsePointer(): boolean {
-    return (
-        typeof window !== "undefined" &&
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(pointer: coarse)").matches
-    );
-}
-
-function resolveTabsElement(
-    target: EventTarget | null,
-    tabItem: HTMLElement | null
-): HTMLElement | null {
-    if (tabItem?.parentElement instanceof HTMLElement) return tabItem.parentElement;
-    if (!(target instanceof HTMLElement)) return null;
-    const tabsEl = target.closest(".tabs");
-    return tabsEl instanceof HTMLElement ? tabsEl : null;
-}
 
 export class TabManager {
-    static initGlobalFunctions(i18n: IObject, onReorder?: ReorderHandler, onReload?: () => void) {
+    static initGlobalFunctions(i18n: IObject, onReload?: () => void) {
         logger.debug("初始化全局 Tabs 交互函数");
-        const longPressDelay = 350;
-        const longPressMoveThreshold = 8;
-        const dragState = {
-            draggingId: "",
-            dropHandled: false,
-            overTab: null as HTMLElement | null,
-            overBefore: false,
-            overInTabs: false,
-        };
-        const touchState = {
-            dragTab: null as HTMLElement | null,
-            tabsEl: null as HTMLElement | null,
-            startX: 0,
-            startY: 0,
-            scrollLeft: 0,
-            isDragging: false,
-            rafId: null as number | null,
-            reordering: false,
-            moved: false,
-            longPressTimer: null as number | null,
-            scrollPossible: false,
+        const activateTabById = (tabContainer: HTMLElement, tabId: string) => {
+            const tabItems = tabContainer.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]");
+            const tabContents = tabContainer.querySelectorAll<HTMLElement>(".tab-content");
+            tabItems.forEach((tabItem) => {
+                if (tabItem.dataset.tabId === tabId) {
+                    tabItem.classList.add("tab-item--active");
+                } else {
+                    tabItem.classList.remove("tab-item--active");
+                }
+            });
+            tabContents.forEach((content) => {
+                if (content.dataset.tabId === tabId) {
+                    content.classList.add("tab-content--active");
+                } else {
+                    content.classList.remove("tab-content--active");
+                }
+            });
+            refreshOverflowForContainer(tabContainer);
+            LineNumberManager.refreshActive(tabContainer);
         };
 
-        const touchMove = (evt: TouchEvent) => {
-            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-            if (!tabs) return;
+        const createMoreTab = () => {
+            const moreItem = document.createElement("div");
+            moreItem.className = "tab-item tab-item--more";
+            moreItem.textContent = t(i18n, "label.moreTabs");
+            return moreItem;
+        };
 
-            const touch = evt.touches[0];
-            const deltaX = touch.pageX - touchState.startX;
-            const deltaY = touch.pageY - touchState.startY;
-            if (
-                !touchState.moved &&
-                (Math.abs(deltaX) > longPressMoveThreshold ||
-                    Math.abs(deltaY) > longPressMoveThreshold)
-            ) {
-                touchState.moved = true;
-                if (touchState.longPressTimer) {
-                    clearTimeout(touchState.longPressTimer);
-                    touchState.longPressTimer = null;
-                }
-                if (!touchState.reordering && touchState.scrollPossible) {
-                    touchState.isDragging = true;
-                }
-            }
-
-            if (touchState.reordering) {
-                evt.preventDefault();
-                touchState.moved = true;
-                const tabsEl = touchState.tabsEl ?? tabs;
-                if (!tabsEl) return;
-                clearDragIndicators(tabsEl);
-                const candidates = Array.from(
-                    tabsEl.querySelectorAll<HTMLElement>(".tab-item")
-                ).filter((item) => item.dataset.tabId !== dragState.draggingId);
-                if (candidates.length === 0) {
-                    dragState.overTab = null;
-                    dragState.overBefore = false;
-                    dragState.overInTabs = false;
-                    return;
-                }
-                let targetItem: HTMLElement | null = null;
-                let before = false;
-                for (const item of candidates) {
-                    const rect = item.getBoundingClientRect();
-                    const mid = rect.left + rect.width / 2;
-                    if (touch.clientX < mid) {
-                        targetItem = item;
-                        before = true;
-                        break;
-                    }
-                }
-                if (!targetItem) {
-                    targetItem = candidates[candidates.length - 1];
-                    before = false;
-                }
-                targetItem.classList.add(before ? "tab-item--drop-left" : "tab-item--drop-right");
-                dragState.overTab = targetItem;
-                dragState.overBefore = before;
-                dragState.overInTabs = true;
+        const openMoreMenu = (evt: MouseEvent, tabContainer: HTMLElement) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            const hiddenTabs = Array.from(
+                tabContainer.querySelectorAll<HTMLElement>(".tab-item--hidden")
+            );
+            if (hiddenTabs.length === 0) return;
+            const menu = new Menu();
+            hiddenTabs.forEach((tabItem) => {
+                const tabId = tabItem.dataset.tabId ?? "";
+                if (!tabId) return;
+                menu.addItem({
+                    label: tabItem.title || tabItem.textContent || `Tab${tabId}`,
+                    click: () => {
+                        activateTabById(tabContainer, tabId);
+                    },
+                });
+            });
+            const anchor =
+                (evt.target as HTMLElement | null)?.closest<HTMLElement>(".tab-item--more");
+            if (anchor) {
+                const rect = anchor.getBoundingClientRect();
+                menu.open({ x: rect.left, y: rect.bottom });
                 return;
             }
+            menu.open({ x: evt.clientX, y: evt.clientY });
+        };
 
-            if (!touchState.isDragging) return;
-            if (touchState.rafId) cancelAnimationFrame(touchState.rafId);
-            touchState.rafId = requestAnimationFrame(() => {
-                tabs.scrollLeft = touchState.scrollLeft - deltaX;
+        const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
+            const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
+            if (!tabsEl) return;
+            const allTabs = Array.from(
+                tabsEl.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]")
+            );
+            if (allTabs.length === 0) return;
+            const existingMore = tabsEl.querySelector<HTMLElement>(".tab-item--more");
+            if (existingMore) existingMore.remove();
+            allTabs.forEach((item) => item.classList.remove("tab-item--hidden"));
+
+            const available = tabsEl.clientWidth;
+            if (available <= 0) return;
+
+            const totalWidth = allTabs.reduce(
+                (sum, item) => sum + item.getBoundingClientRect().width,
+                0
+            );
+            if (totalWidth <= available) return;
+
+            const moreItem = createMoreTab();
+            moreItem.style.visibility = "hidden";
+            moreItem.style.position = "absolute";
+            tabsEl.appendChild(moreItem);
+            const moreWidth = moreItem.getBoundingClientRect().width;
+            moreItem.remove();
+            moreItem.style.visibility = "";
+            moreItem.style.position = "";
+
+            let used = 0;
+            let visibleCount = 0;
+            for (const item of allTabs) {
+                const width = item.getBoundingClientRect().width;
+                if (used + width + moreWidth <= available || visibleCount === 0) {
+                    used += width;
+                    visibleCount += 1;
+                } else {
+                    break;
+                }
+            }
+            if (visibleCount >= allTabs.length) return;
+            allTabs.slice(visibleCount).forEach((item) => item.classList.add("tab-item--hidden"));
+            if (!tabsEl.dataset.moreMenuBound) {
+                tabsEl.addEventListener("click", (event) => {
+                    const target = event.target as HTMLElement;
+                    const more = target.closest<HTMLElement>(".tab-item--more");
+                    if (!more) return;
+                    openMoreMenu(event as MouseEvent, tabContainer);
+                });
+                tabsEl.dataset.moreMenuBound = "true";
+            }
+            tabsEl.appendChild(moreItem);
+
+            const activeHidden = allTabs
+                .slice(visibleCount)
+                .some((item) => item.classList.contains("tab-item--active"));
+            moreItem.classList.toggle("tab-item--more-active", activeHidden);
+        };
+
+        const refreshOverflow = (root?: HTMLElement | ShadowRoot) => {
+            const scope: HTMLElement | ShadowRoot | Document = root ?? document;
+            const scan = (containerRoot: ParentNode) => {
+                const containers = containerRoot.querySelectorAll<HTMLElement>(".tabs-container");
+                containers.forEach((container) => refreshOverflowForContainer(container));
+            };
+            if (scope instanceof ShadowRoot) {
+                scan(scope);
+                return;
+            }
+            scan(scope);
+            const hosts = (scope as ParentNode).querySelectorAll?.("protyle-html") ?? [];
+            hosts.forEach((host) => {
+                const shadow = (host as HTMLElement).shadowRoot;
+                if (shadow) scan(shadow);
             });
-        };
-
-        const touchStart = (evt: TouchEvent) => {
-            evt.stopPropagation();
-            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-            if (!tabs) return;
-
-            const touch = evt.touches[0];
-            touchState.startX = touch.pageX;
-            touchState.startY = touch.pageY;
-            touchState.scrollLeft = tabs.scrollLeft;
-            touchState.scrollPossible = tabs.scrollWidth > tabs.clientWidth;
-            touchState.moved = false;
-            touchState.isDragging = false;
-
-            const tabItem = (evt.target as HTMLElement).closest(".tab-item") as HTMLElement | null;
-            const allowLongPress = isCoarsePointer() && tabItem;
-            if (allowLongPress) {
-                if (touchState.longPressTimer) {
-                    clearTimeout(touchState.longPressTimer);
-                }
-                touchState.longPressTimer = window.setTimeout(() => {
-                    const tabId = tabItem?.dataset.tabId ?? "";
-                    if (!tabId) return;
-                    dragState.draggingId = tabId;
-                    dragState.dropHandled = false;
-                    dragState.overTab = null;
-                    dragState.overBefore = false;
-                    dragState.overInTabs = false;
-                    touchState.dragTab = tabItem;
-                    touchState.tabsEl = tabs;
-                    touchState.reordering = true;
-                    touchState.isDragging = false;
-                    tabItem.classList.add("tab-item--dragging");
-                    logger.debug("触摸长按进入拖拽", { tabId });
-                }, longPressDelay);
-            } else {
-                touchState.isDragging = touchState.scrollPossible;
-            }
-
-            tabs.addEventListener("touchmove", touchMove, { passive: false });
-        };
-
-        const touchEnd = (evt: TouchEvent) => {
-            const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement;
-            tabs?.removeEventListener("touchmove", touchMove);
-            if (touchState.longPressTimer) {
-                clearTimeout(touchState.longPressTimer);
-                touchState.longPressTimer = null;
-            }
-            if (touchState.reordering) {
-                const tabsEl =
-                    touchState.tabsEl ?? resolveTabsElement(evt.target, touchState.dragTab);
-                if (tabsEl) clearDragIndicators(tabsEl);
-                const draggedId = dragState.draggingId;
-                if (
-                    touchState.moved &&
-                    draggedId &&
-                    tabsEl &&
-                    (dragState.overTab || dragState.overInTabs)
-                ) {
-                    pluginCodeTabs.applyReorder(
-                        draggedId,
-                        tabsEl,
-                        dragState.overTab,
-                        dragState.overBefore
-                    );
-                }
-                touchState.dragTab?.classList.remove("tab-item--dragging");
-                touchState.dragTab = null;
-                touchState.tabsEl = null;
-                dragState.draggingId = "";
-                dragState.overTab = null;
-                dragState.overInTabs = false;
-                touchState.reordering = false;
-            }
-            touchState.isDragging = false;
-            touchState.scrollPossible = false;
         };
 
         const pluginCodeTabs = {
@@ -323,19 +237,10 @@ export class TabManager {
                 const clicked = evt.target as HTMLElement;
                 const tabContainer = clicked.closest(".tabs-container") as HTMLElement | null;
                 if (!tabContainer) return;
-                const tabItems = tabContainer.querySelectorAll(".tab-item");
-                const tabContents = tabContainer.querySelectorAll(".tab-content");
-                tabItems.forEach((tabItem: HTMLElement, index: number) => {
-                    if (tabItem === clicked) {
-                        tabItem.classList.add("tab-item--active");
-                        tabContents[index].classList.add("tab-content--active");
-                    } else {
-                        tabItem.classList.remove("tab-item--active");
-                        tabContents[index].classList.remove("tab-content--active");
-                    }
-                });
-                logger.debug("切换标签页", { index: Array.from(tabItems).indexOf(clicked) });
-                LineNumberManager.refreshActive(tabContainer);
+                const tabId = clicked.dataset.tabId ?? "";
+                if (!tabId) return;
+                activateTabById(tabContainer, tabId);
+                logger.debug("切换标签页", { tabId });
             },
 
             copyCode: async (evt: MouseEvent) => {
@@ -377,243 +282,59 @@ export class TabManager {
                 if (!nodeId) return;
 
                 try {
-                    const attrs = await getBlockAttrs(nodeId);
-                    if (!attrs || !attrs[`${CUSTOM_ATTR}`]) {
+                    const data = await resolveTabsData(nodeId, htmlBlock, i18n);
+                    if (!data || data.tabs.length === 0) {
                         pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                         return;
                     }
-                    const codeText = getCodeFromAttribute(nodeId, attrs[`${CUSTOM_ATTR}`], i18n);
-                    if (!codeText) {
+                    if (activeId < 0 || activeId >= data.tabs.length) {
                         pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                         return;
                     }
-                    const parsed = TabParser.checkCodeText(codeText, i18n, true);
-                    if (!parsed.result || parsed.code.length === 0) {
-                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
-                        return;
-                    }
-                    if (activeId < 0 || activeId >= parsed.code.length) {
-                        pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
-                        return;
-                    }
-                    const currentActiveIndex = parsed.code.findIndex((tab) => tab.isActive);
-                    if (currentActiveIndex === activeId) {
+                    if (data.active === activeId) {
                         logger.debug("默认标签未变化，跳过更新", {
                             nodeId,
                             activeId,
                         });
                         return;
                     }
-                    const updated = parsed.code.map((tab, index) => {
-                        if (index === activeId) {
-                            return {
-                                ...tab,
-                                isActive: true,
-                            };
-                        }
-                        return {
-                            ...tab,
-                            isActive: false,
-                        };
-                    });
-                    const newSyntax = TabParser.generateNewSyntax(updated);
-                    const htmlBlock = TabRenderer.createProtyleHtml(
-                        updated,
-                        t(i18n, "label.toggleToCode")
-                    );
-                    await updateBlock("markdown", htmlBlock, nodeId);
-                    await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
+                    data.active = activeId;
+                    await persistTabsData(nodeId, data, onReload);
                     pushMsg(t(i18n, "msg.setDefaultActive"));
                     logger.debug("已设置默认标签", { nodeId, activeId });
-                    onReload?.();
                 } catch (error) {
                     logger.warn("设置默认标签失败", { error, nodeId, activeId });
                     pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                 }
             },
-            applyReorder: (
-                draggedId: string,
-                tabsEl: HTMLElement,
-                tabItem: HTMLElement | null,
-                before: boolean
-            ) => {
-                const draggedEl = tabsEl.querySelector<HTMLElement>(
-                    `.tab-item[data-tab-id="${draggedId}"]`
-                );
-                if (!draggedEl) return;
-                if (tabItem && draggedEl === tabItem) return;
-                const beforeOrder = getTabOrder(tabsEl);
+            editTab: async (evt: MouseEvent) => {
+                const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
+                if (!trigger) return;
+                const tabContainer = trigger.closest(".tabs-container");
+                if (!tabContainer) return;
+                const activeTab = tabContainer.querySelector<HTMLElement>(".tab-item--active");
+                const activeId = Number(activeTab?.dataset.tabId ?? "0");
 
-                if (tabItem) {
-                    tabsEl.insertBefore(draggedEl, before ? tabItem : tabItem.nextSibling);
-                    logger.debug("拖拽插入", {
-                        before,
-                        draggedId,
-                        targetId: tabItem.dataset.tabId,
-                    });
-                } else {
-                    tabsEl.appendChild(draggedEl);
-                    logger.debug("拖拽插入到末尾", { draggedId });
-                }
-
-                const tabContainer = tabsEl.closest(".tabs-container");
-                const contentsEl = tabContainer?.querySelector<HTMLElement>(".tab-contents");
-                if (!contentsEl) return;
-                const afterOrder = getTabOrder(tabsEl);
-                if (isSameOrder(beforeOrder, afterOrder)) {
-                    logger.debug("拖拽排序未变化，跳过处理", { order: afterOrder });
-                    return;
-                }
-                const order = reorderTabContents(tabsEl, contentsEl);
-
-                const htmlBlock = getHtmlBlockFromEventTarget(tabItem || tabsEl);
+                const htmlBlock = getHtmlBlockFromEventTarget(trigger);
                 const nodeId = htmlBlock?.dataset.nodeId;
-                logger.debug("拖拽持久化触发", { nodeId, order });
-                if (nodeId && onReorder) {
-                    onReorder(nodeId, order);
-                }
-            },
-            dragStart: (evt: DragEvent) => {
-                if (isCoarsePointer()) return;
-                const target = evt.target as HTMLElement | null;
-                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
-                if (!tabItem) return;
-                const tabId = tabItem.dataset.tabId ?? "";
-                logger.debug("拖拽开始", { tabId });
-                dragState.draggingId = tabId;
-                dragState.dropHandled = false;
-                dragState.overTab = null;
-                dragState.overBefore = false;
-                dragState.overInTabs = false;
-                tabItem.classList.add("tab-item--dragging");
-                if (evt.dataTransfer) {
-                    evt.dataTransfer.effectAllowed = "move";
-                    evt.dataTransfer.setData("text/plain", tabId);
-                }
-            },
-            dragOver: (evt: DragEvent) => {
-                if (isCoarsePointer()) return;
-                evt.preventDefault();
-                if (evt.dataTransfer) {
-                    evt.dataTransfer.dropEffect = "move";
-                }
-                const target = evt.target as HTMLElement | null;
-                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
-                const tabsEl = resolveTabsElement(target, tabItem);
-                if (!tabsEl) return;
-                clearDragIndicators(tabsEl);
-                if (!tabItem) {
-                    dragState.overTab = null;
-                    dragState.overBefore = false;
-                    dragState.overInTabs = true;
+                if (!nodeId) return;
+
+                const data = await resolveTabsData(nodeId, htmlBlock, i18n);
+                if (!data) {
+                    pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                     return;
                 }
-                const rect = tabItem.getBoundingClientRect();
-                const before = evt.clientX < rect.left + rect.width / 2;
-                tabItem.classList.add(before ? "tab-item--drop-left" : "tab-item--drop-right");
-                dragState.overTab = tabItem;
-                dragState.overBefore = before;
-                dragState.overInTabs = true;
-                logger.debug("拖拽悬停", {
-                    targetId: tabItem.dataset.tabId,
-                    before,
+
+                TabEditor.open({
+                    i18n,
+                    data,
+                    currentIndex: Number.isNaN(activeId) ? 0 : activeId,
+                    onSubmit: async (next) => {
+                        await persistTabsData(nodeId, next, onReload);
+                    },
                 });
             },
-            dragDrop: (evt: DragEvent) => {
-                if (isCoarsePointer()) return;
-                evt.preventDefault();
-                const target = evt.target as HTMLElement | null;
-                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
-                const tabsEl = resolveTabsElement(target, tabItem);
-                if (!tabsEl) return;
-
-                const draggedId =
-                    dragState.draggingId || evt.dataTransfer?.getData("text/plain") || "";
-                logger.debug("拖拽释放", { draggedId, targetId: tabItem?.dataset.tabId ?? "" });
-                if (!draggedId) return;
-                clearDragIndicators(tabsEl);
-                if (tabItem) {
-                    const rect = tabItem.getBoundingClientRect();
-                    const before = evt.clientX < rect.left + rect.width / 2;
-                    pluginCodeTabs.applyReorder(draggedId, tabsEl, tabItem, before);
-                } else {
-                    pluginCodeTabs.applyReorder(draggedId, tabsEl, null, false);
-                }
-                dragState.dropHandled = true;
-            },
-            dragEnd: (evt: DragEvent) => {
-                if (isCoarsePointer()) return;
-                const target = evt.target as HTMLElement | null;
-                const tabItem = target?.closest(".tab-item") as HTMLElement | null;
-                tabItem?.classList.remove("tab-item--dragging");
-                const draggedId = dragState.draggingId;
-                const tabsEl = resolveTabsElement(target, tabItem);
-                if (tabsEl) clearDragIndicators(tabsEl);
-                logger.debug("拖拽结束");
-                if (
-                    !dragState.dropHandled &&
-                    tabsEl &&
-                    (dragState.overTab || dragState.overInTabs)
-                ) {
-                    logger.debug("拖拽结束未触发 drop，执行回退排序");
-                    pluginCodeTabs.applyReorder(
-                        draggedId,
-                        tabsEl,
-                        dragState.overTab,
-                        dragState.overBefore
-                    );
-                }
-                dragState.draggingId = "";
-                dragState.overTab = null;
-                dragState.overInTabs = false;
-            },
-            dragLeave: (evt: DragEvent) => {
-                if (isCoarsePointer()) return;
-                const target = evt.target as HTMLElement | null;
-                const tabsEl = resolveTabsElement(target, null);
-                if (tabsEl) clearDragIndicators(tabsEl);
-                logger.debug("拖拽离开");
-            },
-
-            toggle: (evt: MouseEvent) => {
-                let parent: Node = evt.target as Node;
-                while (parent && parent.parentNode) {
-                    parent = parent.parentNode;
-                }
-                if (!parent || !(parent instanceof ShadowRoot)) return;
-                const host = parent.host;
-                if (!host || !host.parentNode || !host.parentNode.parentNode) return;
-                const htmlBlock = host.parentNode.parentNode as HTMLElement;
-                const nodeId = htmlBlock.dataset.nodeId;
-
-                getBlockAttrs(nodeId).then((res) => {
-                    if (!res) return;
-                    const codeText = getCodeFromAttribute(nodeId, res[`${CUSTOM_ATTR}`], i18n);
-                    const flag = TAB_SEPARATOR;
-                    updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, nodeId).then(() => {
-                        logger.info(`标签页转为代码块: id ${nodeId}`);
-                    });
-                });
-            },
-
-            wheelTag: (evt: WheelEvent) => {
-                const tabs = (evt.target as HTMLElement).closest(".tabs") as HTMLElement | null;
-                if (!tabs) return;
-                const hasHorizontalScroll = tabs.scrollWidth > tabs.clientWidth;
-                if (!hasHorizontalScroll) return;
-                evt.preventDefault();
-                tabs.scrollLeft += evt.deltaY;
-            },
-
-            touchStart,
-            touchMove,
-            touchEnd,
-            contextMenu: (evt: Event) => {
-                if (!isCoarsePointer()) return;
-                evt.preventDefault();
-                evt.stopPropagation();
-                logger.debug("移动端标签栏拦截长按菜单");
-            },
+            refreshOverflow,
         };
         window.pluginCodeTabs = pluginCodeTabs;
     }

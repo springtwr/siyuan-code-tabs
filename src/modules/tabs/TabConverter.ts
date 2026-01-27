@@ -9,14 +9,14 @@ import {
     sql,
     updateBlock,
 } from "@/api";
-import { CUSTOM_ATTR, TAB_SEPARATOR } from "@/constants";
-import { encodeSource, resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
+import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
+import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
-import { CodeTab } from "./types";
+import { CodeTab, TabsData } from "./types";
 import { TabRenderer } from "./TabRenderer";
-import { getCodeFromAttribute } from "./TabManager";
+import { TabDataManager } from "./TabDataManager";
 
 export type ConversionStats = { success: number; failure: number };
 
@@ -27,7 +27,7 @@ type ConversionMessages = {
     skippedDueToFormat: string;
     noItems: string;
 };
-type CodeToTabsProcessItem = { id: string; codeText: string; codeArr: CodeTab[] };
+type CodeToTabsProcessItem = { id: string; codeArr: CodeTab[] };
 
 type BatchTask = {
     cancelled: boolean;
@@ -57,46 +57,41 @@ export class TabConverter {
         try {
             logger.debug("持久化排序开始", { nodeId, order });
             const attrs = await getBlockAttrs(nodeId);
-            if (!attrs || !attrs[`${CUSTOM_ATTR}`]) {
-                logger.warn("持久化排序失败：缺少自定义属性", { nodeId });
-                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
-                return;
+            let data = TabDataManager.readFromAttrs(attrs);
+            if (!data) {
+                const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
+                if (legacy) {
+                    data = TabDataManager.migrateFromLegacy(legacy, this.i18n);
+                }
             }
-            const codeText = getCodeFromAttribute(nodeId, attrs[`${CUSTOM_ATTR}`], this.i18n);
-            if (!codeText) {
-                logger.warn("持久化排序失败：未解析到源码", { nodeId });
-                return;
-            }
-            const parsed = TabParser.checkCodeText(codeText, this.i18n, true);
-            if (!parsed.result || parsed.code.length === 0) {
-                logger.warn("持久化排序失败：源码解析失败", { nodeId });
+            if (!data) {
+                logger.warn("持久化排序失败：缺少标签数据", { nodeId });
                 pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
                 return;
             }
 
-            const reordered = order
-                .map((id) => parsed.code[Number(id)])
+            const reorderedTabs = order
+                .map((id) => data?.tabs[Number(id)])
                 .filter((item) => item !== undefined);
-            if (reordered.length !== parsed.code.length) {
-                logger.warn("持久化排序失败：顺序与源码数量不一致", {
+            if (reorderedTabs.length !== data.tabs.length) {
+                logger.warn("持久化排序失败：顺序与数据数量不一致", {
                     nodeId,
                     order,
-                    total: parsed.code.length,
-                    mapped: reordered.length,
+                    total: data.tabs.length,
+                    mapped: reorderedTabs.length,
                 });
                 pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
                 return;
             }
-            logger.debug("持久化排序重排完成", { count: reordered.length });
+            const newActive = order.findIndex((id) => Number(id) === data.active);
+            data.tabs = reorderedTabs;
+            data.active = newActive >= 0 ? newActive : 0;
+            logger.debug("持久化排序重排完成", { count: reorderedTabs.length });
 
-            const newSyntax = TabParser.generateNewSyntax(reordered);
-            const htmlBlock = TabRenderer.createProtyleHtml(
-                reordered,
-                t(this.i18n, "label.toggleToCode")
-            );
+            const htmlBlock = TabRenderer.createProtyleHtml(data);
             logger.debug("持久化排序生成 HTML 完成", { length: htmlBlock.length });
             await updateBlock("markdown", htmlBlock, nodeId);
-            await setBlockAttrs(nodeId, { [`${CUSTOM_ATTR}`]: encodeSource(newSyntax) });
+            await TabDataManager.writeToBlock(nodeId, data);
             logger.debug("持久化排序完成", { nodeId });
             this.onSuccess?.();
         } catch (error) {
@@ -294,7 +289,7 @@ export class TabConverter {
                 logger.info(`codeToTabs: ${msg}，跳过 (nodeId: ${id})`);
                 continue;
             }
-            toProcess.push({ id, codeText, codeArr: checkResult.code });
+            toProcess.push({ id, codeArr: checkResult.code });
         }
 
         return { toProcess, skipped, invalid };
@@ -333,7 +328,7 @@ export class TabConverter {
                 logger.info(`codeToTabs(sql): ${msg}，跳过 (nodeId: ${id})`);
                 continue;
             }
-            toProcess.push({ id, codeText, codeArr: checkResult.code });
+            toProcess.push({ id, codeArr: checkResult.code });
         }
 
         return { toProcess, skipped, invalid };
@@ -361,12 +356,11 @@ export class TabConverter {
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.codeToTabs"),
             toProcess,
-            async ({ id, codeText, codeArr }) => {
-                const htmlBlock = TabRenderer.createProtyleHtml(
-                    codeArr,
-                    t(this.i18n, "label.toggleToCode")
-                );
-                await this.update("markdown", htmlBlock, id, codeText);
+            async ({ id, codeArr }) => {
+                const data = TabDataManager.fromCodeTabs(codeArr);
+                const htmlBlock = TabRenderer.createProtyleHtml(data);
+                await updateBlock("markdown", htmlBlock, id);
+                await TabDataManager.writeToBlock(id, data);
             }
         );
 
@@ -386,68 +380,84 @@ export class TabConverter {
         return stats;
     }
 
-    private extractTabBlockMeta(block: TabBlock): { id: string; customAttribute: string } {
-        if ("ial" in block && typeof block.ial === "string") {
-            return {
-                id: block.id ?? "",
-                customAttribute:
-                    block.ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "",
-            };
-        }
-        const domBlock = block as HTMLElement;
-        return {
-            id: domBlock.getAttribute("data-node-id") ?? "",
-            customAttribute: domBlock.getAttribute(CUSTOM_ATTR) ?? "",
-        };
+    private extractTabsDataFromIal(ial: string): { dataRaw: string; legacyRaw: string } {
+        const dataRaw =
+            ial.match(new RegExp(`${CODE_TABS_DATA_ATTR}="([^"]*)"`, "i"))?.[1] ?? "";
+        const legacyRaw =
+            ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "";
+        return { dataRaw, legacyRaw };
     }
 
-    private collectTabBlocks(
+    private async extractTabsData(block: TabBlock): Promise<{ id: string; data: TabsData | null }> {
+        let id = "";
+        let dataRaw = "";
+        let legacyRaw = "";
+        if ("ial" in block && typeof block.ial === "string") {
+            id = block.id ?? "";
+            const extracted = this.extractTabsDataFromIal(block.ial);
+            dataRaw = extracted.dataRaw;
+            legacyRaw = extracted.legacyRaw;
+        } else {
+            const domBlock = block as HTMLElement;
+            id = domBlock.getAttribute("data-node-id") ?? "";
+            dataRaw =
+                domBlock.getAttribute(CODE_TABS_DATA_ATTR) ?? "";
+            legacyRaw = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
+            if (!dataRaw && id) {
+                const attrs = await getBlockAttrs(id);
+                dataRaw =
+                    attrs?.[CODE_TABS_DATA_ATTR] ?? dataRaw;
+                legacyRaw = attrs?.[CUSTOM_ATTR] ?? legacyRaw;
+            }
+        }
+
+        if (!dataRaw && legacyRaw) {
+            const legacy = TabDataManager.decodeLegacySourceFromAttrs({
+                [CUSTOM_ATTR]: legacyRaw,
+            });
+            if (legacy) {
+                const migrated = TabDataManager.migrateFromLegacy(legacy, this.i18n);
+                return { id, data: migrated };
+            }
+        }
+        if (!dataRaw) return { id, data: null };
+        return { id, data: TabDataManager.decode(dataRaw) };
+    }
+
+    private async collectTabsDataBlocks(
         blockList: TabBlock[],
-        parseCode: boolean,
         context: string
-    ): {
-        toProcess: Array<{ id: string; codeText: string } | { id: string; codeArr: CodeTab[] }>;
+    ): Promise<{
+        toProcess: Array<{ id: string; data: TabsData }>;
         invalid: { nodeId: string; reason: string }[];
-    } {
-        const toProcess: Array<
-            { id: string; codeText: string } | { id: string; codeArr: CodeTab[] }
-        > = [];
+    }> {
+        const toProcess: Array<{ id: string; data: TabsData }> = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
         for (const block of blockList) {
-            const { id, customAttribute } = this.extractTabBlockMeta(block);
+            const { id, data } = await this.extractTabsData(block);
             if (!id) {
                 const msg = "缺少 nodeId";
                 invalid.push({ nodeId: "unknown", reason: msg });
                 logger.warn(`${context}: ${msg}`);
                 continue;
             }
-            if (!customAttribute) {
-                const msg = "未找到插件自定义属性";
+            if (!data || data.tabs.length === 0) {
+                const msg = "未找到标签数据";
                 invalid.push({ nodeId: id, reason: msg });
                 logger.warn(`${context}: ${msg} (nodeId: ${id})`);
                 continue;
             }
-            const codeText = getCodeFromAttribute(id, customAttribute, this.i18n);
-            if (!codeText) {
-                const msg = "未找到源码";
+            const validation = TabDataManager.validate(data);
+            if (!validation.ok) {
+                const msg = "标签数据校验失败";
                 invalid.push({ nodeId: id, reason: msg });
-                logger.warn(`${context}: ${msg} (nodeId: ${id})`);
+                logger.warn(`${context}: ${msg} (nodeId: ${id})`, {
+                    errors: validation.errors,
+                });
                 continue;
             }
-
-            if (parseCode) {
-                const parseResult = TabParser.checkCodeText(codeText, this.i18n);
-                if (!parseResult.result || parseResult.code.length === 0) {
-                    const msg = "源码解析失败";
-                    invalid.push({ nodeId: id, reason: msg });
-                    logger.warn(`${context}: ${msg} (nodeId: ${id})`);
-                    continue;
-                }
-                toProcess.push({ id, codeArr: parseResult.code });
-            } else {
-                toProcess.push({ id, codeText });
-            }
+            toProcess.push({ id, data });
         }
 
         return { toProcess, invalid };
@@ -460,10 +470,7 @@ export class TabConverter {
         }
         logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
 
-        const { toProcess, invalid } = this.collectTabBlocks(blockList, false, "tabToCode") as {
-            toProcess: { id: string; codeText: string }[];
-            invalid: { nodeId: string; reason: string }[];
-        };
+        const { toProcess, invalid } = await this.collectTabsDataBlocks(blockList, "tabToCode");
         const skipped: { nodeId: string; reason: string }[] = [];
 
         const tabsToCodeMessages = {
@@ -482,9 +489,8 @@ export class TabConverter {
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.tabsToCode"),
             toProcess,
-            async ({ id, codeText }) => {
-                const flag = TAB_SEPARATOR;
-                await updateBlock("markdown", `${flag}tab\n${codeText}${flag}`, id);
+            async ({ id, data }) => {
+                await this.replaceWithPlainCodeBlocks(id, data.tabs);
                 logger.info(`标签页转为代码块: id ${id}`);
             }
         );
@@ -517,7 +523,7 @@ export class TabConverter {
         }
         logger.info("当前文档标签页 -> 代码块 查询开始", { rootId });
         const blockList = (await sql(
-            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
         logger.info("当前文档标签页 -> 代码块 查询完成", {
             count: blockList.length,
@@ -529,7 +535,7 @@ export class TabConverter {
     async allTabsToCode(): Promise<void> {
         logger.info("全局标签页 -> 代码块 查询开始");
         const blockList = (await sql(
-            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
         logger.info("全局标签页 -> 代码块 查询完成", { count: blockList.length });
         this.tabToCodeBatch(blockList);
@@ -542,14 +548,10 @@ export class TabConverter {
         }
         logger.info("开始标签页 -> 多个标准代码块 批量转换", { count: blockList.length });
 
-        const { toProcess, invalid } = this.collectTabBlocks(
+        const { toProcess, invalid } = await this.collectTabsDataBlocks(
             blockList,
-            true,
             "tabsToPlainCode"
-        ) as {
-            toProcess: { id: string; codeArr: CodeTab[] }[];
-            invalid: { nodeId: string; reason: string }[];
-        };
+        );
 
         if (toProcess.length === 0) {
             if (invalid.length > 0) {
@@ -563,8 +565,8 @@ export class TabConverter {
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.tabsToPlainCode"),
             toProcess,
-            async ({ id, codeArr }) => {
-                await this.replaceWithPlainCodeBlocks(id, codeArr);
+            async ({ id, data }) => {
+                await this.replaceWithPlainCodeBlocks(id, data.tabs);
             }
         );
 
@@ -600,14 +602,20 @@ export class TabConverter {
                 const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
                 const languageEl = block.querySelector<HTMLElement>(".protyle-action__language");
                 const languageRaw = languageEl?.textContent?.trim() ?? "";
+                const titleAttr = block.getAttribute(CODE_TAB_TITLE_ATTR) ?? "";
                 if (!id || !contentEl) return null;
                 const codeText = stripInvisibleChars(contentEl.textContent || "").replace(
                     /\n+$/,
                     ""
                 );
-                return { id, codeText, languageRaw };
+                return { id, codeText, languageRaw, titleAttr };
             })
-            .filter(Boolean) as Array<{ id: string; codeText: string; languageRaw: string }>;
+            .filter(Boolean) as Array<{
+            id: string;
+            codeText: string;
+            languageRaw: string;
+            titleAttr: string;
+        }>;
 
         if (blocks.length < 2) {
             pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
@@ -620,23 +628,29 @@ export class TabConverter {
         for (const item of blocks) {
             const parsed = TabParser.checkCodeText(item.codeText, this.i18n, true);
             if (parsed.result && parsed.code.length > 0) {
-                codeArr.push(...parsed.code);
+                codeArr.push(
+                    ...parsed.code.map((tab) => ({
+                        ...tab,
+                        isActive: false,
+                    }))
+                );
                 hasTabSyntaxBlock = true;
                 continue;
             }
-            const title = item.languageRaw ? item.languageRaw : `Tab${fallbackIndex}`;
+            const title = item.titleAttr ? item.titleAttr : `Tab${fallbackIndex}`;
             const language = item.languageRaw ? item.languageRaw : "plaintext";
             codeArr.push({ title, language, code: item.codeText, isActive: false });
             fallbackIndex += 1;
         }
 
-        const codeText = TabParser.generateNewSyntax(codeArr).trim();
-        const flag = TAB_SEPARATOR;
+        const data = TabDataManager.fromCodeTabs(codeArr);
         const targetId = blocks[0].id;
-        await updateBlock("markdown", `${flag}tab\n${codeText}\n${flag}`, targetId);
+        const htmlBlock = TabRenderer.createProtyleHtml(data);
+        await updateBlock("markdown", htmlBlock, targetId);
+        await TabDataManager.writeToBlock(targetId, data);
         const restIds = blocks.slice(1).map((item) => item.id);
         await Promise.all(restIds.map((id) => deleteBlock(id)));
-        logger.info("合并代码块为 tab 语法代码块完成", { count: blocks.length });
+        logger.info("合并代码块为标签页完成", { count: blocks.length });
         if (hasTabSyntaxBlock) {
             pushMsg(`${t(this.i18n, "msg.mergeContainsTabSyntax")}`).then();
         }
@@ -663,7 +677,7 @@ export class TabConverter {
         }
         logger.info("当前文档标签页 -> 多个标准代码块 查询开始", { rootId });
         const blockList = (await sql(
-            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
         logger.info("当前文档标签页 -> 多个标准代码块 查询完成", {
             count: blockList.length,
@@ -675,30 +689,34 @@ export class TabConverter {
     async allTabsToPlainCode(): Promise<void> {
         logger.info("全局标签页 -> 多个标准代码块 查询开始");
         const blockList = (await sql(
-            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
         logger.info("全局标签页 -> 多个标准代码块 查询完成", { count: blockList.length });
         this.tabsToPlainCodeBlocksBatch(blockList);
     }
 
-    private async update(dataType: "markdown" | "dom", data: string, id: string, codeText: string) {
-        await updateBlock(dataType, data, id);
-        logger.info(`更新块, id ${id}`);
-        // 使用 Base64 编码保存源码
-        const encodedCodeText = encodeSource(codeText);
-        await setBlockAttrs(id, { [`${CUSTOM_ATTR}`]: encodedCodeText });
-    }
-
-    private async replaceWithPlainCodeBlocks(id: string, codeArr: CodeTab[]): Promise<void> {
+    private async replaceWithPlainCodeBlocks(
+        id: string,
+        tabs: Array<{ title: string; lang: string; code: string }>
+    ): Promise<void> {
         let previousId = id;
-        for (const tab of codeArr) {
-            const markdown = this.buildCodeBlock(tab.code, tab.language);
+        for (const tab of tabs) {
+            const markdown = this.buildCodeBlock(tab.code, tab.lang);
             const result = await insertBlock("markdown", markdown, "", previousId, "");
             const newId = result[0].doOperations[0].id;
+            if (this.shouldPersistTitle(tab.title)) {
+                await setBlockAttrs(newId, { [CODE_TAB_TITLE_ATTR]: tab.title });
+            }
             previousId = newId;
         }
         await deleteBlock(id);
-        logger.info("标签页已拆分为标准代码块", { id, count: codeArr.length });
+        logger.info("标签页已拆分为标准代码块", { id, count: tabs.length });
+    }
+
+    private shouldPersistTitle(title: string): boolean {
+        const trimmed = title.trim();
+        if (!trimmed) return false;
+        return !/^tab\d+$/i.test(trimmed);
     }
 
     private buildCodeBlock(code: string, language: string): string {

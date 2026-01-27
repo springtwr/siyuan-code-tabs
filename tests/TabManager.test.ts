@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabManager, getCodeFromAttribute } from "@/modules/tabs/TabManager";
-import { encodeSource } from "@/utils/encoding";
+import { TabManager } from "@/modules/tabs/TabManager";
 import { pushErrMsg } from "@/api";
 
 vi.mock("@/api", () => ({
@@ -21,17 +20,6 @@ describe("TabManager", () => {
     afterEach(() => {
         delete (window as Window & { pluginCodeTabs?: unknown }).pluginCodeTabs;
         document.body.innerHTML = "";
-    });
-
-    it("getCodeFromAttribute: 应将旧语法转换为新语法并补齐换行", () => {
-        const legacy = "tab::: JS\nlang::: js\nconsole.log('ok')";
-        const encoded = encodeSource(legacy);
-        const result = getCodeFromAttribute("id-1", encoded, i18n);
-
-        expect(result).toBeTruthy();
-        expect(result).toContain(":::");
-        expect(result).not.toContain("tab:::");
-        expect(result?.endsWith("\n")).toBe(true);
     });
 
     it("copyCode: 使用 clipboard.writeText 复制代码", async () => {

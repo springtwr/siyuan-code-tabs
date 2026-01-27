@@ -1,14 +1,14 @@
 import { Marked } from "marked";
 import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
 import { markedHighlight } from "marked-highlight";
-import { CodeTab } from "@/modules/tabs/types";
+import type { TabsData } from "@/modules/tabs/types";
 import { protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 
 export class TabRenderer {
-    static createProtyleHtml(codeArr: CodeTab[], toggleToCode: string): string {
-        logger.debug("开始生成 Tabs HTML 块", { count: codeArr.length });
+    static createProtyleHtml(data: TabsData): string {
+        logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
         const containerDiv = document.createElement("div");
         containerDiv.innerHTML = protyleHtmlStr;
         const tabContainer = containerDiv.querySelector(".tabs-container") as HTMLElement;
@@ -16,17 +16,12 @@ export class TabRenderer {
         const tabsOuter = containerDiv.querySelector(".tabs-outer") as HTMLElement;
         const tabs = containerDiv.querySelector(".tabs") as HTMLElement;
 
-        tabs.setAttribute("onwheel", "pluginCodeTabs.wheelTag(event)");
-        tabs.setAttribute("ontouchstart", "pluginCodeTabs.touchStart(event)");
-        tabs.setAttribute("ontouchend", "pluginCodeTabs.touchEnd(event)");
-        tabs.setAttribute("oncontextmenu", "pluginCodeTabs.contextMenu(event)");
-        tabs.setAttribute("ondragover", "pluginCodeTabs.dragOver(event)");
-        tabs.setAttribute("ondrop", "pluginCodeTabs.dragDrop(event)");
-        tabs.setAttribute("ondragleave", "pluginCodeTabs.dragLeave(event)");
 
         const tabContents = containerDiv.querySelector(".tab-contents") as HTMLElement;
-        let activeIndex = 0;
-        let hasActive = false;
+        const activeIndex = Math.min(
+            Math.max(data.active ?? 0, 0),
+            Math.max(data.tabs.length - 1, 0)
+        );
         const marked = new Marked(
             markedHighlight({
                 langPrefix: "hljs language-",
@@ -41,14 +36,10 @@ export class TabRenderer {
         } as MarkedKatexOptions;
         marked.use(markedKatex(options));
 
-        for (let i = 0; i < codeArr.length; i++) {
-            const title = codeArr[i].title;
-            const language = codeArr[i].language;
-            const code = codeArr[i].code;
-            if (codeArr[i].isActive && !hasActive) {
-                activeIndex = i;
-                hasActive = true;
-            }
+        for (let i = 0; i < data.tabs.length; i++) {
+            const title = data.tabs[i].title;
+            const language = data.tabs[i].lang;
+            const code = data.tabs[i].code;
 
             const tab = document.createElement("div");
             tab.className = "tab-item";
@@ -56,9 +47,6 @@ export class TabRenderer {
             tab.textContent = title;
             tab.title = title;
             tab.setAttribute("onclick", "pluginCodeTabs.openTag(event)");
-            tab.setAttribute("draggable", "true");
-            tab.setAttribute("ondragstart", "pluginCodeTabs.dragStart(event)");
-            tab.setAttribute("ondragend", "pluginCodeTabs.dragEnd(event)");
             tabs.appendChild(tab);
 
             const content = document.createElement("div");
@@ -88,16 +76,15 @@ export class TabRenderer {
             tabContents.appendChild(content);
         }
 
-        tabs.children[activeIndex].classList.add("tab-item--active");
-        tabContents.children[activeIndex + 1].classList.add("tab-content--active");
-        logger.debug("Tabs 内容生成完成", { activeIndex, count: codeArr.length });
-
-        const tabToggle = containerDiv.querySelector(".tab-toggle") as HTMLElement;
-        tabToggle.setAttribute("onclick", "pluginCodeTabs.toggle(event)");
-        tabToggle.textContent = toggleToCode;
+        if (tabs.children[activeIndex]) {
+            tabs.children[activeIndex].classList.add("tab-item--active");
+        }
+        if (tabContents.children[activeIndex + 1]) {
+            tabContents.children[activeIndex + 1].classList.add("tab-content--active");
+        }
+        logger.debug("Tabs 内容生成完成", { activeIndex, count: data.tabs.length });
 
         tabsOuter.appendChild(tabs);
-        tabsOuter.appendChild(tabToggle);
 
         tabContainer.appendChild(tabsOuter);
         tabContainer.appendChild(tabContents);

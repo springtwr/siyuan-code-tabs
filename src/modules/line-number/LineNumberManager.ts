@@ -1,4 +1,4 @@
-import { CUSTOM_ATTR } from "@/constants";
+import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { getActiveEditor } from "siyuan";
 import logger from "@/utils/logger";
 
@@ -112,7 +112,7 @@ export class LineNumberManager {
     private static scan(scope?: HTMLElement): void {
         if (!scope) return;
         const nodes = scope.querySelectorAll<HTMLElement>(
-            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+            `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
         );
         if (nodes.length === 0) return;
         logger.debug("检测到标签页块，准备渲染行号", { count: nodes.length });

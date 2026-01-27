@@ -2,8 +2,8 @@
     padding: 2px 5px;
     font-weight: bold;
     flex-shrink: 0;
-    max-width: 12em;
-    min-width: 2em;
+    max-width: var(--code-tabs-max-width, 12ch);
+    min-width: 3ch;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -26,26 +26,26 @@
     background-color: var(--code-tabs-active-color, #7f6df2);
 }
 
-.tab-item--dragging {
-    opacity: 0.5;
+.tab-item--hidden {
+    display: none;
 }
 
-.tab-item--drop-left::before,
-.tab-item--drop-right::after {
+.tab-item--more {
+    cursor: pointer;
+}
+
+.tab-item--more-active {
+    color: var(--code-tabs-active-color, #7f6df2);
+}
+
+.tab-item--more-active::after {
     content: "";
     position: absolute;
-    top: 3px;
-    bottom: 3px;
-    width: 2px;
-    background-color: var(--b3-theme-primary, #5b8def);
-}
-
-.tab-item--drop-left::before {
-    left: 0;
-}
-
-.tab-item--drop-right::after {
-    right: 0;
+    bottom: 0;
+    left: 4px;
+    height: 3px;
+    right: 4px;
+    background-color: var(--code-tabs-active-color, #7f6df2);
 }
 
 .tab-content {
@@ -120,19 +120,8 @@
     transition: opacity 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
 }
 
-.code-tabs--icon_default {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
-    line-height: 1;
-    color: var(--b3-theme-surface, #fff);
-}
-
+.code-tabs--icon_default,
+.code-tabs--icon_edit,
 .code-tabs--icon_copy {
     display: inline-flex;
     align-items: center;
@@ -144,19 +133,21 @@
     transition: background-color 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
     line-height: 1;
     color: var(--b3-theme-surface, #fff);
+    pointer-events: auto;
 }
 
 .tabs-container:hover .code-tabs--icon_group {
     opacity: 0.86;
-    pointer-events: auto;
 }
 
+.code-tabs--icon_edit:hover,
 .code-tabs--icon_copy:hover,
 .code-tabs--icon_default:hover {
     background-color: var(--b3-theme-on-background, #222);
     color: var(--b3-theme-background, #fff);
 }
 
+.code-tabs--icon_edit svg,
 .code-tabs--icon_copy svg,
 .code-tabs--icon_default svg {
     width: 14px;
@@ -181,28 +172,22 @@
     right: 0;
     justify-content: space-between;
     align-items: center;
-    z-index: 2;
+    z-index: 4;
 }
 
 .tabs {
     order: 0;
     display: flex;
-    width: calc(100% - 6em);
+    width: 100%;
     height: 100%;
     align-items: center;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     transform: translate3d(0, 0, 0);
     /* 启用硬件加速 */
     scrollbar-width: none;
     -ms-overflow-style: none;
-}
-
-.tabs-outer:hover .tabs {
-    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
-    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+    padding-right: 40px;
+    box-sizing: border-box;
 }
 
 .tabs::-webkit-scrollbar {
@@ -213,15 +198,6 @@
 .tab-item {
     -webkit-touch-callout: none;
     user-select: none;
-}
-
-.tab-toggle {
-    order: 1;
-    width: 6em;
-    height: 100%;
-    text-align: center;
-    font-weight: bold;
-    padding: 2px 5px;
 }
 
 .tab-contents {

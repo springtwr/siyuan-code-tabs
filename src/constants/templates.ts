@@ -8,13 +8,19 @@ import {
     KATEX_CSS,
     PLUGIN_PATH,
 } from "./paths";
-import { CUSTOM_ATTR } from "./keys";
+import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "./keys";
 
 export const CODE_TABS_STYLE = `
-div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] { 
+div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}],
+div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] { 
     padding: 0 !important; 
     margin: 0 !important; 
     border: none !important;
+}
+
+div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] > .protyle-icons,
+div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
+    display: none !important;
 }
 
 .code-tabs__setting-color {
@@ -31,6 +37,33 @@ div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] {
     border-radius: 6px;
     background: transparent;
     cursor: pointer;
+}
+
+.code-tabs__setting-width {
+    display: grid;
+    grid-template-columns: 140px 56px auto;
+    gap: 6px;
+    align-items: center;
+}
+
+.code-tabs__setting-width-select {
+    width: 140px;
+    height: 28px;
+}
+
+.code-tabs__setting-width-input {
+    width: 56px;
+    height: 28px;
+    text-align: center;
+}
+
+.code-tabs__setting-width-input:disabled {
+    opacity: 0.6;
+}
+
+.code-tabs__setting-width-unit {
+    font-size: 12px;
+    opacity: 0.7;
 }
 
 .code-tabs__task {
@@ -58,6 +91,196 @@ div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}] {
     font-size: 12px;
     opacity: 0.85;
 }
+
+.code-tabs__editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+    container-type: inline-size;
+}
+
+.code-tabs__editor-body {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) minmax(280px, 1fr);
+    gap: 16px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.code-tabs__editor-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+    border-radius: 8px;
+    background: var(--b3-theme-surface, #f5f5f5);
+    min-height: 0;
+    min-width: 0;
+}
+
+.code-tabs__editor-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+    border-radius: 8px;
+    background: var(--b3-theme-surface, #f5f5f5);
+    min-height: 0;
+    min-width: 0;
+}
+
+.code-tabs__editor-label {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.code-tabs__editor-input {
+    width: 100%;
+}
+
+.code-tabs__editor-textarea {
+    min-height: 140px;
+    flex: 1;
+    resize: none;
+    font-family: var(--b3-font-family-code);
+    line-height: 1.5;
+}
+
+.code-tabs__editor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 6px;
+}
+
+.code-tabs__editor-item {
+    border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+    border-radius: 6px;
+    padding: 6px 8px;
+    text-align: left;
+    cursor: pointer;
+    background: var(--b3-theme-background, #fff);
+    color: var(--b3-theme-on-background, #333);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 28px;
+}
+
+.code-tabs__editor-item-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.code-tabs__editor-item-handle {
+    flex-shrink: 0;
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: grab;
+    color: var(--b3-theme-on-surface, #666);
+}
+
+.code-tabs__editor-item-handle svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+.code-tabs__editor-item-handle:active {
+    cursor: grabbing;
+}
+
+.code-tabs__editor-item--active {
+    border-color: var(--b3-theme-primary, #5b8def);
+    background: var(--b3-theme-primary-lighter, #e8f0fe);
+    color: var(--b3-theme-on-primary, #1a1a1a);
+}
+
+.code-tabs__editor-item--drop {
+    border-color: var(--b3-theme-primary, #5b8def);
+    box-shadow: 0 0 0 1px var(--b3-theme-primary, #5b8def);
+}
+
+.code-tabs__editor-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: auto;
+}
+
+.code-tabs__editor-actions .b3-button {
+    width: 100%;
+}
+
+@container (max-width: 520px) {
+    .code-tabs__editor-body {
+        grid-template-columns: 1fr;
+        overflow: auto;
+    }
+
+    .code-tabs__editor-left,
+    .code-tabs__editor-right {
+        min-width: 0;
+    }
+}
+
+@container (max-height: 420px) {
+    .code-tabs__editor-body {
+        grid-template-columns: 1fr;
+        overflow: auto;
+    }
+
+    .code-tabs__editor-left {
+        order: 2;
+    }
+
+    .code-tabs__editor-right {
+        order: 1;
+    }
+}
+
+.code-tabs__editor-dialog {
+    max-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.code-tabs__editor-dialog .b3-dialog__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 200px);
+    overflow: auto;
+}
+
+.code-tabs__editor-dialog .code-tabs__editor {
+    flex: 1;
+    min-height: 0;
+}
+
+.code-tabs__editor-dialog .b3-dialog__action {
+    flex-shrink: 0;
+}
 `.trim();
 
 export const protyleHtmlStr = `
@@ -69,13 +292,17 @@ export const protyleHtmlStr = `
 <div class="tabs-container">
     <div class="tabs-outer">
         <div class="tabs"></div>
-        <div class="tab-toggle"></div>
     </div>
     <div class="tab-contents">
         <span class="code-tabs--icon_group">
             <span class="code-tabs--icon_default" onclick="pluginCodeTabs.setDefault(event)" title="设为默认">
                 <svg width="14" height="14" style="display:block">
                     <use xlink:href="${CODE_TABS_ICONS}#iconStar"></use>
+                </svg>
+            </span>
+            <span class="code-tabs--icon_edit" onclick="pluginCodeTabs.editTab(event)" title="编辑">
+                <svg width="14" height="14" style="display:block">
+                    <use xlink:href="${CODE_TABS_ICONS}#iconEdit"></use>
                 </svg>
             </span>
             <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)" title="复制">

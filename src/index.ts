@@ -1,10 +1,23 @@
 import { getActiveEditor, Plugin, Setting, type IMenu } from "siyuan";
-import { pushErrMsg, putFile } from "@/api";
+import { insertBlock, pushErrMsg, putFile, updateBlock } from "@/api";
 import logger from "@/utils/logger";
-import { CONFIG_JSON, CUSTOM_ATTR, DEBUG_LOG, CODE_TABS_STYLE, settingIconMain } from "@/constants";
+import {
+    CODE_TABS_DATA_ATTR,
+    CONFIG_JSON,
+    CUSTOM_ATTR,
+    DEBUG_LOG,
+    CODE_TABS_STYLE,
+    settingIconMain,
+    TAB_WIDTH_DEFAULT,
+    TAB_WIDTH_MAX,
+    TAB_WIDTH_MIN,
+    TAB_WIDTH_SETTING_KEY,
+} from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { TabManager } from "@/modules/tabs/TabManager";
+import { TabDataManager } from "@/modules/tabs/TabDataManager";
+import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DevToggleManager } from "@/modules/developer/DevToggleManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
@@ -13,15 +26,19 @@ import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig }
 import { debounce } from "@/utils/common";
 import { t } from "@/utils/i18n";
 import { isDevMode } from "@/utils/env";
+import type { TabWidthSetting } from "@/modules/tabs/types";
 
 export default class CodeTabs extends Plugin {
     private readonly activeColorKey = "codeTabsActiveColor";
     private readonly defaultActiveColor = "#7f6df2";
+    private readonly tabWidthKey = TAB_WIDTH_SETTING_KEY;
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private tabConverter!: TabConverter;
     private themeObserver?: MutationObserver;
     private injectedStyleEl?: HTMLStyleElement;
     private activeColorInput?: HTMLInputElement;
+    private tabWidthSelect?: HTMLSelectElement;
+    private tabWidthInput?: HTMLInputElement;
     private logBuffer: string[] = [];
     private flushLogFile: () => void = () => {};
     private onLoadedProtyle = (evt: unknown) => {
@@ -37,6 +54,7 @@ export default class CodeTabs extends Plugin {
         this.ensureInjectedStyle();
 
         this.initTabModules();
+        this.registerSlashMenu();
 
         this.initSettings();
         this.registerCommands();
@@ -77,7 +95,6 @@ export default class CodeTabs extends Plugin {
 
     private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
         this.buildBlockMenu(detail);
-        this.buildMoreMenu(detail);
         this.buildDevMenu(detail);
     }
 
@@ -115,6 +132,33 @@ export default class CodeTabs extends Plugin {
         });
     }
 
+    private registerSlashMenu(): void {
+        const slashIcon = settingIconMain.replace(
+            "<svg",
+            '<svg class="b3-list-item__graphic"'
+        );
+        this.protyleSlash.push({
+            filter: ["bq", "tabs", "标签页"],
+            html: `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
+                this.i18n,
+                "slash.tabs"
+            )}</span></div>`,
+            id: "code-tabs",
+            callback: async (_protyle, nodeElement) => {
+                const data = TabDataManager.createDefaultData();
+                const htmlBlock = TabRenderer.createProtyleHtml(data);
+                const targetId = nodeElement?.dataset?.nodeId ?? "";
+                if (targetId) {
+                    await updateBlock("markdown", htmlBlock, targetId);
+                    await TabDataManager.writeToBlock(targetId, data);
+                    this.reloadActivateDocument();
+                    return;
+                }
+                pushErrMsg(t(this.i18n, "msg.noTargetBlock"));
+            },
+        });
+    }
+
     private registerProtyleEvents(): void {
         this.eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
         this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyle);
@@ -134,17 +178,13 @@ export default class CodeTabs extends Plugin {
     }
 
     private initTabModules(): void {
-        TabManager.initGlobalFunctions(
-            this.i18n,
-            (nodeId, order) => {
-                this.tabConverter.reorderTabsInBlock(nodeId, order);
-            },
-            () => this.reloadActivateDocument()
-        );
+        TabManager.initGlobalFunctions(this.i18n, () => this.reloadActivateDocument());
         logger.info("全局函数已注册");
         this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
         this.ensureActiveColorSettings();
         this.applyActiveTabColors();
+        this.ensureTabWidthSettings();
+        this.applyTabWidthSetting();
         this.lastLineNumberEnabled = LineNumberManager.isEnabled();
     }
 
@@ -163,6 +203,9 @@ export default class CodeTabs extends Plugin {
         this.ensureActiveColorSettings();
         this.applyActiveTabColors();
         this.syncActiveColorInputValue();
+        this.ensureTabWidthSettings();
+        this.applyTabWidthSetting();
+        this.syncTabWidthSettingInputs();
         const configFlag = compareConfig(data, this.data);
         if (!configFlag) {
             logger.info("检测到配置变更，重新生成样式文件");
@@ -474,13 +517,6 @@ export default class CodeTabs extends Plugin {
         });
 
         this.setting.addItem({
-            title: `${t(this.i18n, "setting.allTabsToCode.title")}`,
-            description: `${t(this.i18n, "setting.allTabsToCode.desc")}`,
-            actionElement: this.createSettingButton("setting.allTabsToCode.button", () => {
-                this.tabConverter.allTabsToCode();
-            }),
-        });
-        this.setting.addItem({
             title: `${t(this.i18n, "setting.allTabsToPlainCode.title")}`,
             description: `${t(this.i18n, "setting.allTabsToPlainCode.desc")}`,
             actionElement: this.createSettingButton("setting.allTabsToPlainCode.button", () => {
@@ -491,6 +527,11 @@ export default class CodeTabs extends Plugin {
             title: `${t(this.i18n, "setting.activeColor.title")}`,
             description: `${t(this.i18n, "setting.activeColor.desc")}`,
             actionElement: this.buildActiveColorSetting(),
+        });
+        this.setting.addItem({
+            title: `${t(this.i18n, "setting.tabWidth.title")}`,
+            description: `${t(this.i18n, "setting.tabWidth.desc")}`,
+            actionElement: this.buildTabWidthSetting(),
         });
         this.setting.addItem({
             title: `${t(this.i18n, "setting.debug.title")}`,
@@ -539,6 +580,57 @@ export default class CodeTabs extends Plugin {
         return activeColorWrapper;
     }
 
+    private buildTabWidthSetting(): HTMLDivElement {
+        const wrapper = document.createElement("div");
+        wrapper.className = "code-tabs__setting-width";
+
+        const modeSelect = document.createElement("select");
+        modeSelect.className = "b3-select code-tabs__setting-width-select";
+        const optionAuto = document.createElement("option");
+        optionAuto.value = "auto";
+        optionAuto.textContent = t(this.i18n, "setting.tabWidth.auto");
+        const optionMax = document.createElement("option");
+        optionMax.value = "max-chars";
+        optionMax.textContent = t(this.i18n, "setting.tabWidth.max");
+        modeSelect.appendChild(optionMax);
+        modeSelect.appendChild(optionAuto);
+
+        const maxInput = document.createElement("input");
+        maxInput.type = "number";
+        maxInput.min = String(TAB_WIDTH_MIN);
+        maxInput.max = String(TAB_WIDTH_MAX);
+        maxInput.step = "1";
+        maxInput.className = "b3-text-field code-tabs__setting-width-input";
+
+        const unit = document.createElement("span");
+        unit.className = "code-tabs__setting-width-unit";
+        unit.textContent = t(this.i18n, "setting.tabWidth.unit");
+
+        this.tabWidthSelect = modeSelect;
+        this.tabWidthInput = maxInput;
+
+        const apply = () => {
+            const setting = this.normalizeTabWidthSetting({
+                mode: modeSelect.value,
+                maxChars: maxInput.value,
+            });
+            this.data[this.tabWidthKey] = setting;
+            this.applyTabWidthSetting();
+            this.saveConfig();
+            this.syncTabWidthSettingInputs();
+        };
+
+        modeSelect.addEventListener("change", apply);
+        maxInput.addEventListener("change", apply);
+
+        wrapper.appendChild(modeSelect);
+        wrapper.appendChild(maxInput);
+        wrapper.appendChild(unit);
+
+        this.syncTabWidthSettingInputs();
+        return wrapper;
+    }
+
     private buildDebugToggle(): HTMLInputElement {
         const debugToggle = document.createElement("input");
         debugToggle.type = "checkbox";
@@ -552,29 +644,11 @@ export default class CodeTabs extends Plugin {
 
     private registerCommands(): void {
         this.addCommand({
-            langKey: t(this.i18n, "menu.block.codeToTabs"),
-            hotkey: "",
-            editorCallback: () => {
-                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                this.tabConverter.codeToTabsBatch(blockList);
-            },
-        });
-        this.addCommand({
-            langKey: t(this.i18n, "menu.block.tabToCode"),
-            hotkey: "",
-            editorCallback: () => {
-                const blockList = getSelectedElements(
-                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
-                );
-                this.tabConverter.tabToCodeBatch(blockList);
-            },
-        });
-        this.addCommand({
             langKey: t(this.i18n, "menu.more.tabsToPlainCode"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements(
-                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}]`
+                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
                 );
                 this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
             },
@@ -606,83 +680,33 @@ export default class CodeTabs extends Plugin {
     private buildBlockMenu(detail: BlockIconEventDetail): void {
         detail.menu.addItem({
             iconHTML: "",
-            label: t(this.i18n, "menu.block.codeToTabs"),
+            label: t(this.i18n, "menu.more.mergeCodeBlocks"),
             click: () => {
-                const blockList = this.collectBlockElements(detail, (item) => {
-                    const editElement = item.querySelector('[contenteditable="true"]');
-                    return !!editElement && item.dataset?.type === "NodeCodeBlock";
-                });
-                this.tabConverter.codeToTabsBatch(blockList);
+                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
+                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
             },
         });
         detail.menu.addItem({
             iconHTML: "",
-            label: t(this.i18n, "menu.block.tabToCode"),
+            label: t(this.i18n, "menu.more.tabsToPlainCode"),
             click: () => {
                 const blockList = this.collectBlockElements(detail, (item) => {
                     return (
-                        item.hasAttribute(`${CUSTOM_ATTR}`) &&
+                        (item.hasAttribute(`${CUSTOM_ATTR}`) ||
+                            item.hasAttribute(`${CODE_TABS_DATA_ATTR}`)) &&
                         item.dataset?.type === "NodeHTMLBlock"
                     );
                 });
-                this.tabConverter.tabToCodeBatch(blockList);
+                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
             },
         });
-    }
-
-    private buildMoreMenu(detail: BlockIconEventDetail): void {
-        const submenuItems: IMenu[] = [
-            {
-                iconHTML: "",
-                label: t(this.i18n, "menu.more.tabsToPlainCode"),
-                click: () => {
-                    const blockList = this.collectBlockElements(detail, (item) => {
-                        return (
-                            item.hasAttribute(`${CUSTOM_ATTR}`) &&
-                            item.dataset?.type === "NodeHTMLBlock"
-                        );
-                    });
-                    this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
-                },
-            },
-            {
-                iconHTML: "",
-                label: t(this.i18n, "menu.more.mergeCodeBlocks"),
-                click: () => {
-                    const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                    this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
-                },
-            },
-            {
-                type: "separator" as const,
-            },
-            {
-                iconHTML: "",
-                label: t(this.i18n, "menu.more.codeToTabsInDocument"),
-                click: () => {
-                    this.tabConverter.codeToTabsInDocument();
-                },
-            },
-            {
-                iconHTML: "",
-                label: t(this.i18n, "menu.more.tabToCodeInDocument"),
-                click: () => {
-                    this.tabConverter.tabToCodeInDocument();
-                },
-            },
-            {
-                iconHTML: "",
-                label: t(this.i18n, "menu.more.tabsToPlainCodeInDocument"),
-                click: () => {
-                    this.tabConverter.tabsToPlainCodeInDocument();
-                },
-            },
-        ];
+        detail.menu.addItem({ type: "separator" });
         detail.menu.addItem({
             iconHTML: "",
-            label: t(this.i18n, "menu.more.title"),
-            type: "submenu",
-            submenu: submenuItems,
+            label: t(this.i18n, "menu.more.tabsToPlainCodeInDocument"),
+            click: () => {
+                this.tabConverter.tabsToPlainCodeInDocument();
+            },
         });
     }
 
@@ -755,6 +779,49 @@ export default class CodeTabs extends Plugin {
         }
     }
 
+    private clampTabWidth(value: unknown): number {
+        const num = typeof value === "number" ? value : Number(value);
+        if (!Number.isFinite(num)) return TAB_WIDTH_DEFAULT;
+        return Math.min(TAB_WIDTH_MAX, Math.max(TAB_WIDTH_MIN, Math.round(num)));
+    }
+
+    private normalizeTabWidthSetting(value: unknown): TabWidthSetting {
+        if (!this.isRecord(value)) {
+            return { mode: "max-chars", maxChars: TAB_WIDTH_DEFAULT };
+        }
+        const mode = value.mode === "auto" ? "auto" : "max-chars";
+        const maxChars = this.clampTabWidth(value.maxChars);
+        return { mode, maxChars };
+    }
+
+    private getTabWidthSetting(): TabWidthSetting {
+        const normalized = this.normalizeTabWidthSetting(this.data[this.tabWidthKey]);
+        this.data[this.tabWidthKey] = normalized;
+        return normalized;
+    }
+
+    private ensureTabWidthSettings(): void {
+        this.getTabWidthSetting();
+    }
+
+    private syncTabWidthSettingInputs(): void {
+        if (!this.tabWidthSelect || !this.tabWidthInput) return;
+        const setting = this.getTabWidthSetting();
+        this.tabWidthSelect.value = setting.mode;
+        this.tabWidthInput.value = String(setting.maxChars);
+        this.tabWidthInput.disabled = setting.mode === "auto";
+    }
+
+    private applyTabWidthSetting(): void {
+        const setting = this.getTabWidthSetting();
+        const root = document.documentElement;
+        if (setting.mode === "auto") {
+            root.style.setProperty("--code-tabs-max-width", "none");
+        } else {
+            root.style.setProperty("--code-tabs-max-width", `${setting.maxChars}ch`);
+        }
+    }
+
     private mergeCustomConfig(value: unknown): void {
         if (!this.isRecord(value)) return;
         const siyuanConfig = getSiyuanConfig();
@@ -822,7 +889,19 @@ export default class CodeTabs extends Plugin {
                 };
             }
         )?.detail;
-        LineNumberManager.scanProtyle(detail?.protyle?.contentElement || detail?.element);
+        const root = detail?.protyle?.contentElement || detail?.element;
+        LineNumberManager.scanProtyle(root);
+        const refreshOverflow = (window as typeof window & {
+            pluginCodeTabs?: { refreshOverflow?: (root?: HTMLElement | ShadowRoot) => void };
+        }).pluginCodeTabs?.refreshOverflow;
+        if (refreshOverflow) {
+            refreshOverflow(root);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    refreshOverflow(root);
+                });
+            });
+        }
     }
 
     private ensureInjectedStyle(): void {

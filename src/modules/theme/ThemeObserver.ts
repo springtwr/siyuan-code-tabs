@@ -13,6 +13,102 @@ export type StyleUpdatePlan = {
     forceProbe: boolean;
 };
 
+export type ThemeMutationReason =
+    | "theme-mode"
+    | "theme-light"
+    | "theme-dark"
+    | "html-attrs"
+    | "theme-link"
+    | "code-style-link";
+
+export function createEmptyPlan(): StyleUpdatePlan {
+    return {
+        codeStyle: false,
+        background: false,
+        markdown: false,
+        lineNumbers: false,
+        forceProbe: false,
+    };
+}
+
+export function buildPlanFromConfigChanges(keys: string[]): StyleUpdatePlan {
+    const plan = createEmptyPlan();
+    keys.forEach((key) => {
+        switch (key) {
+            case "fontSize":
+                plan.background = true;
+                plan.lineNumbers = true;
+                plan.forceProbe = true;
+                break;
+            case "codeLigatures":
+                plan.background = true;
+                break;
+            case "codeLineWrap":
+                plan.background = true;
+                plan.lineNumbers = true;
+                break;
+            case "codeSyntaxHighlightLineNum":
+                plan.lineNumbers = true;
+                break;
+            case "mode":
+                plan.background = true;
+                plan.codeStyle = true;
+                plan.markdown = true;
+                break;
+            case "themeLight":
+            case "themeDark":
+                plan.background = true;
+                plan.codeStyle = true;
+                break;
+            case "codeBlockThemeLight":
+            case "codeBlockThemeDark":
+                plan.codeStyle = true;
+                break;
+            default:
+                plan.background = true;
+                break;
+        }
+    });
+    return plan;
+}
+
+export function buildPlanFromMutation(reason: ThemeMutationReason): StyleUpdatePlan {
+    const plan = createEmptyPlan();
+    switch (reason) {
+        case "theme-mode":
+            plan.background = true;
+            plan.codeStyle = true;
+            plan.markdown = true;
+            break;
+        case "theme-light":
+        case "theme-dark":
+            plan.background = true;
+            plan.codeStyle = true;
+            break;
+        case "theme-link":
+            plan.background = true;
+            plan.forceProbe = true;
+            break;
+        case "code-style-link":
+            plan.codeStyle = true;
+            break;
+        default:
+            plan.background = true;
+            break;
+    }
+    return plan;
+}
+
+export function describePlan(plan: StyleUpdatePlan): string[] {
+    const result: string[] = [];
+    if (plan.background) result.push("background.css");
+    if (plan.codeStyle) result.push("code-style.css");
+    if (plan.markdown) result.push("github-markdown.css");
+    if (plan.lineNumbers) result.push("line-numbers");
+    if (plan.forceProbe) result.push("force-probe");
+    return result.length > 0 ? result : ["no-op"];
+}
+
 type ThemeObserverOptions = {
     data: Record<string, unknown>;
     i18n: Record<string, string>;
@@ -78,11 +174,11 @@ export class ThemeObserver {
     ): void {
         const configChanges = this.getSiyuanConfigChanges();
         if (configChanges.keys.length > 0) {
-            const plan = this.buildPlanFromConfigChanges(configChanges.keys);
+            const plan = buildPlanFromConfigChanges(configChanges.keys);
             logger.info("检测到思源配置变更", {
                 keys: configChanges.keys,
                 labels: configChanges.labels,
-                plan: this.describePlan(plan),
+                plan: describePlan(plan),
             });
             onPlan(plan, true);
             return;
@@ -91,10 +187,10 @@ export class ThemeObserver {
         for (const mutation of mutationsList) {
             const reason = this.getThemeMutationReason(mutation);
             if (reason) {
-                const plan = this.buildPlanFromMutation(reason);
+                const plan = buildPlanFromMutation(reason);
                 logger.info("检测到主题相关变更", {
                     reason,
-                    plan: this.describePlan(plan),
+                    plan: describePlan(plan),
                     detail: this.describeMutation(mutation),
                 });
                 onPlan(plan, false);
@@ -105,14 +201,7 @@ export class ThemeObserver {
 
     private getThemeMutationReason(
         mutation: MutationRecord
-    ):
-        | "theme-mode"
-        | "theme-light"
-        | "theme-dark"
-        | "html-attrs"
-        | "theme-link"
-        | "code-style-link"
-        | null {
+    ): ThemeMutationReason | null {
         if (mutation.target === document.documentElement && mutation.type === "attributes") {
             const attr = mutation.attributeName;
             if (attr === "data-theme-mode") return "theme-mode";
@@ -186,97 +275,11 @@ export class ThemeObserver {
         }
     }
 
-    private buildPlanFromConfigChanges(keys: string[]): StyleUpdatePlan {
-        const plan: StyleUpdatePlan = {
-            codeStyle: false,
-            background: false,
-            markdown: false,
-            lineNumbers: false,
-            forceProbe: false,
-        };
-        keys.forEach((key) => {
-            switch (key) {
-                case "codeLigatures":
-                case "codeLineWrap":
-                    plan.background = true;
-                    break;
-                case "codeSyntaxHighlightLineNum":
-                    plan.lineNumbers = true;
-                    break;
-                case "fontSize":
-                    plan.background = true;
-                    plan.lineNumbers = true;
-                    break;
-                case "mode":
-                    plan.background = true;
-                    plan.codeStyle = true;
-                    plan.markdown = true;
-                    break;
-                case "themeLight":
-                case "themeDark":
-                    plan.background = true;
-                    plan.codeStyle = true;
-                    break;
-                case "codeBlockThemeLight":
-                case "codeBlockThemeDark":
-                    plan.codeStyle = true;
-                    break;
-                default:
-                    plan.background = true;
-                    break;
-            }
-        });
-        return plan;
-    }
-
-    private buildPlanFromMutation(reason: string): StyleUpdatePlan {
-        const plan: StyleUpdatePlan = {
-            codeStyle: false,
-            background: false,
-            markdown: false,
-            lineNumbers: false,
-            forceProbe: false,
-        };
-        switch (reason) {
-            case "theme-mode":
-                plan.background = true;
-                plan.codeStyle = true;
-                plan.markdown = true;
-                break;
-            case "theme-light":
-            case "theme-dark":
-                plan.background = true;
-                plan.codeStyle = true;
-                break;
-            case "theme-link":
-                plan.background = true;
-                plan.forceProbe = true;
-                break;
-            case "code-style-link":
-                plan.codeStyle = true;
-                break;
-            default:
-                plan.background = true;
-                break;
-        }
-        return plan;
-    }
-
-    private describePlan(plan: StyleUpdatePlan): string[] {
-        const result: string[] = [];
-        if (plan.background) result.push("background.css");
-        if (plan.codeStyle) result.push("code-style.css");
-        if (plan.markdown) result.push("github-markdown.css");
-        if (plan.lineNumbers) result.push("line-numbers");
-        if (plan.forceProbe) result.push("force-probe");
-        return result.length > 0 ? result : ["no-op"];
-    }
-
     private applyStylePlan(plan: StyleUpdatePlan, persistConfig: boolean): void {
         const shouldUpdateTheme = plan.background || plan.codeStyle || plan.markdown;
         if (shouldUpdateTheme) {
             logger.info(t(this.i18n, "msg.codeStyleChange"), {
-                plan: this.describePlan(plan),
+                plan: describePlan(plan),
             });
             this.applyThemeStyles(plan).then(() => {
                 if (plan.lineNumbers) {

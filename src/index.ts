@@ -1,26 +1,20 @@
-import { getActiveEditor, Plugin, Setting, type IMenu } from "siyuan";
+import { getActiveEditor, Plugin, Setting } from "siyuan";
 import { pushErrMsg, updateBlock } from "@/api";
 import logger from "@/utils/logger";
-import {
-    CODE_TABS_DATA_ATTR,
-    CUSTOM_ATTR,
-    CODE_TABS_STYLE,
-    settingIconMain,
-} from "@/constants";
+import { CODE_TABS_STYLE, settingIconMain } from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { TabManager } from "@/modules/tabs/TabManager";
 import { TabDataManager } from "@/modules/tabs/TabDataManager";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
-import { DevToggleManager } from "@/modules/developer/DevToggleManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
-import { getSelectedElements, syncSiyuanConfig } from "@/utils/dom";
+import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
+import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
-import { isDevMode } from "@/utils/env";
 
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
@@ -29,6 +23,7 @@ export default class CodeTabs extends Plugin {
     private settingsPanel!: SettingsPanel;
     private debugLogManager!: DebugLogManager;
     private configManager!: ConfigManager;
+    private commandManager!: CommandManager;
     private injectedStyleEl?: HTMLStyleElement;
     private onLoadedProtyle = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
@@ -83,8 +78,7 @@ export default class CodeTabs extends Plugin {
     }
 
     private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
-        this.buildBlockMenu(detail);
-        this.buildDevMenu(detail);
+        this.commandManager.handleBlockIconEvent(detail);
     }
 
     private initLogging(): void {
@@ -186,6 +180,13 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             onSaveConfig: () => this.configManager.saveConfig(),
         });
+        this.commandManager = new CommandManager({
+            i18n: this.i18n,
+            data: this.data,
+            tabConverter: this.tabConverter,
+            onReload: () => this.reloadActivateDocument(),
+            addCommand: (command) => this.addCommand(command),
+        });
         this.configManager = new ConfigManager({
             data: this.data,
             onApplyThemeStyles: () => this.themeObserver.applyThemeStyles(),
@@ -209,110 +210,7 @@ export default class CodeTabs extends Plugin {
     }
 
     private registerCommands(): void {
-        this.addCommand({
-            langKey: t(this.i18n, "menu.more.tabsToPlainCode"),
-            hotkey: "",
-            editorCallback: () => {
-                const blockList = getSelectedElements(
-                    `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
-                );
-                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
-            },
-        });
-        this.addCommand({
-            langKey: t(this.i18n, "menu.more.mergeCodeBlocks"),
-            hotkey: "",
-            editorCallback: () => {
-                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
-            },
-        });
-    }
-
-    private collectBlockElements(
-        detail: BlockIconEventDetail,
-        predicate: (item: HTMLElement) => boolean
-    ): HTMLElement[] {
-        const blockList: HTMLElement[] = [];
-        for (const item of detail.blockElements) {
-            const element = item as HTMLElement;
-            if (predicate(element)) {
-                blockList.push(element);
-            }
-        }
-        return blockList;
-    }
-
-    private buildBlockMenu(detail: BlockIconEventDetail): void {
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.more.mergeCodeBlocks"),
-            click: () => {
-                const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
-            },
-        });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.more.tabsToPlainCode"),
-            click: () => {
-                const blockList = this.collectBlockElements(detail, (item) => {
-                    return (
-                        (item.hasAttribute(`${CUSTOM_ATTR}`) ||
-                            item.hasAttribute(`${CODE_TABS_DATA_ATTR}`)) &&
-                        item.dataset?.type === "NodeHTMLBlock"
-                    );
-                });
-                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
-            },
-        });
-        detail.menu.addItem({ type: "separator" });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.more.tabsToPlainCodeInDocument"),
-            click: () => {
-                this.tabConverter.tabsToPlainCodeInDocument();
-            },
-        });
-    }
-
-    private buildDevMenu(detail: BlockIconEventDetail): void {
-        if (!isDevMode()) {
-            return;
-        }
-        detail.menu.addItem({ type: "separator" });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.dev.title"),
-            type: "readonly",
-        });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.dev.toggleLineWrap"),
-            click: () => {
-                DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, () =>
-                    this.reloadActivateDocument()
-                );
-            },
-        });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.dev.toggleLigatures"),
-            click: () => {
-                DevToggleManager.toggleEditorSetting("codeLigatures", this.data, () =>
-                    this.reloadActivateDocument()
-                );
-            },
-        });
-        detail.menu.addItem({
-            iconHTML: "",
-            label: t(this.i18n, "menu.dev.toggleLineNumber"),
-            click: () => {
-                DevToggleManager.toggleEditorSetting("codeSyntaxHighlightLineNum", this.data, () =>
-                    this.reloadActivateDocument()
-                );
-            },
-        });
+        this.commandManager.registerCommands();
     }
 
     private handleProtyleLoaded(evt: unknown) {
@@ -360,10 +258,3 @@ export default class CodeTabs extends Plugin {
         }
     }
 }
-
-type BlockIconEventDetail = {
-    menu: {
-        addItem: (item: IMenu) => void;
-    };
-    blockElements: HTMLElement[];
-};

@@ -1,4 +1,4 @@
-import { getActiveEditor, Plugin, Setting } from "siyuan";
+import { Plugin, Setting } from "siyuan";
 import { pushErrMsg } from "@/api";
 import logger from "@/utils/logger";
 import { CODE_TABS_STYLE } from "@/constants";
@@ -6,6 +6,7 @@ import { TabConverter } from "@/modules/tabs/TabConverter";
 import { TabManager } from "@/modules/tabs/TabManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
+import { EditorRefreshManager } from "@/modules/editor/EditorRefreshManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
@@ -19,6 +20,7 @@ import { t } from "@/utils/i18n";
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private tabConverter!: TabConverter;
+    private editorRefreshManager!: EditorRefreshManager;
     private themeObserver!: ThemeObserver;
     private settingsPanel!: SettingsPanel;
     private debugLogManager!: DebugLogManager;
@@ -31,6 +33,7 @@ export default class CodeTabs extends Plugin {
     async onload() {
         this.registerBlockIconEvent();
         this.debugLogManager = new DebugLogManager();
+        this.editorRefreshManager = new EditorRefreshManager();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
 
@@ -110,18 +113,14 @@ export default class CodeTabs extends Plugin {
         this.protyleLifecycleManager.unregister(this.eventBus);
     }
 
-    private reloadActivateDocument() {
-        const activeEditor = getActiveEditor(true);
-        if (activeEditor) {
-            logger.info("刷新页面");
-            activeEditor.reload(true);
-        }
-    }
-
     private initTabModules(): void {
-        TabManager.initGlobalFunctions(this.i18n, () => this.reloadActivateDocument());
+        TabManager.initGlobalFunctions(this.i18n, () =>
+            this.editorRefreshManager.reloadActiveDocument()
+        );
         logger.info("全局函数已注册");
-        this.tabConverter = new TabConverter(this.i18n, () => this.reloadActivateDocument());
+        this.tabConverter = new TabConverter(this.i18n, () =>
+            this.editorRefreshManager.reloadActiveDocument()
+        );
     }
 
     private initManagers(): void {
@@ -143,18 +142,18 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             tabConverter: this.tabConverter,
-            onReload: () => this.reloadActivateDocument(),
+            onReload: () => this.editorRefreshManager.reloadActiveDocument(),
             addCommand: (command) => this.addCommand(command),
         });
         this.protyleLifecycleManager = new ProtyleLifecycleManager({
-            onRefreshOverflow: (root) => this.refreshOverflow(root),
+            onRefreshOverflow: (root) => this.editorRefreshManager.refreshOverflow(root),
         });
         this.uiEntryManager = new UiEntryManager({
             i18n: this.i18n,
             addTopBar: (options) => this.addTopBar(options),
             openSetting: () => this.openSetting(),
             protyleSlash: this.protyleSlash,
-            onReload: () => this.reloadActivateDocument(),
+            onReload: () => this.editorRefreshManager.reloadActiveDocument(),
         });
         this.configManager = new ConfigManager({
             data: this.data,
@@ -180,15 +179,6 @@ export default class CodeTabs extends Plugin {
 
     private registerCommands(): void {
         this.commandManager.registerCommands();
-    }
-
-    private refreshOverflow(root?: HTMLElement | ShadowRoot): void {
-        const refreshOverflow = (window as typeof window & {
-            pluginCodeTabs?: { refreshOverflow?: (root?: HTMLElement | ShadowRoot) => void };
-        }).pluginCodeTabs?.refreshOverflow;
-        if (refreshOverflow) {
-            refreshOverflow(root);
-        }
     }
 
     private ensureInjectedStyle(): void {

@@ -11,6 +11,7 @@ import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
+import { ProtyleLifecycleManager } from "@/modules/protyle/ProtyleLifecycleManager";
 import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
@@ -23,11 +24,9 @@ export default class CodeTabs extends Plugin {
     private debugLogManager!: DebugLogManager;
     private configManager!: ConfigManager;
     private commandManager!: CommandManager;
+    private protyleLifecycleManager!: ProtyleLifecycleManager;
     private uiEntryManager!: UiEntryManager;
     private injectedStyleEl?: HTMLStyleElement;
-    private onLoadedProtyle = (evt: unknown) => {
-        this.handleProtyleLoaded(evt);
-    };
 
     async onload() {
         this.registerBlockIconEvent();
@@ -104,13 +103,11 @@ export default class CodeTabs extends Plugin {
     }
 
     private registerProtyleEvents(): void {
-        this.eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
-        this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyle);
+        this.protyleLifecycleManager.register(this.eventBus);
     }
 
     private unregisterProtyleEvents(): void {
-        this.eventBus.off("loaded-protyle-static", this.onLoadedProtyle);
-        this.eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyle);
+        this.protyleLifecycleManager.unregister(this.eventBus);
     }
 
     private reloadActivateDocument() {
@@ -149,6 +146,9 @@ export default class CodeTabs extends Plugin {
             onReload: () => this.reloadActivateDocument(),
             addCommand: (command) => this.addCommand(command),
         });
+        this.protyleLifecycleManager = new ProtyleLifecycleManager({
+            onRefreshOverflow: (root) => this.refreshOverflow(root),
+        });
         this.uiEntryManager = new UiEntryManager({
             i18n: this.i18n,
             addTopBar: (options) => this.addTopBar(options),
@@ -182,27 +182,12 @@ export default class CodeTabs extends Plugin {
         this.commandManager.registerCommands();
     }
 
-    private handleProtyleLoaded(evt: unknown) {
-        const detail = (
-            evt as {
-                detail?: {
-                    protyle?: { contentElement?: HTMLElement };
-                    element?: HTMLElement;
-                };
-            }
-        )?.detail;
-        const root = detail?.protyle?.contentElement || detail?.element;
-        LineNumberManager.scanProtyle(root);
+    private refreshOverflow(root?: HTMLElement | ShadowRoot): void {
         const refreshOverflow = (window as typeof window & {
             pluginCodeTabs?: { refreshOverflow?: (root?: HTMLElement | ShadowRoot) => void };
         }).pluginCodeTabs?.refreshOverflow;
         if (refreshOverflow) {
             refreshOverflow(root);
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    refreshOverflow(root);
-                });
-            });
         }
     }
 

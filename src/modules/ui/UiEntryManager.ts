@@ -28,6 +28,17 @@ type UiEntryManagerOptions = {
     onReload: () => void;
 };
 
+export function buildSlashMenuHtml(i18n: IObject): string {
+    const slashIcon = settingIconMain.replace(
+        "<svg",
+        '<svg class="b3-list-item__graphic"'
+    );
+    return `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
+        i18n,
+        "slash.tabs"
+    )}</span></div>`;
+}
+
 export class UiEntryManager {
     private readonly i18n: IObject;
     private readonly addTopBar: (options: TopBarOptions) => void;
@@ -55,16 +66,9 @@ export class UiEntryManager {
     }
 
     registerSlashMenu(): void {
-        const slashIcon = settingIconMain.replace(
-            "<svg",
-            '<svg class="b3-list-item__graphic"'
-        );
         this.protyleSlash.push({
             filter: ["bq", "tabs", "标签页"],
-            html: `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
-                this.i18n,
-                "slash.tabs"
-            )}</span></div>`,
+            html: buildSlashMenuHtml(this.i18n),
             id: "code-tabs",
             callback: async (_protyle, nodeElement) => {
                 const data = TabDataManager.createDefaultData();

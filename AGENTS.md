@@ -10,7 +10,7 @@
 ## 2. 目录职责（基于当前结构的约定）
 
 - `src/index.ts`：插件入口与生命周期调度（仅保留最小编排逻辑）。
-- `src/modules/`：业务模块（解析、渲染、主题、行号、交互、设置、调试、配置、命令）。
+- `src/modules/`：业务模块（解析、渲染、主题、行号、交互、设置、调试、配置、命令、UI 入口）。
 - `src/api/`：思源内置 API 封装（只做请求与类型约束，不掺业务逻辑）。
 - `src/utils/`：通用工具（纯函数/无副作用，除 `logger` 外尽量不依赖 DOM 与全局对象）。
 - `src/types/`：共享类型与接口定义。
@@ -46,6 +46,8 @@ src/
       ConfigManager.ts      # 配置加载/合并/保存编排
     command/
       CommandManager.ts     # 命令注册与块菜单构建
+    ui/
+      UiEntryManager.ts     # 顶部按钮与斜杠菜单入口
   api/
     request.ts              # request 基础方法
     block.ts notebook.ts file.ts attr.ts sql.ts
@@ -81,6 +83,7 @@ docs/
 - `DebugLogManager`：只负责 debug 开关与日志写入，不参与业务逻辑。
 - `ConfigManager`：只负责配置加载/合并/保存与样式更新触发，不处理 UI 与主题监听细节。
 - `CommandManager`：只负责命令注册与块菜单构建，不处理渲染与解析。
+- `UiEntryManager`：只负责顶部按钮与斜杠菜单入口，不处理转换与主题逻辑。
 - `api`：严格一函数对应一个 API，禁止夹带业务逻辑。
 - `utils`：纯工具函数；若依赖 `window`/DOM，需明确标注为“浏览器环境”用途。
 - `logger`：支持 debug/info/warn/error；debug 可通过设置开关并写入 `debug.log`。

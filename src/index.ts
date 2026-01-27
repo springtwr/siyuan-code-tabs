@@ -1,11 +1,9 @@
 import { getActiveEditor, Plugin, Setting } from "siyuan";
-import { pushErrMsg, updateBlock } from "@/api";
+import { pushErrMsg } from "@/api";
 import logger from "@/utils/logger";
-import { CODE_TABS_STYLE, settingIconMain } from "@/constants";
+import { CODE_TABS_STYLE } from "@/constants";
 import { TabConverter } from "@/modules/tabs/TabConverter";
 import { TabManager } from "@/modules/tabs/TabManager";
-import { TabDataManager } from "@/modules/tabs/TabDataManager";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
@@ -13,6 +11,7 @@ import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
+import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 
@@ -24,6 +23,7 @@ export default class CodeTabs extends Plugin {
     private debugLogManager!: DebugLogManager;
     private configManager!: ConfigManager;
     private commandManager!: CommandManager;
+    private uiEntryManager!: UiEntryManager;
     private injectedStyleEl?: HTMLStyleElement;
     private onLoadedProtyle = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
@@ -39,7 +39,7 @@ export default class CodeTabs extends Plugin {
 
         this.initTabModules();
         this.initManagers();
-        this.registerSlashMenu();
+        this.uiEntryManager.registerSlashMenu();
 
         this.initSettings();
         this.registerCommands();
@@ -49,7 +49,7 @@ export default class CodeTabs extends Plugin {
     async onLayoutReady() {
         logger.info("布局就绪，开始初始化");
 
-        this.initTopBar();
+        this.uiEntryManager.initTopBar();
 
         syncSiyuanConfig(this.data);
         logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
@@ -103,44 +103,6 @@ export default class CodeTabs extends Plugin {
         this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
     }
 
-    private initTopBar(): void {
-        this.addTopBar({
-            icon: settingIconMain,
-            title: "code-tabs",
-            position: "right",
-            callback: () => {
-                this.openSetting();
-            },
-        });
-    }
-
-    private registerSlashMenu(): void {
-        const slashIcon = settingIconMain.replace(
-            "<svg",
-            '<svg class="b3-list-item__graphic"'
-        );
-        this.protyleSlash.push({
-            filter: ["bq", "tabs", "标签页"],
-            html: `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
-                this.i18n,
-                "slash.tabs"
-            )}</span></div>`,
-            id: "code-tabs",
-            callback: async (_protyle, nodeElement) => {
-                const data = TabDataManager.createDefaultData();
-                const htmlBlock = TabRenderer.createProtyleHtml(data);
-                const targetId = nodeElement?.dataset?.nodeId ?? "";
-                if (targetId) {
-                    await updateBlock("markdown", htmlBlock, targetId);
-                    await TabDataManager.writeToBlock(targetId, data);
-                    this.reloadActivateDocument();
-                    return;
-                }
-                pushErrMsg(t(this.i18n, "msg.noTargetBlock"));
-            },
-        });
-    }
-
     private registerProtyleEvents(): void {
         this.eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
         this.eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyle);
@@ -186,6 +148,13 @@ export default class CodeTabs extends Plugin {
             tabConverter: this.tabConverter,
             onReload: () => this.reloadActivateDocument(),
             addCommand: (command) => this.addCommand(command),
+        });
+        this.uiEntryManager = new UiEntryManager({
+            i18n: this.i18n,
+            addTopBar: (options) => this.addTopBar(options),
+            openSetting: () => this.openSetting(),
+            protyleSlash: this.protyleSlash,
+            onReload: () => this.reloadActivateDocument(),
         });
         this.configManager = new ConfigManager({
             data: this.data,

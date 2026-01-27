@@ -1,9 +1,8 @@
 import { getActiveEditor, Plugin, Setting, type IMenu } from "siyuan";
-import { pushErrMsg, putFile, updateBlock } from "@/api";
+import { pushErrMsg, updateBlock } from "@/api";
 import logger from "@/utils/logger";
 import {
     CODE_TABS_DATA_ATTR,
-    CONFIG_JSON,
     CUSTOM_ATTR,
     CODE_TABS_STYLE,
     settingIconMain,
@@ -18,8 +17,8 @@ import { DebugLogManager } from "@/modules/developer/DebugLogManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
-import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
-import { compareConfig, getSelectedElements, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
+import { ConfigManager } from "@/modules/config/ConfigManager";
+import { getSelectedElements, syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { isDevMode } from "@/utils/env";
 
@@ -29,6 +28,7 @@ export default class CodeTabs extends Plugin {
     private themeObserver!: ThemeObserver;
     private settingsPanel!: SettingsPanel;
     private debugLogManager!: DebugLogManager;
+    private configManager!: ConfigManager;
     private injectedStyleEl?: HTMLStyleElement;
     private onLoadedProtyle = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
@@ -176,7 +176,7 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             onAllTabsToPlainCode: () => this.tabConverter.allTabsToPlainCode(),
-            onSaveConfig: () => this.saveConfig(),
+            onSaveConfig: () => this.configManager.saveConfig(),
             buildDebugToggle: () => this.debugLogManager.createToggle(),
         });
         this.settingsPanel.ensureSettings();
@@ -184,30 +184,21 @@ export default class CodeTabs extends Plugin {
         this.themeObserver = new ThemeObserver({
             data: this.data,
             i18n: this.i18n,
-            onSaveConfig: () => this.saveConfig(),
+            onSaveConfig: () => this.configManager.saveConfig(),
+        });
+        this.configManager = new ConfigManager({
+            data: this.data,
+            onApplyThemeStyles: () => this.themeObserver.applyThemeStyles(),
+            onAfterLoad: () => {
+                this.settingsPanel.ensureSettings();
+                this.settingsPanel.applySettings();
+                this.settingsPanel.syncInputs();
+            },
         });
     }
 
     private async loadConfigAndApplyTheme(): Promise<void> {
-        const configFile = await fetchFileFromUrlSimple(
-            CONFIG_JSON.replace("/data", ""),
-            "config.json"
-        );
-        if (configFile === undefined || configFile.size === 0) {
-            logger.info("未检测到配置文件，初始化样式文件");
-            await this.themeObserver.applyThemeStyles();
-            return;
-        }
-        const data = await loadJsonFromFile(configFile);
-        this.mergeCustomConfig(data);
-        this.settingsPanel.ensureSettings();
-        this.settingsPanel.applySettings();
-        this.settingsPanel.syncInputs();
-        const configFlag = compareConfig(data, this.data);
-        if (!configFlag) {
-            logger.info("检测到配置变更，重新生成样式文件");
-            await this.themeObserver.applyThemeStyles();
-        }
+        await this.configManager.loadAndApply();
     }
 
     private initSettings(): void {
@@ -322,27 +313,6 @@ export default class CodeTabs extends Plugin {
                 );
             },
         });
-    }
-
-    private mergeCustomConfig(value: unknown): void {
-        if (!this.isRecord(value)) return;
-        const siyuanConfig = getSiyuanConfig();
-        Object.keys(value).forEach((key) => {
-            if (key in siyuanConfig) return;
-            this.data[key] = value[key];
-        });
-    }
-
-    private isRecord(value: unknown): value is Record<string, unknown> {
-        return typeof value === "object" && value !== null;
-    }
-
-    private async saveConfig() {
-        syncSiyuanConfig(this.data);
-        const file = new File([JSON.stringify(this.data)], "config.json", {
-            type: "application/json",
-        });
-        await putFile(CONFIG_JSON, false, file);
     }
 
     private handleProtyleLoaded(evt: unknown) {

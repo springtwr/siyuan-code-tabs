@@ -10,7 +10,7 @@
 ## 2. 目录职责（基于当前结构的约定）
 
 - `src/index.ts`：插件入口与生命周期调度（仅保留最小编排逻辑）。
-- `src/modules/`：业务模块（解析、渲染、主题、行号、交互、设置、调试）。
+- `src/modules/`：业务模块（解析、渲染、主题、行号、交互、设置、调试、配置）。
 - `src/api/`：思源内置 API 封装（只做请求与类型约束，不掺业务逻辑）。
 - `src/utils/`：通用工具（纯函数/无副作用，除 `logger` 外尽量不依赖 DOM 与全局对象）。
 - `src/types/`：共享类型与接口定义。
@@ -42,6 +42,8 @@ src/
       LineNumberManager.ts  # 行号管理
     developer/
       DebugLogManager.ts    # 调试日志开关与写入
+    config/
+      ConfigManager.ts      # 配置加载/合并/保存编排
   api/
     request.ts              # request 基础方法
     block.ts notebook.ts file.ts attr.ts sql.ts
@@ -75,6 +77,7 @@ docs/
 - `LineNumberManager`：只负责行号显示与刷新，不关心转换逻辑。
 - `SettingsPanel`：只负责设置 UI 构建与应用，不处理转换与主题监听。
 - `DebugLogManager`：只负责 debug 开关与日志写入，不参与业务逻辑。
+- `ConfigManager`：只负责配置加载/合并/保存与样式更新触发，不处理 UI 与主题监听细节。
 - `api`：严格一函数对应一个 API，禁止夹带业务逻辑。
 - `utils`：纯工具函数；若依赖 `window`/DOM，需明确标注为“浏览器环境”用途。
 - `logger`：支持 debug/info/warn/error；debug 可通过设置开关并写入 `debug.log`。
@@ -114,6 +117,7 @@ docs/
 - Debug 开关：插件设置中提供“调试日志”，开启后写入 `data/plugins/code-tabs/debug.log`。
 - 提交前检查：必须运行 `pnpm check`（同时执行 tsc、lint、test），确保全部通过再提交。
 - 规范维护：每次项目结构或重大变更时必须同步更新本文件。
+- 提交信息风格：使用中文。第一行概述本次提交内容，后续用要点分条说明改动细节。
 
 ## 9. i18n 规范
 

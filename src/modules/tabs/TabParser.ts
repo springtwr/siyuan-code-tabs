@@ -1,31 +1,41 @@
-import { pushMsg } from "@/api";
 import { CodeTab } from "@/modules/tabs/types";
-import { IObject } from "siyuan";
-import logger from "@/utils/logger";
-import { t } from "@/utils/i18n";
+
+export type ParseErrorKey =
+    | "parser.headErr"
+    | "parser.noTitle"
+    | "parser.noLang"
+    | "parser.noCode"
+    | "parser.multiActive";
+
+export type ParseError = {
+    key: ParseErrorKey;
+    index?: number;
+    preview?: string;
+    title?: string;
+};
+
+export type ParseResult = {
+    result: boolean;
+    code: CodeTab[];
+    errors: ParseError[];
+};
 
 export class TabParser {
-    static checkCodeText(
-        codeText: string,
-        i18n: IObject,
-        silent: boolean = false
-    ): { result: boolean; code: CodeTab[] } {
+    static checkCodeText(codeText: string): ParseResult {
         codeText = codeText.trim();
-        logger.debug("开始解析代码块语法", { length: codeText.length });
         // 兼容旧语法
         if (codeText.startsWith("tab:::")) {
-            return this.parseLegacy(codeText, i18n, silent);
+            return this.parseLegacy(codeText);
         }
         // 新语法
         if (codeText.startsWith(":::")) {
-            return this.parseNew(codeText, i18n, silent);
+            return this.parseNew(codeText);
         }
         const firstLine = this.getPreviewLine(codeText);
-        if (!silent) {
-            pushMsg(`${t(i18n, "parser.headErr")} | 当前内容: ${firstLine}`).then();
-        }
-        logger.warn("语法检查失败：未匹配到可用语法前缀", { preview: firstLine });
-        return { result: false, code: [] };
+        return this.fail({
+            key: "parser.headErr",
+            preview: firstLine,
+        });
     }
 
     static generateNewSyntax(tabs: CodeTab[]): string {
@@ -49,18 +59,13 @@ export class TabParser {
         return result.trim();
     }
 
-    private static parseNew(
-        codeText: string,
-        i18n: IObject,
-        silent: boolean
-    ): { result: boolean; code: CodeTab[] } {
+    private static parseNew(codeText: string): ParseResult {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
         if (parts[0].trim() === "") parts.shift();
 
         const codeResult: CodeTab[] = [];
         let activeCount = 0;
-        logger.debug("解析新语法标签", { count: parts.length });
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -80,15 +85,11 @@ export class TabParser {
             const title = headerParts[0];
 
             if (!title) {
-                if (!silent) {
-                    pushMsg(
-                        `${t(i18n, "parser.noTitle")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                            headerLine
-                        )}`
-                    ).then();
-                }
-                logger.warn("新语法解析失败：缺少标题", { index: i + 1 });
-                return { result: false, code: [] };
+                return this.fail({
+                    key: "parser.noTitle",
+                    index: i + 1,
+                    preview: this.getPreviewLine(headerLine),
+                });
             }
 
             let language = "";
@@ -113,26 +114,20 @@ export class TabParser {
             }
 
             if (!codeContent || codeContent.trim().length === 0) {
-                if (!silent) {
-                    pushMsg(
-                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 标题: ${title}`
-                    ).then();
-                }
-                logger.warn("新语法解析失败：缺少代码内容", { index: i + 1, title });
-                return { result: false, code: [] };
+                return this.fail({
+                    key: "parser.noCode",
+                    index: i + 1,
+                    title,
+                });
             }
 
             if (isActive) {
                 activeCount += 1;
                 if (activeCount > 1) {
-                    if (!silent) {
-                        pushMsg(t(i18n, "parser.multiActive")).then();
-                    }
-                    logger.warn("新语法解析失败：active 标签重复", {
+                    return this.fail({
+                        key: "parser.multiActive",
                         index: i + 1,
-                        activeCount,
                     });
-                    return { result: false, code: [] };
                 }
                 codeResult.push({
                     title: title,
@@ -149,61 +144,48 @@ export class TabParser {
                 });
             }
         }
-        logger.debug("新语法解析完成", { count: codeResult.length });
-        return { result: true, code: codeResult };
+        return { result: true, code: codeResult, errors: [] };
     }
 
-    private static parseLegacy(
-        codeText: string,
-        i18n: IObject,
-        silent: boolean
-    ): { result: boolean; code: CodeTab[] } {
+    private static parseLegacy(codeText: string): ParseResult {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
-        if (!codeArr) return { result: false, code: [] };
+        if (!codeArr) {
+            return this.fail({
+                key: "parser.headErr",
+                preview: this.getPreviewLine(codeText),
+            });
+        }
 
         const codeResult: CodeTab[] = [];
         let activeCount = 0;
-        logger.debug("解析旧语法标签", { count: codeArr.length });
         for (let i = 0; i < codeArr.length; i++) {
             const codeSplitArr = codeArr[i].trim().split("\n");
             if (
                 codeSplitArr.length === 1 ||
                 (codeSplitArr.length === 2 && codeSplitArr[1].trim().startsWith("lang:::"))
             ) {
-                if (!silent) {
-                    pushMsg(
-                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                            codeSplitArr[0]
-                        )}`
-                    ).then();
-                }
-                logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
-                return { result: false, code: [] };
+                return this.fail({
+                    key: "parser.noCode",
+                    index: i + 1,
+                    preview: this.getPreviewLine(codeSplitArr[0]),
+                });
             }
             if (codeSplitArr[0].length < 7) {
-                if (!silent) {
-                    pushMsg(
-                        `${t(i18n, "parser.noTitle")}（第 ${i + 1} 个标签） | 头部: ${this.getPreviewLine(
-                            codeSplitArr[0]
-                        )}`
-                    ).then();
-                }
-                logger.warn("旧语法解析失败：缺少标题", { index: i + 1 });
-                return { result: false, code: [] };
+                return this.fail({
+                    key: "parser.noTitle",
+                    index: i + 1,
+                    preview: this.getPreviewLine(codeSplitArr[0]),
+                });
             }
             let title = codeSplitArr[0].substring(6).trim();
             let isActive = false;
             if (title.includes(":::active")) {
                 activeCount += 1;
                 if (activeCount > 1) {
-                    if (!silent) {
-                        pushMsg(t(i18n, "parser.multiActive")).then();
-                    }
-                    logger.warn("旧语法解析失败：active 标签重复", {
+                    return this.fail({
+                        key: "parser.multiActive",
                         index: i + 1,
-                        activeCount,
                     });
-                    return { result: false, code: [] };
                 }
                 isActive = true;
                 title = title.replace(":::active", "").trim();
@@ -212,15 +194,11 @@ export class TabParser {
             if (codeSplitArr[1].trim().startsWith("lang:::")) {
                 const languageLine = codeSplitArr[1].trim();
                 if (languageLine.length < 8) {
-                    if (!silent) {
-                        pushMsg(
-                            `${t(i18n, "parser.noLang")}（第 ${i + 1} 个标签） | 行内容: ${this.getPreviewLine(
-                                languageLine
-                            )}`
-                        ).then();
-                    }
-                    logger.warn("旧语法解析失败：语言标记不完整", { index: i + 1 });
-                    return { result: false, code: [] };
+                    return this.fail({
+                        key: "parser.noLang",
+                        index: i + 1,
+                        preview: this.getPreviewLine(languageLine),
+                    });
                 }
                 language = languageLine.substring(7).trim().toLowerCase();
 
@@ -228,14 +206,12 @@ export class TabParser {
             }
             codeSplitArr.shift();
             const code = codeSplitArr.join("\n").trim();
-            if (!code) {
-                if (!silent) {
-                    pushMsg(
-                        `${t(i18n, "parser.noCode")}（第 ${i + 1} 个标签） | 标题: ${title}`
-                    ).then();
-                }
-                logger.warn("旧语法解析失败：缺少代码内容", { index: i + 1 });
-                return { result: false, code: [] };
+            if (!code || code.trim().length === 0) {
+                return this.fail({
+                    key: "parser.noCode",
+                    index: i + 1,
+                    title,
+                });
             }
             if (language === "") {
                 language = title.trim();
@@ -248,8 +224,7 @@ export class TabParser {
                 isActive: isActive,
             });
         }
-        logger.debug("旧语法解析完成", { count: codeResult.length });
-        return { result: true, code: codeResult };
+        return { result: true, code: codeResult, errors: [] };
     }
 
     private static getLanguage(lang: string) {
@@ -264,5 +239,9 @@ export class TabParser {
         const line = text.split("\n")[0]?.trim() ?? "";
         if (line.length <= 60) return line || "(空)";
         return `${line.slice(0, 57)}...`;
+    }
+
+    private static fail(error: ParseError): ParseResult {
+        return { result: false, code: [], errors: [error] };
     }
 }

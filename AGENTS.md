@@ -10,7 +10,7 @@
 ## 2. 目录职责（基于当前结构的约定）
 
 - `src/index.ts`：插件入口与生命周期调度（仅保留最小编排逻辑）。
-- `src/modules/`：业务模块（解析、渲染、主题、行号、交互）。
+- `src/modules/`：业务模块（解析、渲染、主题、行号、交互、设置、调试）。
 - `src/api/`：思源内置 API 封装（只做请求与类型约束，不掺业务逻辑）。
 - `src/utils/`：通用工具（纯函数/无副作用，除 `logger` 外尽量不依赖 DOM 与全局对象）。
 - `src/types/`：共享类型与接口定义。
@@ -33,10 +33,15 @@ src/
       types.ts              # codeTab 等与 tabs 相关类型
     theme/
       ThemeManager.ts       # 主题/样式文件生成与更新
+      ThemeObserver.ts      # 主题监听与样式更新编排
       StyleProbe.ts         # 主题样式采集（原 StyleProtyle）
       types.ts              # ThemeStyle/ThemePatch
+    settings/
+      SettingsPanel.ts      # 设置面板构建与应用
     line-number/
       LineNumberManager.ts  # 行号管理
+    developer/
+      DebugLogManager.ts    # 调试日志开关与写入
   api/
     request.ts              # request 基础方法
     block.ts notebook.ts file.ts attr.ts sql.ts
@@ -66,7 +71,10 @@ docs/
 - `TabConverter`：负责批量转换、统计与 API 调用，不直接处理生命周期与设置 UI。
 - `TabManager`：管理 tabs 交互（`window.pluginCodeTabs`）与用户交互逻辑，不负责渲染与语法解析。
 - `ThemeManager/StyleProbe`：只处理主题样式、CSS 生成与更新，不参与转换流程。
+- `ThemeObserver`：只负责主题监听与样式更新计划编排，不处理设置 UI 与业务转换。
 - `LineNumberManager`：只负责行号显示与刷新，不关心转换逻辑。
+- `SettingsPanel`：只负责设置 UI 构建与应用，不处理转换与主题监听。
+- `DebugLogManager`：只负责 debug 开关与日志写入，不参与业务逻辑。
 - `api`：严格一函数对应一个 API，禁止夹带业务逻辑。
 - `utils`：纯工具函数；若依赖 `window`/DOM，需明确标注为“浏览器环境”用途。
 - `logger`：支持 debug/info/warn/error；debug 可通过设置开关并写入 `debug.log`。
@@ -104,6 +112,8 @@ docs/
 - 单元测试：`vitest`，测试文件集中放在 `tests/`。
 - 集成测试：使用 `docs/testing/` 中的样例文档与回归清单。
 - Debug 开关：插件设置中提供“调试日志”，开启后写入 `data/plugins/code-tabs/debug.log`。
+- 提交前检查：必须运行 `pnpm check`（同时执行 tsc、lint、test），确保全部通过再提交。
+- 规范维护：每次项目结构或重大变更时必须同步更新本文件。
 
 ## 9. i18n 规范
 

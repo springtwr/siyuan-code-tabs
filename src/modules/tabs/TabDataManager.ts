@@ -4,7 +4,6 @@ import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
 import type { CodeTab, TabDataItem, TabsData } from "./types";
-import type { IObject } from "siyuan";
 
 const CURRENT_VERSION = 2;
 function normalizeTabs(tabs: TabDataItem[]): TabDataItem[] {
@@ -133,12 +132,12 @@ export class TabDataManager {
         await setBlockAttrs(nodeId, { [CODE_TABS_DATA_ATTR]: encoded });
     }
 
-    static migrateFromLegacy(codeText: string, i18n: IObject): TabsData | null {
+    static migrateFromLegacy(codeText: string): TabsData | null {
         let text = codeText;
         if (text.trim().startsWith("tab:::")) {
             text = decodeLegacyHtmlEntities(text);
         }
-        const parsed = TabParser.checkCodeText(text, i18n, false);
+        const parsed = TabParser.checkCodeText(text);
         if (!parsed.result) return null;
         return this.fromCodeTabs(parsed.code);
     }

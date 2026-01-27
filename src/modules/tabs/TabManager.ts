@@ -14,8 +14,7 @@ import type { TabsData } from "./types";
 
 async function resolveTabsData(
     nodeId: string,
-    htmlBlock: HTMLElement | null,
-    i18n: IObject
+    htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
     const dataFromDom = TabDataManager.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;
@@ -24,7 +23,7 @@ async function resolveTabsData(
     if (dataFromAttr) return dataFromAttr;
     const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
     if (legacy) {
-        const migrated = TabDataManager.migrateFromLegacy(legacy, i18n);
+        const migrated = TabDataManager.migrateFromLegacy(legacy);
         if (migrated) {
             await TabDataManager.writeToBlock(nodeId, migrated);
             return migrated;
@@ -282,7 +281,7 @@ export class TabManager {
                 if (!nodeId) return;
 
                 try {
-                    const data = await resolveTabsData(nodeId, htmlBlock, i18n);
+                    const data = await resolveTabsData(nodeId, htmlBlock);
                     if (!data || data.tabs.length === 0) {
                         pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                         return;
@@ -319,7 +318,7 @@ export class TabManager {
                 const nodeId = htmlBlock?.dataset.nodeId;
                 if (!nodeId) return;
 
-                const data = await resolveTabsData(nodeId, htmlBlock, i18n);
+                const data = await resolveTabsData(nodeId, htmlBlock);
                 if (!data) {
                     pushErrMsg(t(i18n, "msg.setDefaultActiveFailed"));
                     return;

@@ -1,23 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { TabParser } from "@/modules/tabs/TabParser";
-import type { IObject } from "siyuan";
-
-vi.mock("@/api", () => ({
-    pushMsg: vi.fn().mockResolvedValue(undefined),
-}));
-
-const i18n = {
-    headErrWhenCheckCode: "head",
-    noTitleWhenCheckCode: "noTitle",
-    noLangWhenCheckCode: "noLang",
-    noCodeWhenCheckCode: "noCode",
-} as unknown as IObject;
 
 describe("TabParser 语法解析", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
     it("解析新语法：多标签与 active", () => {
         const input = `::: JS | javascript | active
 console.log("ok");
@@ -25,13 +9,14 @@ console.log("ok");
 ::: Python
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(2);
         expect(result.code[0].isActive).toBe(true);
         expect(result.code[0].language).toBe("javascript");
         expect(result.code[1].isActive).toBe(false);
         expect(result.code[1].language).toBe("python");
+        expect(result.errors.length).toBe(0);
     });
 
     it("解析旧语法：带 lang 行", () => {
@@ -39,40 +24,45 @@ print("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(1);
         expect(result.code[0].language).toBe("js");
+        expect(result.errors.length).toBe(0);
     });
 
     it("新语法：缺少标题应失败", () => {
         const input = `:::
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noTitle");
+        expect(result.errors[0]?.index).toBe(1);
     });
 
     it("新语法：缺少代码应失败", () => {
         const input = `::: JS
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noCode");
     });
 
     it("非 ::: 或 tab::: 开头应失败", () => {
         const input = `:: title
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.headErr");
     });
 
     it("新语法：缺少语言时自动推断", () => {
         const input = `::: TypeScript
 const a = 1;
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("typescript");
     });
@@ -81,7 +71,7 @@ const a = 1;
         const input = `::: Demo | js | active | ignored
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
     });
@@ -93,16 +83,18 @@ console.log("ok");
 ::: Python | active
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.multiActive");
     });
 
     it("新语法：标题下为空行应失败", () => {
         const input = `::: Title | js
 
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noCode");
     });
 
     it("旧语法：缺少标题应失败", () => {
@@ -110,8 +102,9 @@ print("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
 
     it("旧语法：lang 值为空应失败", () => {
@@ -119,16 +112,18 @@ console.log("ok")
 lang:::
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noLang");
     });
 
     it("旧语法：缺少代码内容应失败", () => {
         const input = `tab::: JS
 lang::: js
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noCode");
     });
 
     it("旧语法：lang 后空行也应失败", () => {
@@ -136,15 +131,16 @@ lang::: js
 lang::: js
 
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noCode");
     });
 
     it("旧语法：无 lang 行时使用标题推断语言", () => {
         const input = `tab::: JS
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("js");
     });
@@ -155,7 +151,7 @@ console.log("ok")
 ::: JS | js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(1);
     });
@@ -164,7 +160,7 @@ console.log("ok")
         const input = `::: Title | active | js
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
         expect(result.code[0].language).toBe("js");
@@ -174,7 +170,7 @@ console.log("ok");
         const input = `::: Demo |  | active
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("demo");
     });
@@ -184,8 +180,9 @@ console.log("ok");
 
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
 
     it("旧语法：标题过短应失败", () => {
@@ -193,8 +190,9 @@ console.log("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
 
     it("旧语法：标题包含 active 标记应解析为默认标签", () => {
@@ -202,7 +200,7 @@ console.log("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
     });
@@ -216,8 +214,9 @@ tab::: Python :::active
 lang::: python
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(false);
+        expect(result.errors[0]?.key).toBe("parser.multiActive");
     });
 
     it("新语法：多块应全部解析", () => {
@@ -227,7 +226,7 @@ console.log("a");
 ::: B | python
 print("b")
 `;
-        const result = TabParser.checkCodeText(input, i18n);
+        const result = TabParser.checkCodeText(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(2);
     });

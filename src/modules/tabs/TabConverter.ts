@@ -61,7 +61,7 @@ export class TabConverter {
             if (!data) {
                 const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
                 if (legacy) {
-                    data = TabDataManager.migrateFromLegacy(legacy, this.i18n);
+                    data = TabDataManager.migrateFromLegacy(legacy);
                 }
             }
             if (!data) {
@@ -282,7 +282,7 @@ export class TabConverter {
             }
 
             const codeText = stripInvisibleChars(contentEl.textContent || "");
-            const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+            const checkResult = TabParser.checkCodeText(codeText);
             if (!checkResult.result) {
                 const msg = "代码块不符合 Tab 格式";
                 skipped.push({ nodeId: id, reason: msg });
@@ -321,7 +321,7 @@ export class TabConverter {
                 continue;
             }
 
-            const checkResult = TabParser.checkCodeText(codeText, this.i18n);
+            const checkResult = TabParser.checkCodeText(codeText);
             if (!checkResult.result) {
                 const msg = "代码块不符合 Tab 格式";
                 skipped.push({ nodeId: id, reason: msg });
@@ -416,7 +416,7 @@ export class TabConverter {
                 [CUSTOM_ATTR]: legacyRaw,
             });
             if (legacy) {
-                const migrated = TabDataManager.migrateFromLegacy(legacy, this.i18n);
+                const migrated = TabDataManager.migrateFromLegacy(legacy);
                 return { id, data: migrated };
             }
         }
@@ -626,7 +626,7 @@ export class TabConverter {
         let hasTabSyntaxBlock = false;
         let fallbackIndex = 1;
         for (const item of blocks) {
-            const parsed = TabParser.checkCodeText(item.codeText, this.i18n, true);
+            const parsed = TabParser.checkCodeText(item.codeText);
             if (parsed.result && parsed.code.length > 0) {
                 codeArr.push(
                     ...parsed.code.map((tab) => ({

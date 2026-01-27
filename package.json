@@ -19,6 +19,7 @@
     "lint:fix": "pnpm lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check": "pnpm tsc && pnpm lint && pnpm test",
     "test": "vitest run",
     "test:watch": "vitest"
   },

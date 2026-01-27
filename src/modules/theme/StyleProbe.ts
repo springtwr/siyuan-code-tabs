@@ -1,4 +1,4 @@
-import { CodeBlockStyleSnapshot, ThemeStyle } from "@/modules/theme/types";
+import { ThemeStyle } from "@/modules/theme/types";
 import logger from "@/utils/logger";
 
 export const StyleProbe = (() => {
@@ -17,27 +17,37 @@ export const StyleProbe = (() => {
             "color",
         ],
         header: ["position", "height", "padding", "backgroundColor", "borderBottom"],
-        body: ["fontFamily", "padding", "backgroundColor", "overflowY", "borderTop"],
+        body: ["fontFamily", "padding", "backgroundColor", "overflowY", "borderTop", "margin"],
         content: ["backgroundColor", "margin", "padding"],
-    };
+    } as const;
 
-    function extract(el, props) {
-        const cs = getComputedStyle(el);
-        const out = {};
-        for (const p of props) out[p] = cs[p];
-        return out;
-    }
+    type SyncGroup = keyof typeof SYNC_PROPS;
+    type CssPropKey = keyof CSSStyleDeclaration;
+    type SyncPropKey<T extends SyncGroup> = (typeof SYNC_PROPS)[T][number] & CssPropKey;
+    type StyleSnapshot = { [K in SyncGroup]: Record<SyncPropKey<K>, string> };
 
-    let cached: {
+    type VirtualProtyle = {
         root: HTMLElement;
         block: HTMLElement;
         action: HTMLElement;
         hljs: HTMLElement;
         content: HTMLElement;
-    } | null = null;
+    };
+
+    function extract<T extends SyncGroup>(
+        el: HTMLElement,
+        props: readonly SyncPropKey<T>[]
+    ): Record<SyncPropKey<T>, string> {
+        const cs = getComputedStyle(el);
+        const out = {} as Record<SyncPropKey<T>, string>;
+        for (const p of props) out[p] = cs[p];
+        return out;
+    }
+
+    let cached: VirtualProtyle | null = null;
     let lastStyle: ThemeStyle | null = null;
 
-    function createVirtualProtyle() {
+    function createVirtualProtyle(): VirtualProtyle {
         const root = document.createElement("div");
         root.className = "protyle";
         root.style.cssText = `
@@ -85,10 +95,10 @@ export const StyleProbe = (() => {
         return cached;
     }
 
-    function probe() {
+    function probe(): StyleSnapshot {
         const { block, action, hljs, content } = getVirtualProtyle();
 
-        const snapshot: CodeBlockStyleSnapshot = {
+        const snapshot: StyleSnapshot = {
             block: extract(block, SYNC_PROPS.block),
             header: extract(action, SYNC_PROPS.header),
             body: extract(hljs, SYNC_PROPS.body),

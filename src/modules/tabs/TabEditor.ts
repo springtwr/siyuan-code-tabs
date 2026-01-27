@@ -17,6 +17,46 @@ type EditorState = {
     currentIndex: number;
 };
 
+export function buildEditorDialogContent(i18n: IObject): string {
+    return `
+<div class="code-tabs__editor">
+    <div class="code-tabs__editor-body">
+        <div class="code-tabs__editor-left">
+            <div class="code-tabs__editor-list" data-role="tab-list"></div>
+            <div class="code-tabs__editor-actions">
+                <button class="b3-button b3-button--outline b3-button--small" data-action="add">${t(
+                    i18n,
+                    "editor.add"
+                )}</button>
+                <button class="b3-button b3-button--outline b3-button--small" data-action="delete">${t(
+                    i18n,
+                    "editor.delete"
+                )}</button>
+            </div>
+        </div>
+        <div class="code-tabs__editor-right">
+            <label class="code-tabs__editor-label">${t(i18n, "editor.tabTitle")}</label>
+            <input class="b3-text-field code-tabs__editor-input" data-field="title" />
+            <label class="code-tabs__editor-label">${t(i18n, "editor.tabLang")}</label>
+            <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
+            <label class="code-tabs__editor-label">${t(i18n, "editor.tabCode")}</label>
+            <textarea class="b3-text-field code-tabs__editor-textarea" data-field="code"></textarea>
+        </div>
+    </div>
+    <div class="b3-dialog__action">
+        <button class="b3-button b3-button--cancel" data-action="cancel">${t(
+            i18n,
+            "editor.cancel"
+        )}</button>
+        <button class="b3-button b3-button--text" data-action="save">${t(
+            i18n,
+            "editor.save"
+        )}</button>
+    </div>
+</div>
+`.trim();
+}
+
 export class TabEditor {
     static open(options: EditorOptions): void {
         const state: EditorState = {
@@ -31,43 +71,7 @@ export class TabEditor {
 
         const dialog = new Dialog({
             title: t(options.i18n, "editor.title"),
-            content: `
-<div class="code-tabs__editor">
-    <div class="code-tabs__editor-body">
-        <div class="code-tabs__editor-left">
-            <div class="code-tabs__editor-list" data-role="tab-list"></div>
-            <div class="code-tabs__editor-actions">
-                <button class="b3-button b3-button--outline b3-button--small" data-action="add">${t(
-                    options.i18n,
-                    "editor.add"
-                )}</button>
-                <button class="b3-button b3-button--outline b3-button--small" data-action="delete">${t(
-                    options.i18n,
-                    "editor.delete"
-                )}</button>
-            </div>
-        </div>
-        <div class="code-tabs__editor-right">
-            <label class="code-tabs__editor-label">${t(options.i18n, "editor.tabTitle")}</label>
-            <input class="b3-text-field code-tabs__editor-input" data-field="title" />
-            <label class="code-tabs__editor-label">${t(options.i18n, "editor.tabLang")}</label>
-            <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
-            <label class="code-tabs__editor-label">${t(options.i18n, "editor.tabCode")}</label>
-            <textarea class="b3-text-field code-tabs__editor-textarea" data-field="code"></textarea>
-        </div>
-    </div>
-    <div class="b3-dialog__action">
-        <button class="b3-button b3-button--cancel" data-action="cancel">${t(
-            options.i18n,
-            "editor.cancel"
-        )}</button>
-        <button class="b3-button b3-button--text" data-action="save">${t(
-            options.i18n,
-            "editor.save"
-        )}</button>
-    </div>
-</div>
-`.trim(),
+            content: buildEditorDialogContent(options.i18n),
             width: "720px",
         });
 

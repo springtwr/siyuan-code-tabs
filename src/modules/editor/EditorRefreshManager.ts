@@ -10,7 +10,9 @@ type EditorRefreshManagerOptions = {
 };
 
 export class EditorRefreshManager {
-    private readonly getEditor: (readOnly?: boolean) => { reload: (reset?: boolean) => void } | null;
+    private readonly getEditor: (
+        readOnly?: boolean
+    ) => { reload: (reset?: boolean) => void } | null;
     private getRefreshOverflow: () => RefreshOverflow | undefined;
 
     constructor(options: EditorRefreshManagerOptions = {}) {
@@ -18,9 +20,11 @@ export class EditorRefreshManager {
         this.getRefreshOverflow =
             options.getRefreshOverflow ??
             (() =>
-                (window as typeof window & {
-                    pluginCodeTabs?: { refreshOverflow?: RefreshOverflow };
-                }).pluginCodeTabs?.refreshOverflow);
+                (
+                    window as typeof window & {
+                        pluginCodeTabs?: { refreshOverflow?: RefreshOverflow };
+                    }
+                ).pluginCodeTabs?.refreshOverflow);
     }
 
     setRefreshOverflowProvider(provider: () => RefreshOverflow | undefined): void {

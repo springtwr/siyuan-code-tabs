@@ -125,16 +125,14 @@ export class TabDataManager {
 
     static readFromElement(element: HTMLElement | null): TabsData | null {
         if (!element) return null;
-        const raw =
-            element.getAttribute(CODE_TABS_DATA_ATTR);
+        const raw = element.getAttribute(CODE_TABS_DATA_ATTR);
         if (!raw) return null;
         return this.decode(raw);
     }
 
     static readFromAttrs(attrs?: Record<string, string>): TabsData | null {
         if (!attrs) return null;
-        const raw =
-            attrs[CODE_TABS_DATA_ATTR];
+        const raw = attrs[CODE_TABS_DATA_ATTR];
         if (!raw) return null;
         return this.decode(raw);
     }

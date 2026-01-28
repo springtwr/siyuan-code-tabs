@@ -11,7 +11,6 @@ import { TabDataManager } from "./TabDataManager";
 import { TabEditor } from "./TabEditor";
 import type { TabsData } from "./types";
 
-
 async function resolveTabsData(
     nodeId: string,
     htmlBlock: HTMLElement | null
@@ -45,7 +44,6 @@ async function persistTabsData(
     await TabDataManager.writeToBlock(nodeId, data);
     onReload?.();
 }
-
 
 async function copyTextToClipboard(text: string, i18n: IObject) {
     const content = text ?? "";
@@ -95,7 +93,6 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     }
     return null;
 }
-
 
 export class TabManager {
     private static resizeObserver: ResizeObserver | null = null;
@@ -153,8 +150,9 @@ export class TabManager {
                     },
                 });
             });
-            const anchor =
-                (evt.target as HTMLElement | null)?.closest<HTMLElement>(".tab-item--more");
+            const anchor = (evt.target as HTMLElement | null)?.closest<HTMLElement>(
+                ".tab-item--more"
+            );
             if (anchor) {
                 const rect = anchor.getBoundingClientRect();
                 menu.open({ x: rect.left, y: rect.bottom });

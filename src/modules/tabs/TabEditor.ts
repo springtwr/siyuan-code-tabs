@@ -73,8 +73,7 @@ export class TabEditor {
             width: "720px",
         });
 
-        const buildSnapshot = (data: TabsData) =>
-            JSON.stringify(TabDataManager.normalize(data));
+        const buildSnapshot = (data: TabsData) => JSON.stringify(TabDataManager.normalize(data));
         const initialSnapshot = buildSnapshot(state.data);
 
         const root = dialog.element;
@@ -176,9 +175,11 @@ export class TabEditor {
         inputCode.addEventListener("keydown", (event) => {
             if (event.key !== "Tab") return;
             event.preventDefault();
-            const editorConfig = ((window as Window & {
-                siyuan?: { config?: { editor?: { codeTabSpaces?: number } } };
-            }).siyuan?.config?.editor ?? {}) as { codeTabSpaces?: number };
+            const editorConfig = ((
+                window as Window & {
+                    siyuan?: { config?: { editor?: { codeTabSpaces?: number } } };
+                }
+            ).siyuan?.config?.editor ?? {}) as { codeTabSpaces?: number };
             const spaces = Math.max(1, Math.min(8, Number(editorConfig.codeTabSpaces ?? 4)));
             const insert = " ".repeat(spaces);
             const start = inputCode.selectionStart ?? 0;

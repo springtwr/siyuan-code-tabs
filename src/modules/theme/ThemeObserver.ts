@@ -199,9 +199,7 @@ export class ThemeObserver {
         }
     }
 
-    private getThemeMutationReason(
-        mutation: MutationRecord
-    ): ThemeMutationReason | null {
+    private getThemeMutationReason(mutation: MutationRecord): ThemeMutationReason | null {
         if (mutation.target === document.documentElement && mutation.type === "attributes") {
             const attr = mutation.attributeName;
             if (attr === "data-theme-mode") return "theme-mode";

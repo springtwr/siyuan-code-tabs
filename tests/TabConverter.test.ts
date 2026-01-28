@@ -121,11 +121,7 @@ describe("TabConverter", () => {
         const converter = new TabConverter(i18n);
         await converter.mergeCodeBlocksToTabSyntax([blockA, blockB]);
 
-        expect(api.updateBlock).toHaveBeenCalledWith(
-            "markdown",
-            expect.any(String),
-            "a"
-        );
+        expect(api.updateBlock).toHaveBeenCalledWith("markdown", expect.any(String), "a");
         expect(api.deleteBlock).toHaveBeenCalledWith("b");
     });
 });

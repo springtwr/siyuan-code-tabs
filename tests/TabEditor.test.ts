@@ -9,10 +9,10 @@ describe("TabEditor helpers", () => {
     it("buildEditorDialogContent 生成基础结构", () => {
         const html = buildEditorDialogContent({});
         expect(html).toContain("code-tabs__editor");
-        expect(html).toContain("data-action=\"add\"");
-        expect(html).toContain("data-action=\"delete\"");
-        expect(html).toContain("data-action=\"save\"");
-        expect(html).toContain("data-field=\"title\"");
+        expect(html).toContain('data-action="add"');
+        expect(html).toContain('data-action="delete"');
+        expect(html).toContain('data-action="save"');
+        expect(html).toContain('data-field="title"');
     });
 
     it("buildEditorDialogContent 使用 i18n key", () => {

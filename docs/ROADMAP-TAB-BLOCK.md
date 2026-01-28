@@ -21,13 +21,12 @@
   "version": 2,
   "active": 0,
   "tabWidth": { "mode": "auto", "maxChars": 12 },
-  "tabs": [
-    { "title": "Tab1", "lang": "plaintext", "code": "在这里输入代码" }
-  ]
+  "tabs": [{ "title": "Tab1", "lang": "plaintext", "code": "在这里输入代码" }]
 }
 ```
 
 说明：
+
 - `version`：用于迁移与兼容。
 - `active`：默认激活索引。
 - `tabWidth`：
@@ -38,33 +37,37 @@
 ### 1.2 自定义属性存储格式（定稿 + 备选对比）
 
 问题点：
+
 - 自定义属性过长可能污染 DOM；
 - 思源自定义属性对特殊字符可能有约束；
 - HTML 块内容已包含大量转义，属性层面需要更稳妥的编码。
 
 候选方案对比：
-1. **Base64(JSON)**（当前选择）  
-   - 优点：规避特殊字符、结构清晰、实现简单、与现有属性体系兼容  
-   - 缺点：体积膨胀、难以手工查看  
+
+1. **Base64(JSON)**（当前选择）
+   - 优点：规避特殊字符、结构清晰、实现简单、与现有属性体系兼容
+   - 缺点：体积膨胀、难以手工查看
    - 适合：当前阶段快速落地
-2. **SQLite（或轻量数据库）**  
-   - 优点：容量大、可查询、可扩展（适合多块统一管理）  
-   - 缺点：需要额外 IO 与索引、同步复杂（块删除/撤销/复制需清理映射）  
+2. **SQLite（或轻量数据库）**
+   - 优点：容量大、可查询、可扩展（适合多块统一管理）
+   - 缺点：需要额外 IO 与索引、同步复杂（块删除/撤销/复制需清理映射）
    - 风险：一致性难保证（尤其是跨文档复制、移动、导出/导入）
-3. **JSON 直接写入**  
-   - 优点：可读性好  
+3. **JSON 直接写入**
+   - 优点：可读性好
    - 缺点：转义与长度风险最大
-4. **分片 + 多属性**  
-   - 优点：突破长度限制  
+4. **分片 + 多属性**
+   - 优点：突破长度限制
    - 缺点：读写复杂、调试成本高
 
 结论：
+
 - 先采用 **Base64(JSON)**，避免引入数据库复杂度；
 - 若后续出现超长需求，再评估“分片”或“落盘文件”。
 
 ### 1.3 数据读写入口
 
 新增 `src/modules/tabs/TabDataManager.ts`：
+
 - `readFromAttr(nodeId | element): TabsData | null`
 - `writeToAttr(nodeId, TabsData)`
 - `migrateFromLegacy(syntaxString): TabsData`
@@ -77,17 +80,20 @@
 ### 1.4 旧语法兼容（更详细）
 
 识别来源优先级：
+
 1. **新属性数据**（主路径）
 2. **旧 HTML 块属性**（如 `custom-plugin-code-tabs-sourcecode`）
 3. **旧语法文本**（`tab:::` / `lang:::`）
 4. **新语法文本**（`::: title | lang | active`）
 
 迁移流程：
+
 - 解析任意旧来源 → 生成 `TabsData` → 写回新属性。
 - 若检测到多 active，阻止生成并提示用户。
 - 旧语法中 HTML 实体（如 `&lt;`）需还原后再入库。
 
 回退策略：
+
 - 保留“还原为代码块”入口，作为兼容与导出路径。
 
 ## 二、渲染与交互（展示层）
@@ -95,6 +101,7 @@
 ### 2.1 TabRenderer 只接收新结构
 
 重构 `TabRenderer.createProtyleHtml(data)`：
+
 - 只依赖 `TabsData`，不再读旧语法。
 - `tabWidth` 输出 CSS 变量：
   - `--code-tabs-max-width: ${maxChars}ch`
@@ -103,6 +110,7 @@
 ### 2.2 TabManager 统一入口
 
 新增/改造方法：
+
 - `getTabsDataFromNode(nodeId | element)`：先读属性，不存在则迁移。
 - `updateTabsData(nodeId, data)`：更新属性 + 生成 HTML + updateBlock + 重载。
 
@@ -114,22 +122,26 @@
 
 位置：默认按钮与复制按钮中间  
 行为：
+
 - 弹窗中显示标题、语言、代码三个字段。
 - 支持新增 / 删除 / 排序（不改变 active）。
 
 ### 3.2 弹窗表单（单 tab 编辑 + 列表操作）
 
 内容：
+
 - 标题：输入框
 - 语言：输入框（后续支持与思源一致的联想列表）
 - 代码：多行文本框（默认展开）
 - 标签列表：支持新增 / 删除 / 排序（可拖拽或上下移动按钮）
 
 校验：
+
 - 标题不可为空
 - 代码不可为空
 
 保存流程：
+
 1. 读取 `TabsData` → 找到当前 tab
 2. 更新 `title/lang/code`
 3. `updateTabsData(nodeId, data)` → 重载
@@ -140,6 +152,7 @@
 
 斜杠菜单新增 “标签页”（使用 `this.protyleSlash`）：
 插入 HTML 块 + 默认数据：
+
 - 标题：`Tab1/2/3...`
 - 语言：`plaintext`
 - 代码：`在这里输入代码`
@@ -149,6 +162,7 @@
 ### 4.2 与设置/主题联动
 
 插入后应自动应用：
+
 - active color
 - 主题样式
 - 行号规则（若启用）
@@ -161,6 +175,7 @@
 输出：单个 HTML 块（TabsData）
 
 规则：
+
 - 每个代码块转为一个 tab
 - 语言来自代码块语言
 - 标题默认 `Tab1/2/3...` 或从代码块属性 `codeTabTitle` 读取（若存在）
@@ -168,6 +183,7 @@
 ### 5.2 标签页 → 代码块
 
 直接生成多个标准代码块：
+
 - 每个 tab → 一个代码块
 - 语言 = tab.lang
 - 内容 = tab.code
@@ -178,16 +194,19 @@
 ### 6.1 UI 与存储
 
 设置方式（块级）：
+
 - `auto`
 - `max-chars` + 输入数值
 
 ### 6.2 渲染方式
 
 在 `.tab-item` 上设置：
+
 - `max-width: var(--code-tabs-max-width);`
 - `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`
 
 限制建议：
+
 - 最小值：3（不低于 2~3 个字的体验底线）
 - 最大值：20
 - 默认：12（对应当前 `max-width: 12em` 的体验）
@@ -201,10 +220,12 @@
 ## 八、测试与回归清单补充
 
 新增单测（尽量纯逻辑）：
+
 - `TabDataManager`：迁移/验证/读写
 - `TabParser`：旧语法迁移保持
 
 手动回归：
+
 - 斜杠菜单插入空标签页
 - 编辑当前 tab（标题/语言/代码）
 - 新增 / 删除 / 排序

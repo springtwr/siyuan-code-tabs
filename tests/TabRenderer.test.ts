@@ -5,8 +5,9 @@ import type { TabsData } from "@/modules/tabs/types";
 // Mock window.Lute
 (window as any).Lute = {
     New: () => ({
-        MarkdownStr: (_name: string, code: string) => `<div data-type="NodeParagraph">${code}</div>`
-    })
+        MarkdownStr: (_name: string, code: string) =>
+            `<div data-type="NodeParagraph">${code}</div>`,
+    }),
 };
 
 describe("TabRenderer", () => {

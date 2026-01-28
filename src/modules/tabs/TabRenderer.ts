@@ -5,7 +5,6 @@ import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
 import { getActiveEditor } from "siyuan";
 
-
 export async function ensureLibraryLoaded(markdown: string): Promise<void> {
     const editor = getActiveEditor(true);
     const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset.nodeId;
@@ -24,7 +23,6 @@ export class TabRenderer {
 
         const tabsOuter = containerDiv.querySelector(".tabs-outer") as HTMLElement;
         const tabs = containerDiv.querySelector(".tabs") as HTMLElement;
-
 
         const tabContents = containerDiv.querySelector(".tab-contents") as HTMLElement;
         const activeIndex = Math.min(
@@ -97,13 +95,13 @@ export class TabRenderer {
 
     private static async renderMarkdown(container: HTMLElement): Promise<string> {
         // 处理数学公式
-        const mathBlocks = container.querySelectorAll<HTMLElement>('.language-math');
+        const mathBlocks = container.querySelectorAll<HTMLElement>(".language-math");
         if (mathBlocks.length > 0) {
             await this.renderMath(mathBlocks);
         }
 
         // 处理 Mermaid
-        const mermaidBlocks = container.querySelectorAll<HTMLElement>('.language-mermaid');
+        const mermaidBlocks = container.querySelectorAll<HTMLElement>(".language-mermaid");
         if (mermaidBlocks.length > 0) {
             await this.renderMermaid(mermaidBlocks);
         }
@@ -118,16 +116,16 @@ export class TabRenderer {
     private static async renderMath(mathBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.katex) {
             // 插入公式块，让思源加载 window.katex
-            const markdown = '$$\n\n$$';
+            const markdown = "$$\n\n$$";
             await ensureLibraryLoaded(markdown);
         }
-        mathBlocks.forEach(el => {
+        mathBlocks.forEach((el) => {
             const code = el.textContent || "";
             try {
                 window.katex.render(window.Lute.UnEscapeHTMLStr(code), el, {
                     displayMode: el.classList.contains("language-math"),
                     throwOnError: false,
-                    macros: {}
+                    macros: {},
                 });
             } catch (e) {
                 logger.warn("KaTeX 渲染失败", e);
@@ -138,7 +136,7 @@ export class TabRenderer {
     private static async renderMermaid(mermaidBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.mermaid) {
             // 插入 mermaid 块，让思源加载 window.mermaid
-            const markdown = '```mermaid\n\n```';
+            const markdown = "```mermaid\n\n```";
             await ensureLibraryLoaded(markdown);
         }
         const renderPromises = Array.from(mermaidBlocks).map(async (el) => {
@@ -147,7 +145,10 @@ export class TabRenderer {
 
             try {
                 const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
-                const renderResult = await window.mermaid.render(id, window.Lute.UnEscapeHTMLStr(code));
+                const renderResult = await window.mermaid.render(
+                    id,
+                    window.Lute.UnEscapeHTMLStr(code)
+                );
                 el.innerHTML = renderResult.svg;
                 // results.push(renderResult.svg);
             } catch (e) {
@@ -161,10 +162,10 @@ export class TabRenderer {
     private static async renderCode(codeBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.hljs) {
             // 插入代码块，让思源加载 window.hljs
-            const markdown = '```typescript\n\n```';
+            const markdown = "```typescript\n\n```";
             await ensureLibraryLoaded(markdown);
         }
-        codeBlocks.forEach(el => {
+        codeBlocks.forEach((el) => {
             try {
                 const code = el.innerText;
                 const language = el.className.replace("language-", "");

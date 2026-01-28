@@ -174,7 +174,7 @@ export default class CodeTabs extends Plugin {
 
     private initSettings(): void {
         this.setting = new Setting({
-            confirmCallback: () => { },
+            confirmCallback: () => {},
         });
         this.settingsPanel.init(this.setting);
     }

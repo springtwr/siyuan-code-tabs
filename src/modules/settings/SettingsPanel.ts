@@ -1,6 +1,11 @@
 import { Setting } from "siyuan";
 
-import { TAB_WIDTH_DEFAULT, TAB_WIDTH_MAX, TAB_WIDTH_MIN, TAB_WIDTH_SETTING_KEY } from "@/constants";
+import {
+    TAB_WIDTH_DEFAULT,
+    TAB_WIDTH_MAX,
+    TAB_WIDTH_MIN,
+    TAB_WIDTH_SETTING_KEY,
+} from "@/constants";
 import { t } from "@/utils/i18n";
 import type { TabWidthSetting } from "@/modules/tabs/types";
 

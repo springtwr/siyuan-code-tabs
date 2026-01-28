@@ -381,10 +381,8 @@ export class TabConverter {
     }
 
     private extractTabsDataFromIal(ial: string): { dataRaw: string; legacyRaw: string } {
-        const dataRaw =
-            ial.match(new RegExp(`${CODE_TABS_DATA_ATTR}="([^"]*)"`, "i"))?.[1] ?? "";
-        const legacyRaw =
-            ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "";
+        const dataRaw = ial.match(new RegExp(`${CODE_TABS_DATA_ATTR}="([^"]*)"`, "i"))?.[1] ?? "";
+        const legacyRaw = ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "";
         return { dataRaw, legacyRaw };
     }
 
@@ -400,13 +398,11 @@ export class TabConverter {
         } else {
             const domBlock = block as HTMLElement;
             id = domBlock.getAttribute("data-node-id") ?? "";
-            dataRaw =
-                domBlock.getAttribute(CODE_TABS_DATA_ATTR) ?? "";
+            dataRaw = domBlock.getAttribute(CODE_TABS_DATA_ATTR) ?? "";
             legacyRaw = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
             if (!dataRaw && id) {
                 const attrs = await getBlockAttrs(id);
-                dataRaw =
-                    attrs?.[CODE_TABS_DATA_ATTR] ?? dataRaw;
+                dataRaw = attrs?.[CODE_TABS_DATA_ATTR] ?? dataRaw;
                 legacyRaw = attrs?.[CUSTOM_ATTR] ?? legacyRaw;
             }
         }
@@ -611,11 +607,11 @@ export class TabConverter {
                 return { id, codeText, languageRaw, titleAttr };
             })
             .filter(Boolean) as Array<{
-                id: string;
-                codeText: string;
-                languageRaw: string;
-                titleAttr: string;
-            }>;
+            id: string;
+            codeText: string;
+            languageRaw: string;
+            titleAttr: string;
+        }>;
 
         if (blocks.length < 2) {
             pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);

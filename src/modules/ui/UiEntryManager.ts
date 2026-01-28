@@ -29,10 +29,7 @@ type UiEntryManagerOptions = {
 };
 
 export function buildSlashMenuHtml(i18n: IObject): string {
-    const slashIcon = settingIconMain.replace(
-        "<svg",
-        '<svg class="b3-list-item__graphic"'
-    );
+    const slashIcon = settingIconMain.replace("<svg", '<svg class="b3-list-item__graphic"');
     return `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
         i18n,
         "slash.tabs"

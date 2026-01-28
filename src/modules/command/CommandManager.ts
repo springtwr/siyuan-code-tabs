@@ -87,9 +87,10 @@ export class CommandManager {
         detail.menu.addItem({
             iconHTML: "",
             label: t(this.i18n, "menu.more.mergeCodeBlocks"),
-            click: () => {
+            click: async () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
+                await this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
+                this.onReload();
             },
         });
         detail.menu.addItem({

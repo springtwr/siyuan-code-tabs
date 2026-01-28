@@ -123,7 +123,7 @@ export class TabRenderer {
             const code = el.textContent || "";
             try {
                 window.katex.render(window.Lute.UnEscapeHTMLStr(code), el, {
-                    displayMode: el.classList.contains("language-math"),
+                    displayMode: el.tagName === "DIV",
                     throwOnError: false,
                     macros: {},
                 });

@@ -1,13 +1,22 @@
-import { Marked } from "marked";
-import markedKatex, { type MarkedKatexOptions } from "marked-katex-extension";
-import { markedHighlight } from "marked-highlight";
 import type { TabsData } from "@/modules/tabs/types";
 import { protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
+import { deleteBlock, insertBlock } from "@/api";
+import { getActiveEditor } from "siyuan";
+
+
+export async function ensureLibraryLoaded(markdown: string): Promise<void> {
+    const editor = getActiveEditor(true);
+    const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset.nodeId;
+    const result = await insertBlock("markdown", markdown, "", previousId, "");
+    const tempId = result[0].doOperations[0].id;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await deleteBlock(tempId);
+}
 
 export class TabRenderer {
-    static createProtyleHtml(data: TabsData): string {
+    static async createProtyleHtml(data: TabsData): Promise<string> {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
         const containerDiv = document.createElement("div");
         containerDiv.innerHTML = protyleHtmlStr;
@@ -22,19 +31,8 @@ export class TabRenderer {
             Math.max(data.active ?? 0, 0),
             Math.max(data.tabs.length - 1, 0)
         );
-        const marked = new Marked(
-            markedHighlight({
-                langPrefix: "hljs language-",
-                highlight(code, lang) {
-                    const language = window.hljs.getLanguage(lang) ? lang : "plaintext";
-                    return window.hljs.highlight(code, { language }).value;
-                },
-            })
-        );
-        const options = {
-            throwOnError: false,
-        } as MarkedKatexOptions;
-        marked.use(markedKatex(options));
+
+        const lute = window.Lute.New();
 
         for (let i = 0; i < data.tabs.length; i++) {
             const title = data.tabs[i].title;
@@ -57,7 +55,10 @@ export class TabRenderer {
             let hlText = code;
             if (language === "markdown-render") {
                 content.dataset.raw = encodeSource(code);
-                hlText = marked.parse(code) as string;
+                const rawHtml = lute.MarkdownStr("markdown", code);
+                const mdDiv = document.createElement("div");
+                mdDiv.innerHTML = rawHtml;
+                hlText = await this.renderMarkdown(mdDiv);
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
                 hlText = window.hljs.highlight(code, {
@@ -92,6 +93,90 @@ export class TabRenderer {
         const escaped = this.normalizeHtmlBlockContent(this.escapeHtml(containerDiv.innerHTML));
         logger.debug("Tabs HTML 块生成完成");
         return `<div>${escaped}</div>`;
+    }
+
+    private static async renderMarkdown(container: HTMLElement): Promise<string> {
+        // 处理数学公式
+        const mathBlocks = container.querySelectorAll<HTMLElement>('.language-math');
+        if (mathBlocks.length > 0) {
+            await this.renderMath(mathBlocks);
+        }
+
+        // 处理 Mermaid
+        const mermaidBlocks = container.querySelectorAll<HTMLElement>('.language-mermaid');
+        if (mermaidBlocks.length > 0) {
+            await this.renderMermaid(mermaidBlocks);
+        }
+
+        // 处理代码高亮
+        const codeBlocks = container.querySelectorAll<HTMLElement>("pre code");
+        await this.renderCode(codeBlocks);
+
+        return container.innerHTML;
+    }
+
+    private static async renderMath(mathBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        if (!window.katex) {
+            // 插入公式块，让思源加载 window.katex
+            const markdown = '$$\n\n$$';
+            await ensureLibraryLoaded(markdown);
+        }
+        mathBlocks.forEach(el => {
+            const code = el.textContent || "";
+            try {
+                window.katex.render(window.Lute.UnEscapeHTMLStr(code), el, {
+                    displayMode: el.classList.contains("language-math"),
+                    throwOnError: false,
+                    macros: {}
+                });
+            } catch (e) {
+                logger.warn("KaTeX 渲染失败", e);
+            }
+        });
+    }
+
+    private static async renderMermaid(mermaidBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        if (!window.mermaid) {
+            // 插入 mermaid 块，让思源加载 window.mermaid
+            const markdown = '```mermaid\n\n```';
+            await ensureLibraryLoaded(markdown);
+        }
+        const renderPromises = Array.from(mermaidBlocks).map(async (el) => {
+            const code = el.textContent || "";
+            if (!code.trim()) return;
+
+            try {
+                const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
+                const renderResult = await window.mermaid.render(id, window.Lute.UnEscapeHTMLStr(code));
+                el.innerHTML = renderResult.svg;
+                // results.push(renderResult.svg);
+            } catch (e) {
+                logger.warn("Mermaid 渲染失败", e);
+                // results.push(code);
+            }
+        });
+        await Promise.all(renderPromises);
+    }
+
+    private static async renderCode(codeBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        if (!window.hljs) {
+            // 插入代码块，让思源加载 window.hljs
+            const markdown = '```typescript\n\n```';
+            await ensureLibraryLoaded(markdown);
+        }
+        codeBlocks.forEach(el => {
+            try {
+                const code = el.innerText;
+                const language = el.className.replace("language-", "");
+                const result = window.hljs.highlight(code, {
+                    language: language,
+                    ignoreIllegals: true,
+                });
+                el.innerHTML = result.value;
+            } catch (e) {
+                logger.warn("hljs 渲染失败", e);
+            }
+        });
     }
 
     private static normalizeHtmlBlockContent(input: string): string {

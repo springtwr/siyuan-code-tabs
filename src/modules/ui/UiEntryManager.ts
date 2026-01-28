@@ -3,7 +3,7 @@ import type { IObject } from "siyuan";
 import { pushErrMsg, updateBlock } from "@/api";
 import { settingIconMain } from "@/constants";
 import { TabDataManager } from "@/modules/tabs/TabDataManager";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
+import { ensureLibraryLoaded, TabRenderer } from "@/modules/tabs/TabRenderer";
 import { t } from "@/utils/i18n";
 
 type TopBarOptions = {
@@ -71,8 +71,11 @@ export class UiEntryManager {
             html: buildSlashMenuHtml(this.i18n),
             id: "code-tabs",
             callback: async (_protyle, nodeElement) => {
+                if (!window.hljs) {
+                    await ensureLibraryLoaded("```\n\n```");
+                }
                 const data = TabDataManager.createDefaultData();
-                const htmlBlock = TabRenderer.createProtyleHtml(data);
+                const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 const targetId = nodeElement?.dataset?.nodeId ?? "";
                 if (targetId) {
                     await updateBlock("markdown", htmlBlock, targetId);

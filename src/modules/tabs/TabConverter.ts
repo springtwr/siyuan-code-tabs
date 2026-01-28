@@ -88,7 +88,7 @@ export class TabConverter {
             data.active = newActive >= 0 ? newActive : 0;
             logger.debug("持久化排序重排完成", { count: reorderedTabs.length });
 
-            const htmlBlock = TabRenderer.createProtyleHtml(data);
+            const htmlBlock = await TabRenderer.createProtyleHtml(data);
             logger.debug("持久化排序生成 HTML 完成", { length: htmlBlock.length });
             await updateBlock("markdown", htmlBlock, nodeId);
             await TabDataManager.writeToBlock(nodeId, data);
@@ -358,7 +358,7 @@ export class TabConverter {
             toProcess,
             async ({ id, codeArr }) => {
                 const data = TabDataManager.fromCodeTabs(codeArr);
-                const htmlBlock = TabRenderer.createProtyleHtml(data);
+                const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
                 await TabDataManager.writeToBlock(id, data);
             }
@@ -611,11 +611,11 @@ export class TabConverter {
                 return { id, codeText, languageRaw, titleAttr };
             })
             .filter(Boolean) as Array<{
-            id: string;
-            codeText: string;
-            languageRaw: string;
-            titleAttr: string;
-        }>;
+                id: string;
+                codeText: string;
+                languageRaw: string;
+                titleAttr: string;
+            }>;
 
         if (blocks.length < 2) {
             pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
@@ -645,7 +645,7 @@ export class TabConverter {
 
         const data = TabDataManager.fromCodeTabs(codeArr);
         const targetId = blocks[0].id;
-        const htmlBlock = TabRenderer.createProtyleHtml(data);
+        const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
         await TabDataManager.writeToBlock(targetId, data);
         const restIds = blocks.slice(1).map((item) => item.id);

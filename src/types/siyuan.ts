@@ -175,6 +175,8 @@ declare global {
                 value: string;
             };
         };
+        katex: { render: (code: string, element: HTMLElement, options: { displayMode: boolean; throwOnError: boolean; macros: Record<string, string>; }) => void; };
+        mermaid: { render: (id: string, code: string) => { diagramType: string, svg: string } };
     }
 }
 

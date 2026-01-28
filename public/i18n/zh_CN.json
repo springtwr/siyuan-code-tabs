@@ -30,6 +30,7 @@
   "editor.dragTip": "拖动排序",
   "editor.save": "保存",
   "editor.cancel": "取消",
+  "editor.confirmDiscard": "内容已修改，确认放弃并关闭吗？",
   "editor.emptyTitle": "标题不能为空",
   "editor.emptyCode": "代码不能为空",
   "editor.deleteLast": "至少保留一个标签",

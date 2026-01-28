@@ -73,6 +73,10 @@ export class TabEditor {
             width: "720px",
         });
 
+        const buildSnapshot = (data: TabsData) =>
+            JSON.stringify(TabDataManager.normalize(data));
+        const initialSnapshot = buildSnapshot(state.data);
+
         const root = dialog.element;
         root.classList.add("code-tabs__editor-dialog");
         const listEl = root.querySelector<HTMLElement>('[data-role="tab-list"]');
@@ -125,9 +129,29 @@ export class TabEditor {
             renderList();
         };
 
-        const close = () => {
-            dialog.destroy();
+        const getDraftSnapshot = () => {
+            const draft = TabDataManager.clone(state.data);
+            const tab = draft.tabs[state.currentIndex];
+            if (tab) {
+                tab.title = inputTitle.value.trim();
+                tab.lang = TabDataManager.normalizeLanguage(inputLang.value);
+                tab.code = inputCode.value;
+            }
+            return buildSnapshot(draft);
         };
+
+        const confirmClose = () => {
+            if (getDraftSnapshot() === initialSnapshot) return true;
+            return window.confirm(t(options.i18n, "editor.confirmDiscard"));
+        };
+
+        const rawDestroy = dialog.destroy.bind(dialog);
+        const close = (force = false) => {
+            if (force || confirmClose()) {
+                rawDestroy();
+            }
+        };
+        dialog.destroy = () => close();
 
         const selectIndex = (index: number, saveCurrent: boolean) => {
             if (saveCurrent) {
@@ -352,7 +376,7 @@ export class TabEditor {
                         }
                     }
                     options.onSubmit(TabDataManager.normalize(state.data));
-                    close();
+                    close(true);
                     break;
                 }
                 case "cancel": {

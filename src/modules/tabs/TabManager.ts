@@ -164,36 +164,48 @@ export class TabManager {
             const allTabs = Array.from(
                 tabsEl.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]")
             );
-            const iconSpaceRaw = getComputedStyle(tabContainer).getPropertyValue(
-                "--code-tabs-icon-space"
-            );
-            const iconSpace = Number.parseFloat(iconSpaceRaw);
-            const reservedSpace = Number.isFinite(iconSpace) ? iconSpace : 90;
+            const moreGap = 6;
             if (allTabs.length === 0) {
                 tabContainer.classList.remove("tabs-container--has-more");
+                tabContainer.classList.remove("tabs-container--icon-sink");
+                tabsEl.style.removeProperty("--code-tabs-more-width");
                 return;
             }
             const existingMore = tabsEl.querySelector<HTMLElement>(".tab-item--more");
             if (existingMore) existingMore.remove();
-            allTabs.forEach((item) => item.classList.remove("tab-item--hidden"));
+            allTabs.forEach((item) => {
+                item.classList.remove("tab-item--hidden");
+                item.style.removeProperty("width");
+            });
+            tabContainer.classList.remove("tabs-container--has-more", "tabs-container--icon-sink");
+            tabsEl.style.removeProperty("--code-tabs-more-width");
 
             const fullAvailable = tabsEl.clientWidth;
-            const availableForNoMore = Math.max(0, fullAvailable - reservedSpace);
-            if (availableForNoMore <= 0) {
-                tabContainer.classList.remove("tabs-container--has-more");
+            if (fullAvailable <= 0) {
                 return;
             }
 
-            const totalWidth = allTabs.reduce(
-                (sum, item) => sum + item.getBoundingClientRect().width,
-                0
-            );
-            if (totalWidth <= availableForNoMore) {
-                tabContainer.classList.remove("tabs-container--has-more");
+            const widths = allTabs.map((item) => item.getBoundingClientRect().width);
+            const tabsRect = tabsEl.getBoundingClientRect();
+            const lastTab = allTabs[allTabs.length - 1];
+            const lastRect = lastTab.getBoundingClientRect();
+            const lastRight = lastRect.right - tabsRect.left;
+            const iconGroup = tabContainer.querySelector<HTMLElement>(".code-tabs--icon_group");
+            const iconRect = iconGroup?.getBoundingClientRect();
+            const iconLeft = iconRect ? iconRect.left - tabsRect.left : Number.POSITIVE_INFINITY;
+            const fontSize = Number.parseFloat(getComputedStyle(lastTab).fontSize) || 12;
+            const sinkThreshold = fontSize;
+            const shouldSink = lastRight > iconLeft + sinkThreshold;
+            const shouldShowMore = lastRight > fullAvailable;
+            if (shouldSink || shouldShowMore) {
+                tabContainer.classList.add("tabs-container--icon-sink");
+            } else {
+                tabContainer.classList.remove("tabs-container--icon-sink");
+            }
+            if (!shouldShowMore) {
                 return;
             }
 
-            const availableForMore = fullAvailable;
             const moreItem = createMoreTab();
             moreItem.style.visibility = "hidden";
             moreItem.style.position = "absolute";
@@ -202,12 +214,13 @@ export class TabManager {
             moreItem.remove();
             moreItem.style.visibility = "";
             moreItem.style.position = "";
+            tabsEl.style.setProperty("--code-tabs-more-width", `${Math.ceil(moreWidth)}px`);
 
+            const availableForMore = Math.max(0, fullAvailable - moreWidth - moreGap);
             let used = 0;
             let visibleCount = 0;
-            for (const item of allTabs) {
-                const width = item.getBoundingClientRect().width;
-                if (used + width + moreWidth <= availableForMore || visibleCount === 0) {
+            for (const width of widths) {
+                if (used + width <= availableForMore || visibleCount === 0) {
                     used += width;
                     visibleCount += 1;
                 } else {
@@ -216,7 +229,27 @@ export class TabManager {
             }
             if (visibleCount >= allTabs.length) {
                 tabContainer.classList.remove("tabs-container--has-more");
+                tabsEl.style.removeProperty("--code-tabs-more-width");
                 return;
+            }
+            if (visibleCount > 0) {
+                const visibleLastIndex = visibleCount - 1;
+                const visibleLast = allTabs[visibleLastIndex];
+                const visibleWidth = widths[visibleLastIndex];
+                const visibleMinWidth =
+                    Number.parseFloat(getComputedStyle(visibleLast).minWidth) || 0;
+                const availableForLast = availableForMore - (used - visibleWidth);
+                if (availableForLast <= 0 || availableForLast < visibleMinWidth) {
+                    if (visibleCount > 1) {
+                        visibleCount -= 1;
+                    }
+                } else if (visibleWidth <= moreWidth + moreGap) {
+                    if (visibleCount > 1) {
+                        visibleCount -= 1;
+                    }
+                } else if (visibleWidth > availableForLast) {
+                    visibleLast.style.width = `${Math.floor(availableForLast)}px`;
+                }
             }
             allTabs.slice(visibleCount).forEach((item) => item.classList.add("tab-item--hidden"));
             tabContainer.classList.add("tabs-container--has-more");

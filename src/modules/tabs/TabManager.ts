@@ -95,6 +95,8 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
 
 
 export class TabManager {
+    private static resizeObserver: ResizeObserver | null = null;
+
     static initGlobalFunctions(
         i18n: IObject,
         onReload?: () => void
@@ -161,6 +163,7 @@ export class TabManager {
         const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
             const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
             if (!tabsEl) return;
+            observeTabs(tabsEl);
             const allTabs = Array.from(
                 tabsEl.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]")
             );
@@ -268,6 +271,28 @@ export class TabManager {
                 .slice(visibleCount)
                 .some((item) => item.classList.contains("tab-item--active"));
             moreItem.classList.toggle("tab-item--more-active", activeHidden);
+        };
+
+        const setupResizeObserver = () => {
+            if (TabManager.resizeObserver) return;
+            let timer: ReturnType<typeof setTimeout> | null = null;
+            TabManager.resizeObserver = new ResizeObserver((entries) => {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(() => {
+                    for (const entry of entries) {
+                        const tabsEl = entry.target as HTMLElement;
+                        const container = tabsEl.closest<HTMLElement>(".tabs-container");
+                        if (container) {
+                            refreshOverflowForContainer(container);
+                        }
+                    }
+                }, 100);
+            });
+        };
+
+        const observeTabs = (tabsEl: HTMLElement) => {
+            if (!TabManager.resizeObserver) setupResizeObserver();
+            TabManager.resizeObserver?.observe(tabsEl);
         };
 
         const refreshOverflow = (root?: HTMLElement | ShadowRoot) => {
@@ -395,5 +420,10 @@ export class TabManager {
         };
         window.pluginCodeTabs = pluginCodeTabs;
         return pluginCodeTabs;
+    }
+
+    static cleanup(): void {
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
     }
 }

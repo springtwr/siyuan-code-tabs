@@ -70,6 +70,7 @@ export default class CodeTabs extends Plugin {
         this.themeObserver?.stop();
         this.tabConverter?.cancelCurrentTask();
         LineNumberManager.cleanup();
+        TabManager.cleanup();
         StyleProbe.cleanup();
         this.debugLogManager?.cleanup();
         this.removeInjectedStyle();
@@ -173,7 +174,7 @@ export default class CodeTabs extends Plugin {
 
     private initSettings(): void {
         this.setting = new Setting({
-            confirmCallback: () => {},
+            confirmCallback: () => { },
         });
         this.settingsPanel.init(this.setting);
     }

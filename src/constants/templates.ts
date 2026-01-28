@@ -194,6 +194,7 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     padding: 2px 4px;
     border-radius: 4px;
     cursor: grab;
+    touch-action: none;
     color: var(--b3-theme-on-surface, #666);
 }
 

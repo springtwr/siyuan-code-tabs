@@ -181,6 +181,21 @@ export class TabEditor {
                 .forEach((item) => item.classList.remove("code-tabs__editor-item--drop"));
         };
 
+        const applyReorder = (fromIndex: number, toIndex: number) => {
+            if (fromIndex === toIndex) return;
+            updateCurrentTab();
+            const [moved] = state.data.tabs.splice(fromIndex, 1);
+            state.data.tabs.splice(toIndex, 0, moved);
+            if (state.data.active === fromIndex) {
+                state.data.active = toIndex;
+            } else if (fromIndex < state.data.active && toIndex >= state.data.active) {
+                state.data.active -= 1;
+            } else if (fromIndex > state.data.active && toIndex <= state.data.active) {
+                state.data.active += 1;
+            }
+            selectIndex(toIndex, false);
+        };
+
         let dragIndex: number | null = null;
 
         listEl.addEventListener("dragstart", (event) => {
@@ -230,17 +245,7 @@ export class TabEditor {
                 dragIndex = null;
                 return;
             }
-            updateCurrentTab();
-            const [moved] = state.data.tabs.splice(dragIndex, 1);
-            state.data.tabs.splice(dropIndex, 0, moved);
-            if (state.data.active === dragIndex) {
-                state.data.active = dropIndex;
-            } else if (dragIndex < state.data.active && dropIndex >= state.data.active) {
-                state.data.active -= 1;
-            } else if (dragIndex > state.data.active && dropIndex <= state.data.active) {
-                state.data.active += 1;
-            }
-            selectIndex(dropIndex, false);
+            applyReorder(dragIndex, dropIndex);
             dragIndex = null;
         });
 
@@ -248,6 +253,62 @@ export class TabEditor {
             clearDropIndicator();
             dragIndex = null;
         });
+
+        let pointerDragIndex: number | null = null;
+        let pointerDropIndex: number | null = null;
+        let pointerId: number | null = null;
+        const resolvePointerItem = (event: PointerEvent) => {
+            const target = document.elementFromPoint(event.clientX, event.clientY);
+            return target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
+        };
+
+        listEl.addEventListener("pointerdown", (event) => {
+            if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+            const target = event.target as HTMLElement;
+            const handle = target.closest<HTMLElement>(".code-tabs__editor-item-handle");
+            if (!handle) return;
+            const item = handle.closest<HTMLElement>(".code-tabs__editor-item");
+            if (!item) return;
+            pointerDragIndex = Number(item.dataset.index ?? 0);
+            pointerDropIndex = pointerDragIndex;
+            pointerId = event.pointerId;
+            handle.setPointerCapture?.(event.pointerId);
+            clearDropIndicator();
+            item.classList.add("code-tabs__editor-item--drop");
+            event.preventDefault();
+        });
+
+        listEl.addEventListener("pointermove", (event) => {
+            if (pointerDragIndex === null || pointerId !== event.pointerId) return;
+            const item = resolvePointerItem(event);
+            if (!item) {
+                clearDropIndicator();
+                pointerDropIndex = null;
+                return;
+            }
+            const dropIndex = Number(item.dataset.index ?? 0);
+            pointerDropIndex = dropIndex;
+            clearDropIndicator();
+            item.classList.add("code-tabs__editor-item--drop");
+            event.preventDefault();
+        });
+
+        const finishPointerDrag = (event: PointerEvent) => {
+            if (pointerDragIndex === null || pointerId !== event.pointerId) return;
+            const dropIndex = pointerDropIndex;
+            clearDropIndicator();
+            if (dropIndex !== null) {
+                applyReorder(pointerDragIndex, dropIndex);
+            }
+            pointerDragIndex = null;
+            pointerDropIndex = null;
+            pointerId = null;
+            const target = event.target as HTMLElement | null;
+            target?.releasePointerCapture?.(event.pointerId);
+        };
+
+        listEl.addEventListener("pointerup", finishPointerDrag);
+        listEl.addEventListener("pointercancel", finishPointerDrag);
 
         root.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;

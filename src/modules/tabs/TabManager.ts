@@ -164,20 +164,36 @@ export class TabManager {
             const allTabs = Array.from(
                 tabsEl.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]")
             );
-            if (allTabs.length === 0) return;
+            const iconSpaceRaw = getComputedStyle(tabContainer).getPropertyValue(
+                "--code-tabs-icon-space"
+            );
+            const iconSpace = Number.parseFloat(iconSpaceRaw);
+            const reservedSpace = Number.isFinite(iconSpace) ? iconSpace : 90;
+            if (allTabs.length === 0) {
+                tabContainer.classList.remove("tabs-container--has-more");
+                return;
+            }
             const existingMore = tabsEl.querySelector<HTMLElement>(".tab-item--more");
             if (existingMore) existingMore.remove();
             allTabs.forEach((item) => item.classList.remove("tab-item--hidden"));
 
-            const available = tabsEl.clientWidth;
-            if (available <= 0) return;
+            const fullAvailable = tabsEl.clientWidth;
+            const availableForNoMore = Math.max(0, fullAvailable - reservedSpace);
+            if (availableForNoMore <= 0) {
+                tabContainer.classList.remove("tabs-container--has-more");
+                return;
+            }
 
             const totalWidth = allTabs.reduce(
                 (sum, item) => sum + item.getBoundingClientRect().width,
                 0
             );
-            if (totalWidth <= available) return;
+            if (totalWidth <= availableForNoMore) {
+                tabContainer.classList.remove("tabs-container--has-more");
+                return;
+            }
 
+            const availableForMore = fullAvailable;
             const moreItem = createMoreTab();
             moreItem.style.visibility = "hidden";
             moreItem.style.position = "absolute";
@@ -191,15 +207,19 @@ export class TabManager {
             let visibleCount = 0;
             for (const item of allTabs) {
                 const width = item.getBoundingClientRect().width;
-                if (used + width + moreWidth <= available || visibleCount === 0) {
+                if (used + width + moreWidth <= availableForMore || visibleCount === 0) {
                     used += width;
                     visibleCount += 1;
                 } else {
                     break;
                 }
             }
-            if (visibleCount >= allTabs.length) return;
+            if (visibleCount >= allTabs.length) {
+                tabContainer.classList.remove("tabs-container--has-more");
+                return;
+            }
             allTabs.slice(visibleCount).forEach((item) => item.classList.add("tab-item--hidden"));
+            tabContainer.classList.add("tabs-container--has-more");
             if (!tabsEl.dataset.moreMenuBound) {
                 tabsEl.addEventListener("click", (event) => {
                     const target = event.target as HTMLElement;

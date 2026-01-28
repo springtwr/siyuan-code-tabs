@@ -32,6 +32,8 @@
 
 .tab-item--more {
     cursor: pointer;
+    flex-grow: 1;
+    text-align: center;
 }
 
 .tab-item--more-active {
@@ -107,9 +109,9 @@
 .code-tabs--icon_group {
     opacity: 0;
     position: absolute;
-    top: 1.5em;
+    top: 50%;
     right: 6px;
-    z-index: 3;
+    z-index: 5;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -118,6 +120,12 @@
     pointer-events: none;
     background-color: var(--b3-theme-on-surface, #5f6368);
     transition: opacity 0.2s cubic-bezier(0, 0, 0.2, 1) 0ms;
+    transform: translateY(-50%);
+}
+
+.tabs-container--has-more .code-tabs--icon_group {
+    top: calc(100% + 0.2em);
+    transform: none;
 }
 
 .code-tabs--icon_default,
@@ -186,8 +194,12 @@
     /* 启用硬件加速 */
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding-right: 40px;
+    padding-right: 0;
     box-sizing: border-box;
+}
+
+.tabs-container:not(.tabs-container--has-more) .tabs {
+    padding-right: var(--code-tabs-icon-space, 90px);
 }
 
 .tabs::-webkit-scrollbar {

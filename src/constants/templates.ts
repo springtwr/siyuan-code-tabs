@@ -292,8 +292,6 @@ export const protyleHtmlStr = `
 <div class="tabs-container">
     <div class="tabs-outer">
         <div class="tabs"></div>
-    </div>
-    <div class="tab-contents">
         <span class="code-tabs--icon_group">
             <span class="code-tabs--icon_default" onclick="pluginCodeTabs.setDefault(event)" title="设为默认">
                 <svg width="14" height="14" style="display:block">
@@ -311,6 +309,8 @@ export const protyleHtmlStr = `
                 </svg>
             </span>
         </span>
+    </div>
+    <div class="tab-contents">
     </div>
 </div>`
     .replace(/>\s+</g, "><")

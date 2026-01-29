@@ -16,7 +16,7 @@ async function resolveTabsData(
     htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
     if (!window.hljs) {
-        await ensureLibraryLoaded("```\n\n```");
+        await ensureLibraryLoaded("hljs");
     }
     const dataFromDom = TabDataManager.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;

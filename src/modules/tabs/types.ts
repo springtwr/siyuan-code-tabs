@@ -1,3 +1,5 @@
+import { FENCED_BLOCK_MARKDOWN } from "@/constants";
+
 export type CodeTab = {
     title: string;
     language: string;
@@ -21,3 +23,5 @@ export type TabsData = {
     active: number;
     tabs: TabDataItem[];
 };
+
+export type FencedBlockType = keyof typeof FENCED_BLOCK_MARKDOWN;

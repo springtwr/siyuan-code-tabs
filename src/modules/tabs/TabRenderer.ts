@@ -1,14 +1,14 @@
-import type { TabsData } from "@/modules/tabs/types";
-import { protyleHtmlStr } from "@/constants";
+import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
+import { FENCED_BLOCK_MARKDOWN, protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
 import { getActiveEditor } from "siyuan";
 
-export async function ensureLibraryLoaded(markdown: string): Promise<void> {
+export async function ensureLibraryLoaded(type: FencedBlockType): Promise<void> {
     const editor = getActiveEditor(true);
     const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset.nodeId;
-    const result = await insertBlock("markdown", markdown, "", previousId, "");
+    const result = await insertBlock("markdown", FENCED_BLOCK_MARKDOWN[type], "", previousId, "");
     const tempId = result[0].doOperations[0].id;
     await new Promise((resolve) => setTimeout(resolve, 100));
     await deleteBlock(tempId);
@@ -116,8 +116,7 @@ export class TabRenderer {
     private static async renderMath(mathBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.katex) {
             // 插入公式块，让思源加载 window.katex
-            const markdown = "$$\n\n$$";
-            await ensureLibraryLoaded(markdown);
+            await ensureLibraryLoaded("katex");
         }
         mathBlocks.forEach((el) => {
             const code = el.textContent || "";
@@ -136,8 +135,7 @@ export class TabRenderer {
     private static async renderMermaid(mermaidBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.mermaid) {
             // 插入 mermaid 块，让思源加载 window.mermaid
-            const markdown = "```mermaid\n\n```";
-            await ensureLibraryLoaded(markdown);
+            await ensureLibraryLoaded("mermaid");
         }
         const renderPromises = Array.from(mermaidBlocks).map(async (el) => {
             const code = el.textContent || "";
@@ -162,8 +160,7 @@ export class TabRenderer {
     private static async renderCode(codeBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.hljs) {
             // 插入代码块，让思源加载 window.hljs
-            const markdown = "```typescript\n\n```";
-            await ensureLibraryLoaded(markdown);
+            await ensureLibraryLoaded("hljs");
         }
         codeBlocks.forEach((el) => {
             try {

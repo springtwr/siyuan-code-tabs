@@ -7,3 +7,15 @@ export const TAB_WIDTH_MIN = 3;
 export const TAB_WIDTH_MAX = 20;
 export const TAB_WIDTH_DEFAULT = 12;
 export const TAB_WIDTH_SETTING_KEY = "codeTabsTabWidth";
+
+export const FENCED_BLOCK_MARKDOWN = {
+    katex: "$$\n\n$$",
+    hljs: "```\n\n```",
+    mermaid: "```mermaid\n\n```",
+    mindmap: "```mindmap\n\n```",
+    echarts: "```echarts\n\n```",
+    abc: "```abc\n\n```",
+    graphviz: "```graphviz\n\n```",
+    flowchart: "```flowchart\n\n```",
+    plantuml: "```plantuml\n\n```",
+} as const;

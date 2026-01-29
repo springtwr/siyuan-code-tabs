@@ -69,7 +69,7 @@ export class UiEntryManager {
             id: "code-tabs",
             callback: async (_protyle, nodeElement) => {
                 if (!window.hljs) {
-                    await ensureLibraryLoaded("```\n\n```");
+                    await ensureLibraryLoaded("hljs");
                 }
                 const data = TabDataManager.createDefaultData();
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);

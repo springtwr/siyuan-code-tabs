@@ -186,7 +186,19 @@ declare global {
                 }
             ) => void;
         };
-        mermaid: { render: (id: string, code: string) => { diagramType: string; svg: string } };
+        mermaid: {
+            render: (id: string, code: string) => Promise<{ diagramType: string; svg: string }>;
+        };
+        ABCJS: {
+            renderAbc: (element: HTMLElement, code: string, options?: object) => void;
+        };
+        plantumlEncoder: {
+            encode: (text: string) => string;
+        };
+        Viz: {
+            instance(): Promise<unknown>;
+            renderSVGElement: (code: string) => SVGElement;
+        };
     }
 }
 
@@ -198,8 +210,10 @@ type SiyuanGlobal = {
             codeLigatures: boolean;
             codeLineWrap: boolean;
             codeSyntaxHighlightLineNum: boolean;
-            codeTabSpaces?: number;
-            allowHTMLBLockScript?: boolean;
+            codeTabSpaces: number;
+            allowHTMLBLockScript: boolean;
+            katexMacros: string;
+            plantUMLServePath: string;
         };
         appearance: {
             mode: string;

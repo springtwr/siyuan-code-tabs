@@ -23,7 +23,10 @@ if (!globalThis.window.siyuan) {
                 codeLigatures: false,
                 codeLineWrap: false,
                 codeSyntaxHighlightLineNum: false,
+                codeTabSpaces: 4,
                 allowHTMLBLockScript: true,
+                katexMacros: "{}",
+                plantUMLServePath: "http://www.plantuml.com/plantuml/svg/~1",
             },
             appearance: {
                 mode: "light",

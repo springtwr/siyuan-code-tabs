@@ -3,7 +3,7 @@ import { FENCED_BLOCK_MARKDOWN, protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
-import { getActiveEditor } from "siyuan";
+import { getActiveEditor, Viz } from "siyuan";
 
 export async function ensureLibraryLoaded(type: FencedBlockType): Promise<void> {
     const editor = getActiveEditor(true);
@@ -108,7 +108,27 @@ export class TabRenderer {
 
         // 处理代码高亮
         const codeBlocks = container.querySelectorAll<HTMLElement>("pre code");
-        await this.renderCode(codeBlocks);
+        if (codeBlocks.length > 0) {
+            await this.renderCode(codeBlocks);
+        }
+
+        // 处理五线谱
+        const abcBlocks = container.querySelectorAll<HTMLElement>(".language-abc");
+        if (abcBlocks.length > 0) {
+            await this.renderAbc(abcBlocks);
+        }
+
+        // 处理 plantUML
+        const plantumlBlocks = container.querySelectorAll<HTMLElement>(".language-plantuml");
+        if (plantumlBlocks.length > 0) {
+            await this.renderPlantUML(plantumlBlocks);
+        }
+
+        // 处理 Graphviz
+        const graphvizBlocks = container.querySelectorAll<HTMLElement>(".language-graphviz");
+        if (graphvizBlocks.length > 0) {
+            await this.renderGraphviz(graphvizBlocks);
+        }
 
         return container.innerHTML;
     }
@@ -118,13 +138,16 @@ export class TabRenderer {
             // 插入公式块，让思源加载 window.katex
             await ensureLibraryLoaded("katex");
         }
+        // 预处理 Macros 配置
+        const macros = JSON.parse(window.siyuan.config.editor.katexMacros || "{}");
         mathBlocks.forEach((el) => {
-            const code = el.textContent || "";
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) return;
             try {
-                window.katex.render(window.Lute.UnEscapeHTMLStr(code), el, {
+                window.katex.render(code, el, {
                     displayMode: el.tagName === "DIV",
                     throwOnError: false,
-                    macros: {},
+                    macros: macros,
                 });
             } catch (e) {
                 logger.warn("KaTeX 渲染失败", e);
@@ -138,20 +161,15 @@ export class TabRenderer {
             await ensureLibraryLoaded("mermaid");
         }
         const renderPromises = Array.from(mermaidBlocks).map(async (el) => {
-            const code = el.textContent || "";
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
             if (!code.trim()) return;
 
             try {
                 const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
-                const renderResult = await window.mermaid.render(
-                    id,
-                    window.Lute.UnEscapeHTMLStr(code)
-                );
+                const renderResult = await window.mermaid.render(id, code);
                 el.innerHTML = renderResult.svg;
-                // results.push(renderResult.svg);
             } catch (e) {
                 logger.warn("Mermaid 渲染失败", e);
-                // results.push(code);
             }
         });
         await Promise.all(renderPromises);
@@ -163,6 +181,9 @@ export class TabRenderer {
             await ensureLibraryLoaded("hljs");
         }
         codeBlocks.forEach((el) => {
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) return;
+
             try {
                 const code = el.innerText;
                 const language = el.className.replace("language-", "");
@@ -173,6 +194,116 @@ export class TabRenderer {
                 el.innerHTML = result.value;
             } catch (e) {
                 logger.warn("hljs 渲染失败", e);
+            }
+        });
+    }
+
+    private static async renderAbc(abcBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        if (!window.ABCJS) {
+            // 插入 abcjs 块，让思源加载 window.ABCJS
+            await ensureLibraryLoaded("abc");
+        }
+        abcBlocks.forEach((el) => {
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) return;
+
+            try {
+                // 解析配置（查找 %%params）
+                const config = this.parseAbcParams(code);
+
+                window.ABCJS.renderAbc(el, code, config);
+                // el.innerHTML = renderResult.svg;
+            } catch (e) {
+                logger.warn("五线谱渲染失败", e);
+            }
+        });
+    }
+
+    /** ABCJS 解析 %%params 的辅助函数 */
+    private static parseAbcParams(code: string) {
+        const lines = code.split("\n");
+        const firstLine = lines[0] || "";
+
+        if (firstLine.trim().startsWith("%%params")) {
+            try {
+                return JSON.parse(firstLine.trim().substring("%%params".length));
+            } catch (e) {
+                logger.warn("无效的五线谱参数", e);
+            }
+        }
+        return { responsive: "resize" };
+    }
+
+    private static async renderPlantUML(plantumlBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        // 确保 plantumlEncoder 已加载
+        if (!window.plantumlEncoder) {
+            await ensureLibraryLoaded("plantuml");
+        }
+
+        plantumlBlocks.forEach((el) => {
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) return;
+
+            try {
+                // 将 PlantUML 文本压缩成 URL 参数
+                const encoded = window.plantumlEncoder.encode(code);
+
+                // 从思源配置中获取 PlantUML 服务地址
+                const serverUrl =
+                    window.siyuan.config.editor.plantUMLServePath ||
+                    "http://www.plantuml.com/plantuml/svg/~1";
+                const imageUrl = `${serverUrl}${encoded}`;
+
+                // 渲染 SVG
+                el.innerHTML = `<object type="image/svg+xml" data="${imageUrl}"></object>`;
+
+                // 错误降级处理 如果 <object> 加载失败（某些浏览器不支持），尝试降级为 <img>
+                const obj = el.firstElementChild as HTMLObjectElement;
+                if (obj) {
+                    obj.addEventListener("error", () => {
+                        el.innerHTML = `<img src="${imageUrl}" alt="PlantUML diagram" />`;
+                    });
+                }
+            } catch (e) {
+                logger.warn("PlantUML 渲染失败", e);
+                // 在界面上显示错误信息
+                el.innerHTML = `<span class="ft__error">Render Error</span>`;
+            }
+        });
+    }
+
+    private static async renderGraphviz(graphvizBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        //
+        if (!window.Viz) {
+            await ensureLibraryLoaded("graphviz");
+        }
+
+        // 准备 Viz 实例
+        // Viz.instance() 异步返回 viz 实例对象
+        let vizInstance: Viz;
+        try {
+            vizInstance = (await window.Viz.instance()) as Viz;
+        } catch (e) {
+            logger.error("Graphviz 初始化失败", e);
+            return;
+        }
+        graphvizBlocks.forEach((el) => {
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) return;
+
+            // 准备容器
+            el.innerHTML = `<div style="width:100%; overflow:auto;"></div>`;
+            const container = el.firstElementChild as HTMLElement;
+
+            try {
+                // 渲染
+                const svgElement = vizInstance.renderSVGElement(code);
+
+                // 插入 DOM
+                container.appendChild(svgElement);
+            } catch (e) {
+                logger.warn("Graphviz 渲染失败", e);
+                container.innerHTML = `<div class="ft__error">Graphviz Render Error: ${e.message}</div>`;
             }
         });
     }

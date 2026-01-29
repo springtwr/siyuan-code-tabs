@@ -94,41 +94,57 @@ export class TabRenderer {
     }
 
     private static async renderMarkdown(container: HTMLElement): Promise<string> {
+        const promises: Promise<void>[] = [];
+
         // 处理数学公式
         const mathBlocks = container.querySelectorAll<HTMLElement>(".language-math");
         if (mathBlocks.length > 0) {
-            await this.renderMath(mathBlocks);
+            promises.push(this.renderMath(mathBlocks));
         }
 
         // 处理 Mermaid
         const mermaidBlocks = container.querySelectorAll<HTMLElement>(".language-mermaid");
         if (mermaidBlocks.length > 0) {
-            await this.renderMermaid(mermaidBlocks);
+            promises.push(this.renderMermaid(mermaidBlocks));
         }
 
         // 处理代码高亮
         const codeBlocks = container.querySelectorAll<HTMLElement>("pre code");
         if (codeBlocks.length > 0) {
-            await this.renderCode(codeBlocks);
+            promises.push(this.renderCode(codeBlocks));
         }
 
         // 处理五线谱
         const abcBlocks = container.querySelectorAll<HTMLElement>(".language-abc");
         if (abcBlocks.length > 0) {
-            await this.renderAbc(abcBlocks);
+            promises.push(this.renderAbc(abcBlocks));
         }
 
         // 处理 plantUML
         const plantumlBlocks = container.querySelectorAll<HTMLElement>(".language-plantuml");
         if (plantumlBlocks.length > 0) {
-            await this.renderPlantUML(plantumlBlocks);
+            promises.push(this.renderPlantUML(plantumlBlocks));
         }
 
         // 处理 Graphviz
         const graphvizBlocks = container.querySelectorAll<HTMLElement>(".language-graphviz");
         if (graphvizBlocks.length > 0) {
-            await this.renderGraphviz(graphvizBlocks);
+            promises.push(this.renderGraphviz(graphvizBlocks));
         }
+
+        // 处理 Flowchart
+        const flowchartBlocks = container.querySelectorAll<HTMLElement>(".language-flowchart");
+        if (flowchartBlocks.length > 0) {
+            promises.push(this.renderFlowchart(flowchartBlocks));
+        }
+        
+        // 处理 ECharts
+        const echartsBlocks = container.querySelectorAll<HTMLElement>(".language-echarts");
+        if (echartsBlocks.length > 0) {
+            promises.push(this.renderEcharts(echartsBlocks));
+        }
+
+        await Promise.all(promises);
 
         return container.innerHTML;
     }
@@ -212,7 +228,6 @@ export class TabRenderer {
                 const config = this.parseAbcParams(code);
 
                 window.ABCJS.renderAbc(el, code, config);
-                // el.innerHTML = renderResult.svg;
             } catch (e) {
                 logger.warn("五线谱渲染失败", e);
             }
@@ -273,7 +288,7 @@ export class TabRenderer {
     }
 
     private static async renderGraphviz(graphvizBlocks: NodeListOf<HTMLElement>): Promise<void> {
-        //
+        // 确保 Viz 已加载
         if (!window.Viz) {
             await ensureLibraryLoaded("graphviz");
         }
@@ -306,6 +321,108 @@ export class TabRenderer {
                 container.innerHTML = `<div class="ft__error">Graphviz Render Error: ${e.message}</div>`;
             }
         });
+    }
+
+    private static async renderFlowchart(flowchartBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        // 确保 flowchart 已加载
+        if (!window.flowchart) {
+            await ensureLibraryLoaded("flowchart");
+        }
+
+        flowchartBlocks.forEach((el) => {            
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent || "");
+            if (!code.trim()) return;
+
+            try {
+                // 清空并创建容器
+                const container = document.createElement("div"); 
+                container.className = "flowchart-container";
+                // 调用 flowchart.js
+                window.flowchart.parse(code).drawSVG(container);
+                el.innerHTML = container.outerHTML;
+            } catch (e) {
+                logger.warn("Flowchart 渲染失败", e);
+                el.innerHTML = `<div class="ft__error">Render Error: ${e}</div>`;
+            }
+        });
+    }
+
+    private static async renderEcharts(echartsBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        // 确保 echarts 已加载
+        if (!window.echarts) {
+            await ensureLibraryLoaded("echarts");
+        }
+
+        // 创建所有图表的渲染任务
+        const renderTasks = Array.from(echartsBlocks).map(async (el) => {
+            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!code.trim()) {
+                return;
+            }
+
+            try {
+                const config = JSON.parse(code);
+
+                // 创建/获取容器
+                let container = el.querySelector('div.data-echarts-container') as HTMLElement;
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = "data-echarts-container";
+                }
+
+                // 获取或初始化实例
+                let chart = window.echarts.getInstanceByDom(container);
+                const echartsTheme = window.siyuan.config.appearance.mode === 'dark' ? 'dark' : null;
+
+                if (chart) {
+                    // 类型变化时清空
+                    const oldType = chart.getOption().series?.[0]?.type;
+                    const newType = config.series?.[0]?.type;
+                    if (oldType && oldType !== newType) {
+                        chart.clear();
+                    }
+                } else {
+                    const editor = getActiveEditor(true);
+                    const containerWidth = editor?.protyle.wysiwyg.element.firstElementChild.clientWidth - 40 || 420;
+                    chart = window.echarts.init(container, echartsTheme, { 
+                        renderer: 'svg', 
+                        width: containerWidth, 
+                        height: 420 
+                    });
+                }
+
+                // 封装 finished 事件为 Promise
+                const renderFinished = new Promise<void>((resolve) => {
+                    const handler = () => {
+                        resolve();
+                        chart?.off('finished', handler); // 避免内存泄漏
+                    };
+                    chart?.on('finished', handler);
+                });
+
+                // 应用配置
+                chart.setOption(config);
+
+                // 等待渲染完成
+                await renderFinished;
+
+                // 更新 DOM
+                el.innerHTML = container.outerHTML;
+                logger.debug("ECharts 设置完成");
+
+            } catch (e) {
+                logger.warn("ECharts 渲染失败", e);
+                // 错误处理
+                const existingChart = window.echarts.getInstanceByDom(el);
+                if (existingChart) {
+                    existingChart.dispose();
+                }
+                el.innerHTML = `<div style="height:420px" class="ft__error">Render Error: ${e.message}</div>`;
+            }
+        });
+
+        // 并发执行所有任务
+        await Promise.all(renderTasks);
     }
 
     private static normalizeHtmlBlockContent(input: string): string {

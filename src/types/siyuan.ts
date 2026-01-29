@@ -199,6 +199,8 @@ declare global {
             instance(): Promise<unknown>;
             renderSVGElement: (code: string) => SVGElement;
         };
+        flowchart: any;
+        echarts: any;
     }
 }
 

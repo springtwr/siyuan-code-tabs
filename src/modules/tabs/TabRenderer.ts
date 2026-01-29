@@ -5,15 +5,6 @@ import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
 import { getActiveEditor, Viz } from "siyuan";
 
-export async function ensureLibraryLoaded(type: FencedBlockType): Promise<void> {
-    const editor = getActiveEditor(true);
-    const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset.nodeId;
-    const result = await insertBlock("markdown", FENCED_BLOCK_MARKDOWN[type], "", previousId, "");
-    const tempId = result[0].doOperations[0].id;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await deleteBlock(tempId);
-}
-
 export class TabRenderer {
     static async createProtyleHtml(data: TabsData): Promise<string> {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
@@ -132,18 +123,6 @@ export class TabRenderer {
             promises.push(this.renderGraphviz(graphvizBlocks));
         }
 
-        // 处理 Flowchart
-        const flowchartBlocks = container.querySelectorAll<HTMLElement>(".language-flowchart");
-        if (flowchartBlocks.length > 0) {
-            promises.push(this.renderFlowchart(flowchartBlocks));
-        }
-        
-        // 处理 ECharts
-        const echartsBlocks = container.querySelectorAll<HTMLElement>(".language-echarts");
-        if (echartsBlocks.length > 0) {
-            promises.push(this.renderEcharts(echartsBlocks));
-        }
-
         await Promise.all(promises);
 
         return container.innerHTML;
@@ -152,7 +131,7 @@ export class TabRenderer {
     private static async renderMath(mathBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.katex) {
             // 插入公式块，让思源加载 window.katex
-            await ensureLibraryLoaded("katex");
+            await this.ensureLibraryLoaded("katex");
         }
         // 预处理 Macros 配置
         const macros = JSON.parse(window.siyuan.config.editor.katexMacros || "{}");
@@ -174,7 +153,7 @@ export class TabRenderer {
     private static async renderMermaid(mermaidBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.mermaid) {
             // 插入 mermaid 块，让思源加载 window.mermaid
-            await ensureLibraryLoaded("mermaid");
+            await this.ensureLibraryLoaded("mermaid");
         }
         const renderPromises = Array.from(mermaidBlocks).map(async (el) => {
             const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
@@ -194,7 +173,7 @@ export class TabRenderer {
     private static async renderCode(codeBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.hljs) {
             // 插入代码块，让思源加载 window.hljs
-            await ensureLibraryLoaded("hljs");
+            await this.ensureLibraryLoaded("hljs");
         }
         codeBlocks.forEach((el) => {
             const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
@@ -217,7 +196,7 @@ export class TabRenderer {
     private static async renderAbc(abcBlocks: NodeListOf<HTMLElement>): Promise<void> {
         if (!window.ABCJS) {
             // 插入 abcjs 块，让思源加载 window.ABCJS
-            await ensureLibraryLoaded("abc");
+            await this.ensureLibraryLoaded("abc");
         }
         abcBlocks.forEach((el) => {
             const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
@@ -252,7 +231,7 @@ export class TabRenderer {
     private static async renderPlantUML(plantumlBlocks: NodeListOf<HTMLElement>): Promise<void> {
         // 确保 plantumlEncoder 已加载
         if (!window.plantumlEncoder) {
-            await ensureLibraryLoaded("plantuml");
+            await this.ensureLibraryLoaded("plantuml");
         }
 
         plantumlBlocks.forEach((el) => {
@@ -290,7 +269,7 @@ export class TabRenderer {
     private static async renderGraphviz(graphvizBlocks: NodeListOf<HTMLElement>): Promise<void> {
         // 确保 Viz 已加载
         if (!window.Viz) {
-            await ensureLibraryLoaded("graphviz");
+            await this.ensureLibraryLoaded("graphviz");
         }
 
         // 准备 Viz 实例
@@ -323,39 +302,18 @@ export class TabRenderer {
         });
     }
 
-    private static async renderFlowchart(flowchartBlocks: NodeListOf<HTMLElement>): Promise<void> {
-        // 确保 flowchart 已加载
-        if (!window.flowchart) {
-            await ensureLibraryLoaded("flowchart");
-        }
-
-        flowchartBlocks.forEach((el) => {            
-            const code = window.Lute.UnEscapeHTMLStr(el.textContent || "");
-            if (!code.trim()) return;
-
-            try {
-                // 清空并创建容器
-                const container = document.createElement("div"); 
-                container.className = "flowchart-container";
-                // 调用 flowchart.js
-                window.flowchart.parse(code).drawSVG(container);
-                el.innerHTML = container.outerHTML;
-            } catch (e) {
-                logger.warn("Flowchart 渲染失败", e);
-                el.innerHTML = `<div class="ft__error">Render Error: ${e}</div>`;
-            }
-        });
-    }
-
-    private static async renderEcharts(echartsBlocks: NodeListOf<HTMLElement>): Promise<void> {
+    static async renderEcharts(echartsBlocks: NodeListOf<HTMLElement>): Promise<void> {
         // 确保 echarts 已加载
         if (!window.echarts) {
-            await ensureLibraryLoaded("echarts");
+            await this.ensureLibraryLoaded("echarts");
         }
 
         // 创建所有图表的渲染任务
         const renderTasks = Array.from(echartsBlocks).map(async (el) => {
-            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!el.dataset.content) {
+                el.dataset.content = el.textContent;
+            }
+            const code = window.Lute.UnEscapeHTMLStr(el.dataset.content);
             if (!code.trim()) {
                 return;
             }
@@ -364,52 +322,38 @@ export class TabRenderer {
                 const config = JSON.parse(code);
 
                 // 创建/获取容器
-                let container = el.querySelector('div.data-echarts-container') as HTMLElement;
+                let container = el.querySelector("div.data-echarts-container") as HTMLElement;
+                const containerWidth = el.clientWidth - 20 || 420;
+                const containerHeight =
+                    250 < el.clientHeight && el.clientHeight < 420 ? el.clientHeight : 420;
                 if (!container) {
-                    container = document.createElement('div');
-                    container.className = "data-echarts-container";
+                    el.innerHTML = `<div class="data-echarts-container" style="height:${containerHeight}; width: 100%;"></div>`;
+                    container = el.firstElementChild as HTMLElement;
                 }
 
                 // 获取或初始化实例
                 let chart = window.echarts.getInstanceByDom(container);
-                const echartsTheme = window.siyuan.config.appearance.mode === 'dark' ? 'dark' : null;
+                const echartsTheme =
+                    window.siyuan.config.appearance.mode === "dark" ? "dark" : null;
 
                 if (chart) {
                     // 类型变化时清空
+                    chart.resize({ width: containerWidth, height: containerHeight });
                     const oldType = chart.getOption().series?.[0]?.type;
                     const newType = config.series?.[0]?.type;
                     if (oldType && oldType !== newType) {
                         chart.clear();
                     }
                 } else {
-                    const editor = getActiveEditor(true);
-                    const containerWidth = editor?.protyle.wysiwyg.element.firstElementChild.clientWidth - 40 || 420;
-                    chart = window.echarts.init(container, echartsTheme, { 
-                        renderer: 'svg', 
-                        width: containerWidth, 
-                        height: 420 
+                    chart = window.echarts.init(container, echartsTheme, {
+                        width: containerWidth,
+                        height: containerHeight,
                     });
                 }
 
-                // 封装 finished 事件为 Promise
-                const renderFinished = new Promise<void>((resolve) => {
-                    const handler = () => {
-                        resolve();
-                        chart?.off('finished', handler); // 避免内存泄漏
-                    };
-                    chart?.on('finished', handler);
-                });
-
                 // 应用配置
                 chart.setOption(config);
-
-                // 等待渲染完成
-                await renderFinished;
-
-                // 更新 DOM
-                el.innerHTML = container.outerHTML;
                 logger.debug("ECharts 设置完成");
-
             } catch (e) {
                 logger.warn("ECharts 渲染失败", e);
                 // 错误处理
@@ -423,6 +367,46 @@ export class TabRenderer {
 
         // 并发执行所有任务
         await Promise.all(renderTasks);
+    }
+
+    static async renderFlowchart(flowchartBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        // 确保 flowchart 已加载
+        if (!window.flowchart) {
+            await this.ensureLibraryLoaded("flowchart");
+        }
+
+        flowchartBlocks.forEach((el) => {
+            if (!el.dataset.content) {
+                el.dataset.content = el.textContent;
+            }
+            const code = window.Lute.UnEscapeHTMLStr(el.dataset.content);
+
+            try {
+                // 清空并创建容器
+                el.innerHTML = `<div class="flowchart-container"></div>`;
+                // 调用 flowchart.js
+                window.flowchart.parse(code).drawSVG(el.lastElementChild);
+            } catch (e) {
+                logger.warn("Flowchart 渲染失败", e);
+                el.innerHTML = `<div class="ft__error">Render Error: ${e}</div>`;
+            }
+        });
+    }
+
+    static async ensureLibraryLoaded(type: FencedBlockType): Promise<void> {
+        const editor = getActiveEditor(true);
+        const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset
+            .nodeId;
+        const result = await insertBlock(
+            "markdown",
+            FENCED_BLOCK_MARKDOWN[type],
+            "",
+            previousId,
+            ""
+        );
+        const tempId = result[0].doOperations[0].id;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await deleteBlock(tempId);
     }
 
     private static normalizeHtmlBlockContent(input: string): string {

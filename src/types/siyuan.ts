@@ -162,30 +162,59 @@ export interface IResExportResources {
     path: string;
 }
 
+declare interface IHljs {
+    getLanguage: (lang: string) => string | null;
+    highlight: (
+        code: string,
+        options: { language: string; ignoreIllegals?: boolean }
+    ) => {
+        value: string;
+    };
+}
+
+declare interface IKatex {
+    render: (
+        code: string,
+        element: HTMLElement,
+        options: {
+            displayMode: boolean;
+            throwOnError: boolean;
+            macros: Record<string, string>;
+        }
+    ) => void;
+}
+
+declare interface IViz {
+    instance(): Promise<IViz>;
+    renderSVGElement: (code: string) => SVGElement;
+}
+
+declare interface IEcharts {
+    getInstanceByDom: (element: HTMLElement) => IEcharts | null;
+    init: (
+        element: HTMLElement,
+        theme?: string | null,
+        options?: Record<string, unknown>
+    ) => IEcharts | null;
+    dispose: () => void;
+    clear: () => void;
+    setOption: (options: object) => void;
+    getOption: () => {
+        series?: Array<{
+            type?: string;
+        }>;
+    };
+    resize: (options?: Record<string, unknown>) => void;
+}
+
 declare global {
     interface Window {
         siyuan: SiyuanGlobal;
         pluginCodeTabs: unknown;
-        hljs: {
-            getLanguage: (lang: string) => unknown;
-            highlight: (
-                code: string,
-                options: { language: string; ignoreIllegals?: boolean }
-            ) => {
-                value: string;
-            };
-        };
-        katex: {
-            render: (
-                code: string,
-                element: HTMLElement,
-                options: {
-                    displayMode: boolean;
-                    throwOnError: boolean;
-                    macros: Record<string, string>;
-                }
-            ) => void;
-        };
+        katex: IKatex;
+        Viz: IViz;
+        echarts: IEcharts;
+        hljs: IHljs;
         mermaid: {
             render: (id: string, code: string) => Promise<{ diagramType: string; svg: string }>;
         };
@@ -195,12 +224,9 @@ declare global {
         plantumlEncoder: {
             encode: (text: string) => string;
         };
-        Viz: {
-            instance(): Promise<unknown>;
-            renderSVGElement: (code: string) => SVGElement;
+        flowchart: {
+            parse: (code: string) => { drawSVG: (element: Element) => void };
         };
-        flowchart: any;
-        echarts: any;
     }
 }
 

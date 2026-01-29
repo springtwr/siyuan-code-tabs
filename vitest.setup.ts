@@ -9,7 +9,7 @@ if (!globalThis.btoa) {
 
 if (!globalThis.window.hljs) {
     globalThis.window.hljs = {
-        getLanguage: (lang: string) => (lang ? { name: lang } : null),
+        getLanguage: (lang: string) => (lang ? lang : null),
         highlight: (code: string) => ({ value: code }),
     };
 }

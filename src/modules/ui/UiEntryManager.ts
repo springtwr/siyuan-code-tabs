@@ -3,7 +3,7 @@ import type { IObject } from "siyuan";
 import { pushErrMsg, updateBlock } from "@/api";
 import { settingIconMain } from "@/constants";
 import { TabDataManager } from "@/modules/tabs/TabDataManager";
-import { ensureLibraryLoaded, TabRenderer } from "@/modules/tabs/TabRenderer";
+import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { t } from "@/utils/i18n";
 
 type TopBarOptions = {
@@ -69,7 +69,7 @@ export class UiEntryManager {
             id: "code-tabs",
             callback: async (_protyle, nodeElement) => {
                 if (!window.hljs) {
-                    await ensureLibraryLoaded("hljs");
+                    await TabRenderer.ensureLibraryLoaded("hljs");
                 }
                 const data = TabDataManager.createDefaultData();
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);

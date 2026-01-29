@@ -3,7 +3,7 @@ import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { t } from "@/utils/i18n";
-import { ensureLibraryLoaded, TabRenderer } from "./TabRenderer";
+import { TabRenderer } from "./TabRenderer";
 import { IObject, Menu } from "siyuan";
 import { StyleProbe } from "../theme/StyleProbe";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
@@ -16,7 +16,7 @@ async function resolveTabsData(
     htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
     if (!window.hljs) {
-        await ensureLibraryLoaded("hljs");
+        await TabRenderer.ensureLibraryLoaded("hljs");
     }
     const dataFromDom = TabDataManager.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;
@@ -123,6 +123,18 @@ export class TabManager {
             });
             refreshOverflowForContainer(tabContainer);
             LineNumberManager.refreshActive(tabContainer);
+            const echartsBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-echarts"
+            );
+            if (echartsBlocks.length > 0) {
+                TabRenderer.renderEcharts(echartsBlocks);
+            }
+            const flowchartBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-flowchart"
+            );
+            if (flowchartBlocks.length > 0) {
+                TabRenderer.renderFlowchart(flowchartBlocks);
+            }
         };
 
         const createMoreTab = () => {

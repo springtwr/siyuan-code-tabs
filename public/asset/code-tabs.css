@@ -125,7 +125,8 @@
 
 .code-tabs--icon_default,
 .code-tabs--icon_edit,
-.code-tabs--icon_copy {
+.code-tabs--icon_copy,
+.code-tabs--icon_refresh {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -145,14 +146,16 @@
 
 .code-tabs--icon_edit:hover,
 .code-tabs--icon_copy:hover,
-.code-tabs--icon_default:hover {
+.code-tabs--icon_default:hover,
+.code-tabs--icon_refresh:hover {
     background-color: var(--b3-theme-on-background, #222);
     color: var(--b3-theme-background, #fff);
 }
 
 .code-tabs--icon_edit svg,
 .code-tabs--icon_copy svg,
-.code-tabs--icon_default svg {
+.code-tabs--icon_default svg,
+.code-tabs--icon_refresh svg {
     width: 14px;
     height: 14px;
     fill: currentColor;

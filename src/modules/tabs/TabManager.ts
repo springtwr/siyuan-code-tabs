@@ -435,6 +435,18 @@ export class TabManager {
                     },
                 });
             },
+            refreshEcharts: async (evt: Event) => {
+                const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
+                if (!trigger) return;
+                const echartsRoot = trigger.closest(".language-echarts") as HTMLElement;
+                const echartsContainer = echartsRoot?.querySelector<HTMLElement>(".echarts-container");
+                if (!echartsContainer) return;
+                
+                const width = echartsContainer?.clientWidth - 20 || 420;
+                const height = 420;
+                // 一般出现这个按钮说明 echarts 已经加载了
+                window.echarts?.getInstanceByDom(echartsContainer)?.resize({ width: width, height: height });
+            },
             refreshOverflow,
         };
         window.pluginCodeTabs = pluginCodeTabs;

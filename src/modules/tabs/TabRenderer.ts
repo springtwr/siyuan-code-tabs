@@ -1,5 +1,5 @@
 import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
-import { FENCED_BLOCK_MARKDOWN, protyleHtmlStr } from "@/constants";
+import { ECHARTS_CONTAINER_HTML, FENCED_BLOCK_MARKDOWN, protyleHtmlStr } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
@@ -322,11 +322,12 @@ export class TabRenderer {
                 const config = JSON.parse(code);
 
                 // 创建/获取容器
+                el.style.position = "relative";
                 let container = el.querySelector("div.echarts-container") as HTMLElement;
                 const containerWidth = el.clientWidth - 20 || 420;
                 const containerHeight = 420;
                 if (!container) {
-                    el.innerHTML = `<div class="echarts-container" style="height:${containerHeight}; width: 100%;"></div>`;
+                    el.innerHTML = ECHARTS_CONTAINER_HTML.replace("{HEIGHT}", String(containerHeight));
                     container = el.firstElementChild as HTMLElement;
                 }
 

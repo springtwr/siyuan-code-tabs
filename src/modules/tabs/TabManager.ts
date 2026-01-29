@@ -135,6 +135,12 @@ export class TabManager {
             if (flowchartBlocks.length > 0) {
                 TabRenderer.renderFlowchart(flowchartBlocks);
             }
+            const mindmapBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-mindmap"
+            );
+            if (mindmapBlocks.length > 0) {
+                TabRenderer.renderMindmap(mindmapBlocks);
+            }
         };
 
         const createMoreTab = () => {

@@ -322,12 +322,11 @@ export class TabRenderer {
                 const config = JSON.parse(code);
 
                 // 创建/获取容器
-                let container = el.querySelector("div.data-echarts-container") as HTMLElement;
+                let container = el.querySelector("div.echarts-container") as HTMLElement;
                 const containerWidth = el.clientWidth - 20 || 420;
-                const containerHeight =
-                    250 < el.clientHeight && el.clientHeight < 420 ? el.clientHeight : 420;
+                const containerHeight = 420;
                 if (!container) {
-                    el.innerHTML = `<div class="data-echarts-container" style="height:${containerHeight}; width: 100%;"></div>`;
+                    el.innerHTML = `<div class="echarts-container" style="height:${containerHeight}; width: 100%;"></div>`;
                     container = el.firstElementChild as HTMLElement;
                 }
 
@@ -391,6 +390,115 @@ export class TabRenderer {
                 el.innerHTML = `<div class="ft__error">Render Error: ${e}</div>`;
             }
         });
+    }
+
+    static async renderMindmap(mindmapBlocks: NodeListOf<HTMLElement>): Promise<void> {
+        // mindmap 也是用 ECharts 实现的
+        if (!window.echarts) {
+            await this.ensureLibraryLoaded("mindmap");
+        }
+
+        const renderTasks = Array.from(mindmapBlocks).map(async (el) => {
+            if (!el.dataset.content) {
+                el.dataset.content = el.textContent;
+            }
+            const code = window.Lute.UnEscapeHTMLStr(el.dataset.content);
+            if (!code.trim()) {
+                return;
+            }
+
+            try {
+                // 使用 Lute 将特定格式的字符串转为 ECharts tree 数据格式
+                const mindmapData = JSON.parse(window.Lute.EChartsMindmapStr(code));
+
+                let container = el.querySelector("div.mindmap-container") as HTMLElement;
+
+                const containerWidth = el.clientWidth - 20 || 420;
+                const containerHeight = 420;
+
+                if (!container) {
+                    el.innerHTML = `<div class="mindmap-container" style="height:${containerHeight}px; width: 100%;"></div>`;
+                    container = el.firstElementChild as HTMLElement;
+                }
+
+                let chart = window.echarts.getInstanceByDom(container);
+                const mindmapTheme =
+                    window.siyuan.config.appearance.mode === "dark" ? "dark" : null;
+                if (chart) {
+                    chart.resize({ width: containerWidth, height: containerHeight });
+                } else {
+                    chart = window.echarts.init(container, mindmapTheme, {
+                        width: containerWidth,
+                        height: containerHeight,
+                    });
+                }
+
+                // 构建配置 (这是与 renderEcharts 最大的不同点)
+                const option = {
+                    series: [
+                        {
+                            data: [mindmapData], // ECharts tree 数据需要包裹在数组中
+                            initialTreeDepth: -1, // -1 表示展开所有层级
+                            type: "tree", // 强制类型为树图
+                            roam: true, // 开启缩放和平移
+                            top: "5%",
+                            left: "10%",
+                            bottom: "5%",
+                            right: "20%",
+
+                            // 样式配置 (可以根据需要从 config 中读取，或者使用默认值)
+                            itemStyle: {
+                                borderWidth: 0,
+                                color: "#4285f4",
+                            },
+                            label: {
+                                backgroundColor: "#f6f8fa",
+                                borderColor: "#d1d5da",
+                                borderRadius: 6,
+                                borderWidth: 0.5,
+                                color: "#586069",
+                                lineHeight: 20,
+                                offset: [-5, 0],
+                                padding: [0, 5],
+                                position: "insideRight",
+                                fontSize: 12,
+                            },
+                            lineStyle: {
+                                color: "#d1d5da",
+                                width: 1,
+                                curveness: 0.5,
+                            },
+                            symbol: (
+                                _value: unknown,
+                                params: { data?: { children?: unknown } }
+                            ) => {
+                                // 有子节点显示圆圈，无子节点显示 path (默认样式)
+                                return params?.data?.children ? "circle" : "path://";
+                            },
+                        },
+                    ],
+                    tooltip: {
+                        trigger: "item",
+                        triggerOn: "mousemove",
+                    },
+                    backgroundColor: "transparent",
+                };
+
+                // 应用配置
+                chart.setOption(option);
+                logger.debug("Mindmap 设置完成");
+            } catch (e) {
+                logger.warn("Mindmap 渲染失败", e);
+                const existingChart = window.echarts.getInstanceByDom(el);
+                if (existingChart) {
+                    existingChart.dispose();
+                }
+                // 显示错误信息
+                el.innerHTML = `<div style="height:420px" class="ft__error">Mindmap Render Error: ${e.message}</div>`;
+            }
+        });
+
+        await Promise.all(renderTasks);
     }
 
     static async ensureLibraryLoaded(type: FencedBlockType): Promise<void> {

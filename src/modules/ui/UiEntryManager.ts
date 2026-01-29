@@ -1,7 +1,7 @@
 import type { IObject } from "siyuan";
 
 import { pushErrMsg, updateBlock } from "@/api";
-import { settingIconMain } from "@/constants";
+import { ICON_MAIN } from "@/constants";
 import { TabDataManager } from "@/modules/tabs/TabDataManager";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { t } from "@/utils/i18n";
@@ -29,7 +29,7 @@ type UiEntryManagerOptions = {
 };
 
 export function buildSlashMenuHtml(i18n: IObject): string {
-    const slashIcon = settingIconMain.replace("<svg", '<svg class="b3-list-item__graphic"');
+    const slashIcon = ICON_MAIN.replace("<svg", '<svg class="b3-list-item__graphic"');
     return `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
         i18n,
         "slash.tabs"
@@ -53,7 +53,7 @@ export class UiEntryManager {
 
     initTopBar(): void {
         this.addTopBar({
-            icon: settingIconMain,
+            icon: ICON_MAIN,
             title: "code-tabs",
             position: "right",
             callback: () => {

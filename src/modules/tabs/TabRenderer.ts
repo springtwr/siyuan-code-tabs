@@ -1,5 +1,5 @@
 import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
-import { ECHARTS_CONTAINER_HTML, FENCED_BLOCK_MARKDOWN, protyleHtmlStr } from "@/constants";
+import { ECHARTS_CONTAINER_HTML, FENCED_BLOCK_MARKDOWN, PROTYLE_HTML } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
@@ -9,7 +9,7 @@ export class TabRenderer {
     static async createProtyleHtml(data: TabsData): Promise<string> {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
         const containerDiv = document.createElement("div");
-        containerDiv.innerHTML = protyleHtmlStr;
+        containerDiv.innerHTML = PROTYLE_HTML;
         const tabContainer = containerDiv.querySelector(".tabs-container") as HTMLElement;
 
         const tabsOuter = containerDiv.querySelector(".tabs-outer") as HTMLElement;

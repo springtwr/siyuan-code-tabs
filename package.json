@@ -15,7 +15,7 @@
     "prebuild": "pnpm lint && pnpm test",
     "build": "vite build",
     "make-install": "vite build && node --no-warnings ./scripts/make_install.js",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\"",
     "lint:fix": "pnpm lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

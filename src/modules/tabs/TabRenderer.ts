@@ -327,7 +327,10 @@ export class TabRenderer {
                 const containerWidth = el.clientWidth - 20 || 420;
                 const containerHeight = 420;
                 if (!container) {
-                    el.innerHTML = ECHARTS_CONTAINER_HTML.replace("{HEIGHT}", String(containerHeight));
+                    el.innerHTML = ECHARTS_CONTAINER_HTML.replace(
+                        "{HEIGHT}",
+                        String(containerHeight)
+                    );
                     container = el.firstElementChild as HTMLElement;
                 }
 
@@ -500,6 +503,44 @@ export class TabRenderer {
         });
 
         await Promise.all(renderTasks);
+    }
+
+    static async renderChartInDom(target: string | HTMLElement): Promise<void> {
+        logger.debug("开始文档重载后的图表渲染");
+        let tabContainer: HTMLElement;
+        if (typeof target === "string") {
+            const nodeId = target;
+            const block = document.querySelector<HTMLElement>(`[data-node-id="${nodeId}"]`);
+            const shadowRoot = block?.querySelector<HTMLElement>("protyle-html")?.shadowRoot;
+            tabContainer = shadowRoot?.querySelector<HTMLElement>(".tabs-container");
+        } else if (target instanceof HTMLElement) {
+            tabContainer = target;
+        }
+        const activateContent = tabContainer?.querySelector<HTMLElement>(".tab-content--active");
+        if (
+            activateContent?.querySelector<HTMLElement>(
+                ".language-echarts, .language-flowchart, .language-mindmap"
+            )
+        ) {
+            const echartsBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-echarts"
+            );
+            if (echartsBlocks.length > 0) {
+                TabRenderer.renderEcharts(echartsBlocks);
+            }
+            const flowchartBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-flowchart"
+            );
+            if (flowchartBlocks.length > 0) {
+                TabRenderer.renderFlowchart(flowchartBlocks);
+            }
+            const mindmapBlocks = tabContainer.querySelectorAll<HTMLElement>(
+                ".tab-content--active .language-mindmap"
+            );
+            if (mindmapBlocks.length > 0) {
+                TabRenderer.renderMindmap(mindmapBlocks);
+            }
+        }
     }
 
     static async ensureLibraryLoaded(type: FencedBlockType): Promise<void> {

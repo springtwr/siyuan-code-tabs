@@ -318,7 +318,7 @@ export const PROTYLE_HTML = `
     .replace(/\s+/g, " ")
     .trim();
 
-export const ECHARTS_CONTAINER_HTML =  `
+export const ECHARTS_CONTAINER_HTML = `
 <div class="echarts-container" style="height:{HEIGHT}; width: 100%;">
 </div>
 <span class="code-tabs--icon_group"

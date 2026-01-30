@@ -123,24 +123,7 @@ export class TabManager {
             });
             refreshOverflowForContainer(tabContainer);
             LineNumberManager.refreshActive(tabContainer);
-            const echartsBlocks = tabContainer.querySelectorAll<HTMLElement>(
-                ".tab-content--active .language-echarts"
-            );
-            if (echartsBlocks.length > 0) {
-                TabRenderer.renderEcharts(echartsBlocks);
-            }
-            const flowchartBlocks = tabContainer.querySelectorAll<HTMLElement>(
-                ".tab-content--active .language-flowchart"
-            );
-            if (flowchartBlocks.length > 0) {
-                TabRenderer.renderFlowchart(flowchartBlocks);
-            }
-            const mindmapBlocks = tabContainer.querySelectorAll<HTMLElement>(
-                ".tab-content--active .language-mindmap"
-            );
-            if (mindmapBlocks.length > 0) {
-                TabRenderer.renderMindmap(mindmapBlocks);
-            }
+            TabRenderer.renderChartInDom(tabContainer);
         };
 
         const createMoreTab = () => {
@@ -181,6 +164,7 @@ export class TabManager {
 
         const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
             const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
+            TabRenderer.renderChartInDom(tabContainer);
             if (!tabsEl) return;
             observeTabs(tabsEl);
             const allTabs = Array.from(
@@ -439,13 +423,16 @@ export class TabManager {
                 const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
                 if (!trigger) return;
                 const echartsRoot = trigger.closest(".language-echarts") as HTMLElement;
-                const echartsContainer = echartsRoot?.querySelector<HTMLElement>(".echarts-container");
+                const echartsContainer =
+                    echartsRoot?.querySelector<HTMLElement>(".echarts-container");
                 if (!echartsContainer) return;
-                
+
                 const width = echartsContainer?.clientWidth - 20 || 420;
                 const height = 420;
                 // 一般出现这个按钮说明 echarts 已经加载了
-                window.echarts?.getInstanceByDom(echartsContainer)?.resize({ width: width, height: height });
+                window.echarts
+                    ?.getInstanceByDom(echartsContainer)
+                    ?.resize({ width: width, height: height });
             },
             refreshOverflow,
         };

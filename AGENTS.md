@@ -68,7 +68,9 @@ src/
     paths.ts                # 路径常量
     templates.ts            # HTML 模板与 SVG 常量
   types/
+    index.ts                # 导出所有类型
     siyuan.ts               # Siyuan 相关通用类型
+    vite-env.d.ts           # 生产和开发环境相关
 tests/
   *.test.ts                 # 单元测试（集中管理）
 docs/
@@ -134,6 +136,7 @@ docs/
 - 集成测试：使用 `docs/testing/` 中的样例文档与回归清单。
 - Debug 开关：插件设置中提供“调试日志”，开启后写入 `data/plugins/code-tabs/debug.log`。
 - 提交前检查：必须运行 `pnpm check`（同时执行 tsc、lint、test），确保全部通过再提交。
+- 代码改动后必须运行 `pnpm check`，确保无误后再交付。
 - 规范维护：每次项目结构或重大变更时必须同步更新本文件。
 - 提交信息风格：使用中文。第一行概述本次提交内容，后续用要点分条说明改动细节。
 

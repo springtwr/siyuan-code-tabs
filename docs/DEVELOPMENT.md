@@ -5,7 +5,7 @@
 ## 项目结构概览
 
 - `src/index.ts`：插件入口与生命周期调度，尽量只保留编排逻辑。
-- `src/modules/`：核心业务模块（tabs、theme、line-number）。
+- `src/modules/`：核心业务模块（tabs、theme、line-number 等）。
 - `src/api/`：思源内置 API 的薄封装，不承载业务逻辑。
 - `src/utils/`：通用工具函数与日志。
 - `src/constants/`：常量与模板。
@@ -20,6 +20,7 @@
 - 代码检查：`pnpm lint`
 - 代码格式化：`pnpm format`
 - 单元测试：`pnpm test`
+- 提交前检查（必须）：`pnpm check`
 
 ## 调试与日志
 
@@ -27,7 +28,7 @@
 - debug 日志会写入 `data/plugins/code-tabs/debug.log`。
 - 日志统一由 `src/utils/logger.ts` 管理，新增日志请使用统一接口。
 - 开发模式下会为 代码块换行/代码块连字/代码块显示行号 注册块菜单选项，方便调试。
-- 开发相关逻辑集中在 `src/modules/developer/`。
+- 只在开发环境中生效的相关逻辑集中在 `src/modules/developer/`。
 
 ## i18n 规范
 
@@ -52,3 +53,12 @@
 - 目录命名统一 `kebab-case`。
 - 新模块需要明确职责边界，并补充相应的测试或手动回归步骤。
 - 避免在 `src/index.ts` 堆积业务逻辑。
+
+## 重大变更记录（面向维护者）
+
+- **v2.x.x 起不再使用“tab 语法代码块”作为中转**  
+  标签页在 HTML 块状态下完成编辑与交互，旧的“切回代码块”入口已移除。
+- **历史数据格式**
+  1. v0.7.0 之前：使用 `tab:::` 语法，明文存储在 `custom-plugin-code-tabs-sourcecode` 属性中，换行被替换为 `⤵↩`。
+  2. v0.7.0 起：使用 `:::` 语法，内容 Base64 编码后仍存储在 `custom-plugin-code-tabs-sourcecode` 中。
+  3. v2.x：主要数据存储在 `custom-code-tabs-data`，旧属性仅用于兼容读取。

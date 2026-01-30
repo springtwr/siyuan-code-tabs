@@ -20,52 +20,27 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ## Tips
 
-- 3.0.14 and above need to turn on `Allow execution of scripts within HTML blocks` in Settings -> Editor.
-- Version 0.7.0 underwent major refactoring. Users who have extensively used this plugin before are advised to test thoroughly before updating to ensure no issues.
-- **After updating the plugin, if there is a display exception, you can try toggling back to code-block and regenerating the code tabs**
+- Please enable `Allow execution of scripts within HTML blocks` in Settings -> Editor.
+- All raw tab data is stored as Base64 in custom attributes. As long as the attributes remain, data can be recovered even if the UI breaks.
+- v2.0.0 provides a tab editor panel and removes “Toggle to code-block”. Please use the **Edit** button.
 
-## Example
+## Usage
 
-1. Insert a code block in the SiYuan document as follows. Use `:::` as the beginning, followed by the `title | language | active` format.
-   For example `::: title | language | active`, where `active` indicates that this tab is activated by default when the document is opened. If this flag is not added,
-   the first tab is activated by default. The language parameter is optional, if omitted it will use the title as the default language for the code. [Example file](./docs/example.md)
-   - When the language is `markdown-render`, [marked](https://github.com/markedjs/marked) will be used for rendering.
-     Rendering [Katex formulas](https://katex.org)
-     with [marked-katex-extension](https://github.com/UziTech/marked-katex-extension), Rendering code blocks
-     with siyuan's built-in hljs.
-
-   ```
-   ::: this is c | c | active
-   #include<stdio.h>
-   int main(){
-   printf("hello\n");
-   return 0;
-   }
-
-   ::: python
-   def hello_world():
-   print("Hello World")
-   ```
-
-2. Click the block menu in the upper-left corner of the code-block -> Plugin -> `Block: code-block -> tabs`, you can also set a shortcut key for this function in Settings -> Keymap.
-   ![fig2](./images/2.gif)
-
-3. If you need to edit the code, you can click on "Toggle to code-block" in the upper-right corner of the tab. After
-   editing, convert the code block back to code-tabs again.
-   ![fig3](./images/3.png)
-4. You can copy the code in one click by clicking the copy button in the upper right corner(Copy plaintext only).  
-   ![fig4](./images/4.png)
-5. More block menu actions are available under `More [code-tabs]`:
-   - `Document: code-block -> tabs` / `Document: tabs -> code-block` / `Document: tabs -> standard code blocks`
-   - `Block: merge selected code blocks` (merge multiple code blocks into one tab-syntax code block)
-   - `Block: tabs -> standard code blocks` (split a tabs block into multiple standard code blocks)
-6. The settings panel provides a global entry: `Split all code-tabs into standard code blocks` (for fully exiting the plugin).
-7. If there are too many tabs, some of the tabs will be hidden, in the desktop application, you can put the mouse cursor
-   on the tabs bar and use the mouse wheel to scroll through them, and in the mobile application, you can slide the tabs
-   bar left and right to view them.
-8. Demo.  
+1. Insert a default tab block via the slash menu `Tabs`/`tab`/`bq`, or select multiple code blocks and use “Block: merge selected code blocks”.
+2. Click the **Edit** button to modify tab title, language, and code. You can also add/remove tabs.
+   - When the language is `markdown-render`, SiYuan’s built-in Lute handles markdown and supports KaTeX / Mermaid / Graphviz / PlantUML / ECharts / Flowchart / Mindmap / ABC.
+3. Click **Set default** to make the current tab the default.
+4. Click **Copy** to copy the current tab’s code.
+5. More block menu actions are available:
+   - `Block: merge selected code blocks`: merge multiple code blocks into tabs
+   - `Block: split tabs into code blocks`: split a tab block into multiple code blocks
+   - `Document: split tabs into code blocks`: split all tabs in the current document
+6. The settings panel provides a global entry: `Split all code-tabs into standard code blocks` (for recovering when deprecating the plugin).
+7. The settings panel provides a legacy migration entry: `Migrate legacy tabs` (migrate `custom-plugin-code-tabs-sourcecode` to the new format).
+8. If there are too many tabs, some will be hidden. Use the “More” tab to view them.
+9. Demo.  
    ![fig5](./images/demo.gif)
-9. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file that allows users to adapt themes themselves. The configuration file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. You can adapt themes to your needs by following the examples and using developer tools. You can also submit a PR to this repository with your adapted theme, the repository's adaptation file path is `/public/asset/theme-adaption.yaml`
+10. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file for theme adaptation. The config file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. Follow the examples and use developer tools to adapt themes. You can also submit a PR; the repo adaptation file path is `/public/asset/theme-adaption.yaml`.
 
 ## Comment
 
@@ -86,7 +61,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 ### v1.1.0
 
 - Added “Tabs → standard code blocks” split (block/document/global entries)
-- Added “Merge selected code blocks” into tab-syntax code block
+- Added “Merge selected code blocks” into tab-syntax code blocks
 - Added “More [code-tabs]” submenu to organize block menu actions
 
 ### v1.0.0

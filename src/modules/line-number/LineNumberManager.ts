@@ -20,6 +20,7 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
+        this.pruneObservers();
         const editor = getActiveEditor(true);
         if (!editor) return;
         logger.debug("扫描全部标签页行号");
@@ -31,6 +32,7 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
+        this.pruneObservers();
         const editor = getActiveEditor(true);
         if (!editor) return;
         const scope = root ?? editor.protyle?.contentElement;
@@ -43,6 +45,7 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
+        this.pruneObservers();
         const editor = getActiveEditor(true);
         if (!editor) return;
         logger.debug("刷新全部标签页行号");
@@ -59,6 +62,7 @@ export class LineNumberManager {
             this.disableAll();
             return;
         }
+        this.pruneObservers();
         const active = tabContainer.querySelector<HTMLElement>(".tab-content--active");
         if (!active) return;
         this.ensureLineNumbers(active);
@@ -90,6 +94,18 @@ export class LineNumberManager {
         this.measurers.forEach((measurer) => measurer.remove());
         this.measurers.clear();
         this.attachedNodes = new WeakSet<HTMLElement>();
+    }
+
+    private static pruneObservers(): void {
+        if (this.resizeObservers.size === 0) return;
+        for (const [tabContent, observer] of this.resizeObservers.entries()) {
+            if (!tabContent.isConnected) {
+                const rafId = this.rafIds.get(tabContent);
+                if (rafId) cancelAnimationFrame(rafId);
+                observer.disconnect();
+                this.resizeObservers.delete(tabContent);
+            }
+        }
     }
 
     static cleanup(): void {

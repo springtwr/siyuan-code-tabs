@@ -130,6 +130,7 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             onAllTabsToPlainCode: () => this.tabConverter.allTabsToPlainCode(),
+            onUpgradeLegacyTabs: () => this.tabConverter.upgradeLegacyTabsAll(),
             onSaveConfig: () => this.configManager.saveConfig(),
             buildDebugToggle: () => this.debugLogManager.createToggle(),
         });

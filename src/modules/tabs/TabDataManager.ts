@@ -147,7 +147,7 @@ export class TabDataManager {
         await setBlockAttrs(nodeId, { [CODE_TABS_DATA_ATTR]: encoded });
     }
 
-    static migrateFromLegacy(codeText: string): TabsData | null {
+    static upgradeFromLegacy(codeText: string): TabsData | null {
         let text = codeText;
         if (text.trim().startsWith("tab:::")) {
             text = decodeLegacyHtmlEntities(text);

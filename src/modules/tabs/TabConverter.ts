@@ -382,7 +382,7 @@ export class TabConverter {
 
     private extractTabsDataFromIal(ial: string): { dataRaw: string; legacyRaw: string } {
         const dataRaw = ial.match(new RegExp(`${CODE_TABS_DATA_ATTR}="([^"]*)"`, "i"))?.[1] ?? "";
-        const legacyRaw = ial.match(/custom-plugin-code-tabs-sourcecode="([^"]*)"/)?.[1] ?? "";
+        const legacyRaw = ial.match(new RegExp(`${CUSTOM_ATTR}="([^"]*)"`))?.[1] ?? "";
         return { dataRaw, legacyRaw };
     }
 
@@ -412,8 +412,8 @@ export class TabConverter {
                 [CUSTOM_ATTR]: legacyRaw,
             });
             if (legacy) {
-                const migrated = TabDataManager.migrateFromLegacy(legacy);
-                return { id, data: migrated };
+                const upgraded = TabDataManager.upgradeFromLegacy(legacy);
+                return { id, data: upgraded };
             }
         }
         if (!dataRaw) return { id, data: null };
@@ -689,6 +689,93 @@ export class TabConverter {
         )) as SqlBlock[];
         logger.info("全局标签页 -> 多个标准代码块 查询完成", { count: blockList.length });
         this.tabsToPlainCodeBlocksBatch(blockList);
+    }
+
+    async upgradeLegacyTabsAll(): Promise<ConversionStats> {
+        logger.info("全局旧版标签页升级查询开始");
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
+        )) as SqlBlock[];
+        logger.info("全局旧版标签页升级查询完成", { count: blockList.length });
+
+        if (!blockList || blockList.length === 0) {
+            pushMsg(`${t(this.i18n, "msg.noLegacyTabsToUpgrade")}`);
+            return { success: 0, failure: 0 };
+        }
+
+        const toProcess: Array<{ id: string; data: TabsData }> = [];
+        const skipped: { nodeId: string; reason: string }[] = [];
+        const invalid: { nodeId: string; reason: string }[] = [];
+
+        for (const block of blockList) {
+            const id = block.id ?? "";
+            if (!id) {
+                invalid.push({ nodeId: "unknown", reason: "缺少 nodeId" });
+                continue;
+            }
+            let dataRaw = "";
+            let legacyRaw = "";
+            if (typeof block.ial === "string") {
+                const extracted = this.extractTabsDataFromIal(block.ial);
+                dataRaw = extracted.dataRaw;
+                legacyRaw = extracted.legacyRaw;
+            } else {
+                const attrs = await getBlockAttrs(id);
+                dataRaw = attrs?.[CODE_TABS_DATA_ATTR] ?? "";
+                legacyRaw = attrs?.[CUSTOM_ATTR] ?? "";
+            }
+
+            // 已有新格式数据则跳过升级
+            if (dataRaw) {
+                skipped.push({ nodeId: id, reason: "已是新格式" });
+                continue;
+            }
+            if (!legacyRaw) {
+                invalid.push({ nodeId: id, reason: "缺少旧版标签数据" });
+                continue;
+            }
+            const legacy = TabDataManager.decodeLegacySourceFromAttrs({ [CUSTOM_ATTR]: legacyRaw });
+            if (!legacy) {
+                invalid.push({ nodeId: id, reason: "旧版标签数据解码失败" });
+                continue;
+            }
+            const upgraded = TabDataManager.upgradeFromLegacy(legacy);
+            if (!upgraded) {
+                invalid.push({ nodeId: id, reason: "旧版标签数据解析失败" });
+                continue;
+            }
+            toProcess.push({ id, data: upgraded });
+        }
+
+        const messages = {
+            completed: t(this.i18n, "msg.upgradeLegacyCompleted"),
+            failed: t(this.i18n, "msg.upgradeLegacyFailed"),
+            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
+            noItems: t(this.i18n, "msg.noLegacyTabsToUpgrade"),
+            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
+        };
+
+        if (toProcess.length === 0) {
+            return this.resultCounter(messages, [], [], skipped, invalid);
+        }
+
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.upgradeLegacy"),
+            toProcess,
+            async ({ id, data }) => {
+                const htmlBlock = await TabRenderer.createProtyleHtml(data);
+                await updateBlock("markdown", htmlBlock, id);
+                await TabDataManager.writeToBlock(id, data);
+            }
+        );
+
+        return this.resultCounter(
+            messages,
+            toProcess.map((item) => ({ id: item.id })),
+            results,
+            skipped,
+            invalid
+        );
     }
 
     private async replaceWithPlainCodeBlocks(

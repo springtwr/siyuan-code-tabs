@@ -8,6 +8,7 @@ const createPanel = (data: Record<string, unknown>) =>
         i18n: {},
         data,
         onAllTabsToPlainCode: vi.fn(),
+        onUpgradeLegacyTabs: vi.fn(),
         onSaveConfig: vi.fn().mockResolvedValue(undefined),
         buildDebugToggle: () => document.createElement("input"),
     });
@@ -51,6 +52,6 @@ describe("SettingsPanel", () => {
         const panel = createPanel(data);
         const addItem = vi.fn();
         panel.init({ addItem } as unknown as Setting);
-        expect(addItem).toHaveBeenCalledTimes(4);
+        expect(addItem).toHaveBeenCalledTimes(5);
     });
 });

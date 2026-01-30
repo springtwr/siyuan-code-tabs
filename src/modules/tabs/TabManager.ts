@@ -25,10 +25,10 @@ async function resolveTabsData(
     if (dataFromAttr) return dataFromAttr;
     const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
     if (legacy) {
-        const migrated = TabDataManager.migrateFromLegacy(legacy);
-        if (migrated) {
-            await TabDataManager.writeToBlock(nodeId, migrated);
-            return migrated;
+        const upgraded = TabDataManager.upgradeFromLegacy(legacy);
+        if (upgraded) {
+            await TabDataManager.writeToBlock(nodeId, upgraded);
+            return upgraded;
         }
     }
     return null;

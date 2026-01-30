@@ -13,6 +13,7 @@ type SettingsPanelOptions = {
     i18n: Record<string, string>;
     data: Record<string, unknown>;
     onAllTabsToPlainCode: () => void;
+    onUpgradeLegacyTabs: () => void;
     onSaveConfig: () => Promise<void>;
     buildDebugToggle: () => HTMLInputElement;
 };
@@ -21,6 +22,7 @@ export class SettingsPanel {
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
     private readonly onAllTabsToPlainCode: () => void;
+    private readonly onUpgradeLegacyTabs: () => void;
     private readonly onSaveConfig: () => Promise<void>;
     private readonly buildDebugToggle: () => HTMLInputElement;
     private readonly activeColorKey = "codeTabsActiveColor";
@@ -34,6 +36,7 @@ export class SettingsPanel {
         this.i18n = options.i18n;
         this.data = options.data;
         this.onAllTabsToPlainCode = options.onAllTabsToPlainCode;
+        this.onUpgradeLegacyTabs = options.onUpgradeLegacyTabs;
         this.onSaveConfig = options.onSaveConfig;
         this.buildDebugToggle = options.buildDebugToggle;
     }
@@ -44,6 +47,13 @@ export class SettingsPanel {
             description: `${t(this.i18n, "setting.allTabsToPlainCode.desc")}`,
             actionElement: this.createSettingButton("setting.allTabsToPlainCode.button", () => {
                 this.onAllTabsToPlainCode();
+            }),
+        });
+        setting.addItem({
+            title: `${t(this.i18n, "setting.upgradeLegacy.title")}`,
+            description: `${t(this.i18n, "setting.upgradeLegacy.desc")}`,
+            actionElement: this.createSettingButton("setting.upgradeLegacy.button", () => {
+                this.onUpgradeLegacyTabs();
             }),
         });
         setting.addItem({

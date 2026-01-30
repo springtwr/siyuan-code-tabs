@@ -3,11 +3,14 @@ import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import type { TabsData } from "@/modules/tabs/types";
 
 // Mock window.Lute
-(window as any).Lute = {
+window.Lute = {
     New: () => ({
         MarkdownStr: (_name: string, code: string) =>
             `<div data-type="NodeParagraph">${code}</div>`,
     }),
+    UnEscapeHTMLStr: (input: string) => input,
+    EscapeHTMLStr: (input: string) => input,
+    EChartsMindmapStr: (input: string) => input,
 };
 
 describe("TabRenderer", () => {

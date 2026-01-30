@@ -8,7 +8,7 @@ export type IMenu = {
     click?: () => void;
 };
 
-export function getActiveEditor() {
+export function getActiveEditor(): null {
     return null;
 }
 

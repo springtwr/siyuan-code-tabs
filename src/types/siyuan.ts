@@ -227,6 +227,14 @@ declare global {
         flowchart: {
             parse: (code: string) => { drawSVG: (element: Element) => void };
         };
+        Lute: {
+            New: () => {
+                MarkdownStr: (name: string, code: string) => string;
+            };
+            UnEscapeHTMLStr: (input: string) => string;
+            EscapeHTMLStr: (input: string) => string;
+            EChartsMindmapStr: (input: string) => string;
+        };
     }
 }
 

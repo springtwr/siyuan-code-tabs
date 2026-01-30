@@ -15,6 +15,8 @@
     "jsx": "preserve",
     /* Linting */
     "strict": false,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,

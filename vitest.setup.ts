@@ -49,3 +49,12 @@ if (!globalThis.window.siyuan) {
 
 vi.stubGlobal("TextEncoder", globalThis.TextEncoder);
 vi.stubGlobal("TextDecoder", globalThis.TextDecoder);
+
+if (!globalThis.ResizeObserver) {
+    class ResizeObserverMock {
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+    }
+    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+}

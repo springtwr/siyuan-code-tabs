@@ -164,7 +164,6 @@ export class TabManager {
 
         const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
             const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
-            TabRenderer.renderChartInDom(tabContainer);
             if (!tabsEl) return;
             observeTabs(tabsEl);
             const allTabs = Array.from(

@@ -3,6 +3,7 @@ import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
+import { resolveLanguage } from "@/modules/tabs/language";
 import type { CodeTab, TabDataItem, TabsData } from "./types";
 
 const CURRENT_VERSION = 2;
@@ -10,7 +11,7 @@ function normalizeTabs(tabs: TabDataItem[]): TabDataItem[] {
     return tabs
         .map((tab) => ({
             title: tab.title?.trim() ?? "",
-            lang: TabDataManager.normalizeLanguage(tab.lang ?? ""),
+            lang: resolveLanguage(tab.lang ?? ""),
             code: tab.code ?? "",
         }))
         .filter((tab) => tab.title.length > 0);
@@ -97,13 +98,6 @@ export class TabDataManager {
             active,
             tabs,
         };
-    }
-
-    static normalizeLanguage(input: string): string {
-        const lang = (input ?? "").trim().toLowerCase();
-        if (lang === "markdown-render") return "markdown-render";
-        if (!lang) return "plaintext";
-        return window.hljs.getLanguage(lang) ? lang : "plaintext";
     }
 
     static encode(data: TabsData): string {

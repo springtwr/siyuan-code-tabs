@@ -4,6 +4,7 @@ import { CODE_TABS_ICONS } from "@/constants";
 import { Dialog, type IObject } from "siyuan";
 import { TabDataManager } from "./TabDataManager";
 import type { TabsData } from "./types";
+import { resolveLanguage } from "./language";
 
 type EditorOptions = {
     i18n: IObject;
@@ -123,7 +124,7 @@ export class TabEditor {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
             tab.title = inputTitle.value.trim();
-            tab.lang = TabDataManager.normalizeLanguage(inputLang.value);
+            tab.lang = resolveLanguage(inputLang.value);
             tab.code = inputCode.value;
             renderList();
         };
@@ -133,7 +134,7 @@ export class TabEditor {
             const tab = draft.tabs[state.currentIndex];
             if (tab) {
                 tab.title = inputTitle.value.trim();
-                tab.lang = TabDataManager.normalizeLanguage(inputLang.value);
+                tab.lang = resolveLanguage(inputLang.value);
                 tab.code = inputCode.value;
             }
             return buildSnapshot(draft);

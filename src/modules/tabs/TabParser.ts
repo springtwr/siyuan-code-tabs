@@ -1,4 +1,5 @@
 import { CodeTab } from "@/modules/tabs/types";
+import { resolveLanguage } from "@/modules/tabs/language";
 
 export type ParseErrorKey =
     | "parser.headErr"
@@ -86,10 +87,10 @@ export class TabParser {
 
             // 智能推断语言
             if (!language) {
-                language = this.getLanguage(title);
+                language = resolveLanguage(title);
             } else {
                 // 校验语言有效性
-                language = this.getLanguage(language);
+                language = resolveLanguage(language);
             }
 
             if (!codeContent || codeContent.trim().length === 0) {
@@ -195,7 +196,7 @@ export class TabParser {
             if (language === "") {
                 language = title.trim();
             }
-            language = this.getLanguage(language);
+            language = resolveLanguage(language);
             codeResult.push({
                 title: title,
                 language: language,
@@ -204,14 +205,6 @@ export class TabParser {
             });
         }
         return { result: true, code: codeResult, errors: [] };
-    }
-
-    private static getLanguage(lang: string) {
-        if (lang === "markdown-render") {
-            return "markdown-render";
-        } else {
-            return window.hljs.getLanguage(lang) ? lang.toLowerCase() : "plaintext";
-        }
     }
 
     private static getPreviewLine(text: string): string {

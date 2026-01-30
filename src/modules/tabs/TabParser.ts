@@ -38,27 +38,6 @@ export class TabParser {
         });
     }
 
-    static generateNewSyntax(tabs: CodeTab[]): string {
-        let result = "";
-        for (const tab of tabs) {
-            let title = tab.title;
-            const active = tab.isActive ? " | active" : "";
-
-            let lang = tab.language;
-            let header = `::: ${title}`;
-
-            // 智能重建：如果语言与标题推断匹配则省略语言标记
-            const inferredLang = this.getLanguage(title);
-            if (lang !== inferredLang) {
-                header += ` | ${lang}`;
-            }
-
-            header += active;
-            result += `${header}\n${tab.code}\n\n`;
-        }
-        return result.trim();
-    }
-
     private static parseNew(codeText: string): ParseResult {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);

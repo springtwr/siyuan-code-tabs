@@ -52,54 +52,6 @@ export class TabConverter {
         this.onSuccess = onSuccess;
     }
 
-    async reorderTabsInBlock(nodeId: string, order: string[]): Promise<void> {
-        if (!nodeId || order.length === 0) return;
-        try {
-            logger.debug("持久化排序开始", { nodeId, order });
-            const attrs = await getBlockAttrs(nodeId);
-            let data = TabDataManager.readFromAttrs(attrs);
-            if (!data) {
-                const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
-                if (legacy) {
-                    data = TabDataManager.migrateFromLegacy(legacy);
-                }
-            }
-            if (!data) {
-                logger.warn("持久化排序失败：缺少标签数据", { nodeId });
-                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
-                return;
-            }
-
-            const reorderedTabs = order
-                .map((id) => data?.tabs[Number(id)])
-                .filter((item) => item !== undefined);
-            if (reorderedTabs.length !== data.tabs.length) {
-                logger.warn("持久化排序失败：顺序与数据数量不一致", {
-                    nodeId,
-                    order,
-                    total: data.tabs.length,
-                    mapped: reorderedTabs.length,
-                });
-                pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
-                return;
-            }
-            const newActive = order.findIndex((id) => Number(id) === data.active);
-            data.tabs = reorderedTabs;
-            data.active = newActive >= 0 ? newActive : 0;
-            logger.debug("持久化排序重排完成", { count: reorderedTabs.length });
-
-            const htmlBlock = await TabRenderer.createProtyleHtml(data);
-            logger.debug("持久化排序生成 HTML 完成", { length: htmlBlock.length });
-            await updateBlock("markdown", htmlBlock, nodeId);
-            await TabDataManager.writeToBlock(nodeId, data);
-            logger.debug("持久化排序完成", { nodeId });
-            this.onSuccess?.();
-        } catch (error) {
-            logger.warn("拖拽排序持久化失败", { error });
-            pushErrMsg(t(this.i18n, "msg.allTabsToCodeFailed"));
-        }
-    }
-
     cancelCurrentTask(): void {
         if (!this.currentTask) return;
         this.currentTask.cancel();
@@ -457,84 +409,6 @@ export class TabConverter {
         }
 
         return { toProcess, invalid };
-    }
-
-    async tabToCodeBatch(blockList: TabBlock[]): Promise<ConversionStats> {
-        if (!blockList || blockList.length === 0) {
-            pushMsg(`${t(this.i18n, "msg.noTabsToConvert")}`);
-            return { success: 0, failure: 0 };
-        }
-        logger.info("开始标签页 -> 代码块 批量转换", { count: blockList.length });
-
-        const { toProcess, invalid } = await this.collectTabsDataBlocks(blockList, "tabToCode");
-        const skipped: { nodeId: string; reason: string }[] = [];
-
-        const tabsToCodeMessages = {
-            completed: t(this.i18n, "msg.allTabsToCodeCompleted"),
-            failed: t(this.i18n, "msg.allTabsToCodeCompletedFailed"),
-            invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
-            noItems: t(this.i18n, "msg.noTabsToConvert"),
-            skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
-        };
-        // ===== 如果没有需要处理的项 =====
-        if (toProcess.length === 0) {
-            return this.resultCounter(tabsToCodeMessages, [], [], skipped, invalid);
-        }
-
-        // 并行执行所有转换（允许部分失败）
-        const { results } = await this.runBatch(
-            t(this.i18n, "task.progress.tabsToCode"),
-            toProcess,
-            async ({ id, data }) => {
-                await this.replaceWithPlainCodeBlocks(id, data.tabs);
-                logger.info(`标签页转为代码块: id ${id}`);
-            }
-        );
-
-        // ===== 统计并提示 =====
-        const stats = this.resultCounter(
-            tabsToCodeMessages,
-            toProcess.map((x) => ({ id: x.id })), // 只需 id 用于关联错误
-            results,
-            skipped,
-            invalid
-        );
-        logger.info("标签页 -> 代码块 转换统计", stats);
-
-        return stats;
-    }
-
-    async tabToCodeInDocument(): Promise<void> {
-        const currentDocument = getActiveEditor(true);
-        if (!currentDocument) return;
-        const rootId =
-            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
-                ?.protyle?.block?.rootID ??
-            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
-                ?.rootId;
-        if (!rootId) {
-            logger.warn("当前文档标签页 -> 代码块 失败：缺少 rootId");
-            pushErrMsg(t(this.i18n, "msg.noRootId"));
-            return;
-        }
-        logger.info("当前文档标签页 -> 代码块 查询开始", { rootId });
-        const blockList = (await sql(
-            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
-        )) as SqlBlock[];
-        logger.info("当前文档标签页 -> 代码块 查询完成", {
-            count: blockList.length,
-            rootId,
-        });
-        this.tabToCodeBatch(blockList);
-    }
-
-    async allTabsToCode(): Promise<void> {
-        logger.info("全局标签页 -> 代码块 查询开始");
-        const blockList = (await sql(
-            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
-        )) as SqlBlock[];
-        logger.info("全局标签页 -> 代码块 查询完成", { count: blockList.length });
-        this.tabToCodeBatch(blockList);
     }
 
     async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {

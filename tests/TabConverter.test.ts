@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
 import { TabConverter } from "@/modules/tabs/TabConverter";
-import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR } from "@/constants";
+import { CODE_TABS_DATA_ATTR } from "@/constants";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import * as api from "@/api";
 import { TabDataManager } from "@/modules/tabs/TabDataManager";
@@ -50,32 +50,6 @@ describe("TabConverter", () => {
             expect.objectContaining({ [CODE_TABS_DATA_ATTR]: expect.any(String) })
         );
         expect(api.deleteBlock).not.toHaveBeenCalledWith("block-1");
-    });
-
-    it("tabToCodeBatch: 应将标签页还原为多个标准代码块", async () => {
-        const block = document.createElement("div");
-        block.dataset.nodeId = "tab-1";
-        block.dataset.type = "NodeHTMLBlock";
-        const data = TabDataManager.createDefaultData();
-        data.tabs = [
-            { title: "Custom1", lang: "js", code: "console.log('ok')" },
-            { title: "Custom2", lang: "python", code: "print('b')" },
-        ];
-        vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
-            [CODE_TABS_DATA_ATTR]: TabDataManager.encode(data),
-        });
-
-        const converter = new TabConverter(i18n);
-        const stats = await converter.tabToCodeBatch([block]);
-
-        expect(stats.success).toBe(1);
-        expect(stats.failure).toBe(0);
-        expect(api.insertBlock).toHaveBeenCalledTimes(2);
-        expect(api.setBlockAttrs).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({ [CODE_TAB_TITLE_ATTR]: expect.any(String) })
-        );
-        expect(api.deleteBlock).toHaveBeenCalledWith("tab-1");
     });
 
     it("tabsToPlainCodeBlocksBatch: 应拆分为多个标准代码块", async () => {

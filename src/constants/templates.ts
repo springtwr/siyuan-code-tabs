@@ -10,6 +10,9 @@ import {
 } from "./paths";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "./keys";
 
+/**
+ * CSS 模板与 HTML 结构模板。
+ */
 export const CODE_TABS_STYLE = `
 div[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}],
 div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] { 

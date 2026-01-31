@@ -1,3 +1,6 @@
+/**
+ * 插件路径与资源路径常量。
+ */
 export const PLUGIN_PATH = "/plugins/code-tabs";
 export const DATA_PATH = "/data/plugins/code-tabs";
 export const SIYUAN_PATH = "/stage/protyle";

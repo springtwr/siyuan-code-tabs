@@ -17,6 +17,10 @@ import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 
+/**
+ * 插件入口与生命周期编排。
+ * 只做模块装配与事件注册。
+ */
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private tabConverter!: TabConverter;
@@ -30,6 +34,9 @@ export default class CodeTabs extends Plugin {
     private uiEntryManager!: UiEntryManager;
     private injectedStyleEl?: HTMLStyleElement;
 
+    /**
+     * onload 阶段：注册事件与基础模块。
+     */
     async onload() {
         this.registerBlockIconEvent();
         this.debugLogManager = new DebugLogManager();
@@ -48,6 +55,9 @@ export default class CodeTabs extends Plugin {
         logger.info("命令与设置项注册完成");
     }
 
+    /**
+     * onLayoutReady 阶段：DOM 扫描与主题样式同步。
+     */
     async onLayoutReady() {
         logger.info("布局就绪，开始初始化");
 
@@ -64,6 +74,9 @@ export default class CodeTabs extends Plugin {
         logger.info("行号扫描完成");
     }
 
+    /**
+     * 插件卸载：必须清理监听与全局对象。
+     */
     onunload() {
         this.unregisterBlockIconEvent();
         this.unregisterProtyleEvents();
@@ -114,6 +127,9 @@ export default class CodeTabs extends Plugin {
         this.protyleLifecycleManager.unregister(this.eventBus);
     }
 
+    /**
+     * 初始化 tabs 交互与转换模块。
+     */
     private initTabModules(): void {
         const pluginApi = TabManager.initGlobalFunctions(this.i18n, () =>
             this.editorRefreshManager.reloadActiveDocument()
@@ -125,6 +141,9 @@ export default class CodeTabs extends Plugin {
         );
     }
 
+    /**
+     * 初始化 UI、配置、命令等管理器。
+     */
     private initManagers(): void {
         this.settingsPanel = new SettingsPanel({
             i18n: this.i18n,
@@ -184,8 +203,10 @@ export default class CodeTabs extends Plugin {
         this.commandManager.registerCommands();
     }
 
+    /**
+     * 注入插件样式标签，避免重复注入。
+     */
     private ensureInjectedStyle(): void {
-        // 注入全局样式，标记为插件样式
         const existingStyle = document.getElementById("code-tabs-style");
         this.injectedStyleEl =
             existingStyle instanceof HTMLStyleElement

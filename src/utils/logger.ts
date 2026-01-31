@@ -1,5 +1,8 @@
 import { isDevMode } from "@/utils/env";
 
+/**
+ * 统一日志输出与调试开关管理。
+ */
 enum LogLevel {
     DEBUG = "debug",
     INFO = "info",
@@ -7,6 +10,9 @@ enum LogLevel {
     ERROR = "error",
 }
 
+/**
+ * logger 实例：支持 debug 开关与可选写入器。
+ */
 class Logger {
     private readonly isDev: boolean;
     private debugEnabled = false;

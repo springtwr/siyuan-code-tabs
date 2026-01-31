@@ -1,3 +1,6 @@
+/**
+ * 业务标识与固定常量。
+ */
 export const CUSTOM_ATTR = "custom-plugin-code-tabs-sourcecode";
 export const CODE_TABS_DATA_ATTR = "custom-code-tabs-data";
 export const CODE_TAB_TITLE_ATTR = "custom-code-tab-title";

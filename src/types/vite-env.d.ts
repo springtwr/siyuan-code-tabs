@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+// Vite 环境变量类型补充
 interface ImportMetaEnv {
     readonly DEV: boolean;
     readonly PROD: boolean;

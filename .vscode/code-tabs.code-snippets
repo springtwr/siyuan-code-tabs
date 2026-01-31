@@ -1,0 +1,40 @@
+{
+  "JSDoc Template (code-tabs)": {
+    "prefix": "/**",
+    "body": [
+      "/**",
+      " * ${1:简要说明}",
+      " *",
+      " * ${2:为什么/边界/副作用}",
+      " * @param ${3:param} ${4:说明}",
+      " * @returns ${5:说明}",
+      " */",
+    ],
+    "description": "code-tabs 注释模板（按项目规范）",
+  },
+  "JSDoc Module/Class (code-tabs)": {
+    "prefix": "/**",
+    "body": [
+      "/**",
+      " * ${1:模块/类用途}",
+      " * ${2:关键边界/约束或副作用}",
+      " */"
+    ],
+    "description": "模块/类注释模板（按项目规范）",
+  },
+  "Inline Reason Comment (code-tabs)": {
+    "prefix": "// reason",
+    "body": ["// 原因：${1:为何要这样处理}"],
+    "description": "复杂分支说明（按项目规范）",
+  },
+  "Inline Compatibility Comment (code-tabs)": {
+    "prefix": "// compat",
+    "body": ["// 兼容：${1:旧格式/缺失库} -> ${2:处理策略}"],
+    "description": "兼容/降级说明（按项目规范）",
+  },
+  "Inline Side Effect Comment (code-tabs)": {
+    "prefix": "// effect",
+    "body": ["// 副作用：${1:例如 DOM/网络/监听/定时器}"],
+    "description": "异步副作用说明（按项目规范）",
+  },
+}

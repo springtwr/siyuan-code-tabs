@@ -1,5 +1,6 @@
 .idea
-.vscode
+.vscode/*
+!.vscode/code-tabs.code-snippets
 .DS_Store
 .env
 pnpm-lock.yaml

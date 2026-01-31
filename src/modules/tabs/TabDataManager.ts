@@ -72,14 +72,14 @@ export class TabDataManager {
         if (!Array.isArray(data.tabs) || data.tabs.length === 0) {
             errors.push("tabs.empty");
         }
-        const tabs = normalizeTabs(data.tabs ?? []);
-        if (tabs.length === 0) {
-            errors.push("tabs.empty");
-        }
+        const tabs = Array.isArray(data.tabs) ? data.tabs : [];
         tabs.forEach((tab, index) => {
-            if (!tab.title) errors.push(`tab.${index}.title.empty`);
-            if (!tab.lang) errors.push(`tab.${index}.lang.empty`);
-            if (!tab.code || tab.code.trim().length === 0) {
+            const title = tab.title?.trim() ?? "";
+            const lang = resolveLanguage(tab.lang ?? "");
+            const code = tab.code ?? "";
+            if (!title) errors.push(`tab.${index}.title.empty`);
+            if (!lang) errors.push(`tab.${index}.lang.empty`);
+            if (!code || code.trim().length === 0) {
                 errors.push(`tab.${index}.code.empty`);
             }
         });

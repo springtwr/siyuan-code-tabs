@@ -32,6 +32,11 @@ type UiEntryManagerOptions = {
     onReload: () => void;
 };
 
+/**
+ * 构建斜杠菜单展示 HTML。
+ * @param i18n i18n 资源
+ * @returns HTML 字符串
+ */
 export function buildSlashMenuHtml(i18n: IObject): string {
     const slashIcon = ICON_MAIN.replace("<svg", '<svg class="b3-list-item__graphic"');
     return `<div class="b3-list-item__first">${slashIcon}<span class="b3-list-item__text">${t(
@@ -58,6 +63,10 @@ export class UiEntryManager {
         this.onReload = options.onReload;
     }
 
+    /**
+     * 注册顶部按钮入口。
+     * @returns void
+     */
     initTopBar(): void {
         this.addTopBar({
             icon: ICON_MAIN,
@@ -71,6 +80,7 @@ export class UiEntryManager {
 
     /**
      * 注册斜杠菜单入口，插入默认 Tabs 块。
+     * @returns void
      */
     registerSlashMenu(): void {
         this.protyleSlash.push({

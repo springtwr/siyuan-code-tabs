@@ -10,6 +10,8 @@ import * as yaml from "js-yaml";
 
 /**
  * 兼容 baseURL 的相对路径解析。
+ * @param route 原始路径
+ * @returns 解析后的绝对/相对路径
  */
 function resolveUrl(route: string): string {
     if (!route) return route;
@@ -30,6 +32,11 @@ function resolveUrl(route: string): string {
 /**
  * 带重试功能的网络请求。
  * 兼容：特定样式文件 404 时允许透传。
+ * @param route 请求路径
+ * @param options fetch 选项
+ * @param retries 重试次数
+ * @param delayMs 重试间隔
+ * @returns Response
  */
 export async function fetchWithRetry(
     route: string,
@@ -71,6 +78,10 @@ const NO_CACHE_HEADERS = { "Cache-Control": "no-cache" };
 
 /**
  * 获取文件并包装为 File（可选重试）。
+ * @param route 请求路径
+ * @param fileName 文件名
+ * @param useRetry 是否启用重试
+ * @returns File 或 undefined
  */
 async function fetchFileFromUrlCore(
     route: string,
@@ -87,6 +98,9 @@ async function fetchFileFromUrlCore(
 
 /**
  * 从 URL 获取文件
+ * @param route 请求路径
+ * @param fileName 文件名
+ * @returns File 或 undefined
  */
 export async function fetchFileFromUrl(
     route: string | undefined,
@@ -111,6 +125,9 @@ export async function fetchFileFromUrl(
 
 /**
  * 从 URL 获取文件（简化版，无重试）
+ * @param route 请求路径
+ * @param fileName 文件名
+ * @returns File 或 undefined
  */
 export async function fetchFileFromUrlSimple(
     route: string,
@@ -126,6 +143,8 @@ export async function fetchFileFromUrlSimple(
 
 /**
  * 从文件加载并解析 JSON 数据
+ * @param file 文件对象
+ * @returns 解析后的 JSON
  */
 export async function loadJsonFromFile(file: File): Promise<unknown> {
     return new Promise((resolve, reject) => {
@@ -144,6 +163,8 @@ export async function loadJsonFromFile(file: File): Promise<unknown> {
 
 /**
  * 从文件加载并解析 YAML 数据
+ * @param file 文件对象
+ * @returns 解析后的 YAML
  */
 export async function loadYamlFromFile(file: File): Promise<unknown> {
     const text = await file.text();
@@ -152,6 +173,9 @@ export async function loadYamlFromFile(file: File): Promise<unknown> {
 
 /**
  * 从 URL 获取并解析 YAML 文件
+ * @param route 请求路径
+ * @param fileName 文件名
+ * @returns 解析后的 YAML 或 undefined
  */
 export async function fetchYamlFromUrl(route: string, fileName: string): Promise<unknown> {
     try {

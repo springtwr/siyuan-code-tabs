@@ -25,6 +25,8 @@ export class ProtyleLifecycleManager {
 
     /**
      * 注册 protyle 事件监听（需在 onunload 中注销）。
+     * @param eventBus 事件总线
+     * @returns void
      */
     register(eventBus: { on: (name: string, callback: (evt: unknown) => void) => void }): void {
         eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
@@ -33,6 +35,8 @@ export class ProtyleLifecycleManager {
 
     /**
      * 注销事件监听，避免重复触发与内存泄漏。
+     * @param eventBus 事件总线
+     * @returns void
      */
     unregister(eventBus: { off: (name: string, callback: (evt: unknown) => void) => void }): void {
         eventBus.off("loaded-protyle-static", this.onLoadedProtyle);
@@ -41,13 +45,15 @@ export class ProtyleLifecycleManager {
 
     /**
      * protyle 加载完成后进行二次刷新，避免布局尚未稳定。
+     * @param evt 事件对象
+     * @returns void
      */
     handleProtyleLoaded(evt: unknown): void {
         const detail = (
             evt as {
                 detail?: {
                     protyle?: {
-                        wysiwyg?: { element?: HTMLElement }
+                        wysiwyg?: { element?: HTMLElement };
                     };
                     element?: HTMLElement;
                 };

@@ -58,6 +58,7 @@ export class TabConverter {
 
     /**
      * 取消当前批量任务并销毁进度 UI。
+     * @returns void
      */
     cancelCurrentTask(): void {
         if (!this.currentTask) return;
@@ -74,6 +75,9 @@ export class TabConverter {
 
     /**
      * 创建批量任务的进度 UI（数量较大时才显示）。
+     * @param taskLabel 任务标题
+     * @param total 总数
+     * @returns BatchTask 或 null
      */
     private createProgressTask(taskLabel: string, total: number): BatchTask | null {
         if (!document.body || total < TabConverter.progressThreshold) {
@@ -173,6 +177,8 @@ export class TabConverter {
 
     /**
      * 批量将代码块转换为标签页（选区入口）。
+     * @param blockList 代码块列表
+     * @returns 转换统计
      */
     async codeToTabsBatch(blockList: HTMLElement[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
@@ -198,6 +204,7 @@ export class TabConverter {
 
     /**
      * 当前文档内的代码块转换入口（SQL 查询）。
+     * @returns Promise<void>
      */
     async codeToTabsInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
@@ -429,6 +436,8 @@ export class TabConverter {
 
     /**
      * 批量将标签页拆分为标准代码块。
+     * @param blockList 标签页块列表
+     * @returns 转换统计
      */
     async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
@@ -477,6 +486,8 @@ export class TabConverter {
 
     /**
      * 合并多个代码块为标签页（支持 tab 语法展开）。
+     * @param blockList 代码块列表
+     * @returns Promise<void>
      */
     async mergeCodeBlocksToTabSyntax(blockList: HTMLElement[]): Promise<void> {
         if (!blockList || blockList.length === 0) {
@@ -595,6 +606,7 @@ export class TabConverter {
 
     /**
      * 全局拆分标签页为标准代码块。
+     * @returns Promise<void>
      */
     async allTabsToPlainCode(): Promise<void> {
         logger.info("全局标签页 -> 多个标准代码块 查询开始");
@@ -607,6 +619,7 @@ export class TabConverter {
 
     /**
      * 全局升级旧版标签页（旧属性数据迁移）。
+     * @returns 转换统计
      */
     async upgradeLegacyTabsAll(): Promise<ConversionStats> {
         logger.info("全局旧版标签页升级查询开始");

@@ -17,6 +17,7 @@ export class LineNumberManager {
 
     /**
      * 是否启用行号显示（取决于思源配置）。
+     * @returns 是否启用
      */
     static isEnabled(): boolean {
         return window.siyuan?.config?.editor?.codeSyntaxHighlightLineNum === true;
@@ -24,6 +25,7 @@ export class LineNumberManager {
 
     /**
      * 扫描当前编辑器的所有 tabs 容器并挂载行号。
+     * @returns void
      */
     static scanAll(): void {
         if (!this.isEnabled()) {
@@ -39,6 +41,8 @@ export class LineNumberManager {
 
     /**
      * 扫描指定 protyle 范围内的 tabs 容器。
+     * @param root 可选根节点
+     * @returns void
      */
     static scanProtyle(root?: HTMLElement): void {
         if (!this.isEnabled()) {
@@ -55,6 +59,7 @@ export class LineNumberManager {
 
     /**
      * 触发一次完整刷新（用于配置变更后重算）。
+     * @returns void
      */
     static refreshAll(): void {
         if (!this.isEnabled()) {
@@ -75,6 +80,8 @@ export class LineNumberManager {
 
     /**
      * 仅刷新当前激活 tab 的行号。
+     * @param tabContainer tabs 容器
+     * @returns void
      */
     static refreshActive(tabContainer: HTMLElement): void {
         if (!this.isEnabled()) {
@@ -89,6 +96,7 @@ export class LineNumberManager {
 
     /**
      * 关闭并清理所有行号相关 DOM 与监听。
+     * @returns void
      */
     private static disableAll(): void {
         const hasLineNumbers = document.querySelector(`.${this.lineNumClass}`);
@@ -120,6 +128,7 @@ export class LineNumberManager {
 
     /**
      * 清理已移除节点的 ResizeObserver。
+     * @returns void
      */
     private static pruneObservers(): void {
         if (this.resizeObservers.size === 0) return;
@@ -139,6 +148,8 @@ export class LineNumberManager {
 
     /**
      * 绑定 HTML 块并初始化行号。
+     * @param node HTML 块
+     * @returns void
      */
     private static attachNode(node: HTMLElement): void {
         if (this.attachedNodes.has(node)) return;
@@ -155,6 +166,8 @@ export class LineNumberManager {
 
     /**
      * 在范围内查找 tabs HTML 块并挂载行号。
+     * @param scope 扫描范围
+     * @returns void
      */
     private static scan(scope?: HTMLElement): void {
         if (!scope) return;
@@ -171,6 +184,8 @@ export class LineNumberManager {
 
     /**
      * 确保指定 tab-content 存在行号 DOM。
+     * @param tabContent tab-content 元素
+     * @returns void
      */
     private static ensureLineNumbers(tabContent: HTMLElement): void {
         if (tabContent.dataset.lang === "markdown-render") {

@@ -36,6 +36,8 @@ export class EditorRefreshManager {
 
     /**
      * 注入刷新回调，避免模块之间的强引用。
+     * @param provider 回调提供器
+     * @returns void
      */
     setRefreshOverflowProvider(provider: () => RefreshOverflow | undefined): void {
         this.getRefreshOverflow = provider;
@@ -43,6 +45,7 @@ export class EditorRefreshManager {
 
     /**
      * 刷新当前文档（重建渲染）。
+     * @returns void
      */
     reloadActiveDocument(): void {
         const activeEditor = this.getEditor(true);
@@ -54,6 +57,8 @@ export class EditorRefreshManager {
 
     /**
      * 刷新 overflow 与行号等依赖布局的计算。
+     * @param root 可选的根节点
+     * @returns void
      */
     refreshOverflow(root?: HTMLElement | ShadowRoot): void {
         const refresh = this.getRefreshOverflow();

@@ -52,6 +52,7 @@ export class CommandManager {
 
     /**
      * 注册快捷命令（仅注册，不直接执行）。
+     * @returns void
      */
     registerCommands(): void {
         this.addCommand({
@@ -76,6 +77,8 @@ export class CommandManager {
 
     /**
      * 处理块菜单事件，按当前选区构建菜单项。
+     * @param detail 块菜单事件详情
+     * @returns void
      */
     handleBlockIconEvent(detail: BlockIconEventDetail): void {
         this.buildBlockMenu(detail);
@@ -98,6 +101,8 @@ export class CommandManager {
 
     /**
      * 构建与 tabs 相关的块菜单入口。
+     * @param detail 块菜单事件详情
+     * @returns void
      */
     private buildBlockMenu(detail: BlockIconEventDetail): void {
         detail.menu.addItem({
@@ -135,6 +140,8 @@ export class CommandManager {
 
     /**
      * 仅在开发模式下暴露的菜单项。
+     * @param detail 块菜单事件详情
+     * @returns void
      */
     private buildDevMenu(detail: BlockIconEventDetail): void {
         if (!isDevMode()) {

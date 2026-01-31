@@ -36,6 +36,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * onload 阶段：注册事件与基础模块。
+     * @returns Promise<void>
      */
     async onload() {
         this.registerBlockIconEvent();
@@ -57,6 +58,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * onLayoutReady 阶段：DOM 扫描与主题样式同步。
+     * @returns Promise<void>
      */
     async onLayoutReady() {
         logger.info("布局就绪，开始初始化");
@@ -76,6 +78,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 插件卸载：必须清理监听与全局对象。
+     * @returns void
      */
     onunload() {
         this.unregisterBlockIconEvent();
@@ -129,6 +132,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 初始化 tabs 交互与转换模块。
+     * @returns void
      */
     private initTabModules(): void {
         const pluginApi = TabManager.initGlobalFunctions(this.i18n, () =>
@@ -143,6 +147,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 初始化 UI、配置、命令等管理器。
+     * @returns void
      */
     private initManagers(): void {
         this.settingsPanel = new SettingsPanel({
@@ -205,6 +210,7 @@ export default class CodeTabs extends Plugin {
 
     /**
      * 注入插件样式标签，避免重复注入。
+     * @returns void
      */
     private ensureInjectedStyle(): void {
         const existingStyle = document.getElementById("code-tabs-style");

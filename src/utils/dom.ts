@@ -4,6 +4,8 @@
 
 /**
  * 获取 ShadowRoot
+ * @param element DOM 节点
+ * @returns ShadowRoot 或 null
  */
 export function getShadowRoot(element: HTMLElement): ShadowRoot | null {
     const root = element.getRootNode();
@@ -12,6 +14,8 @@ export function getShadowRoot(element: HTMLElement): ShadowRoot | null {
 
 /**
  * 获取 ShadowRoot 的宿主元素
+ * @param shadowRoot ShadowRoot
+ * @returns 宿主元素或 null
  */
 export function getShadowHost(shadowRoot: ShadowRoot): HTMLElement | null {
     const host = shadowRoot.host;
@@ -21,6 +25,8 @@ export function getShadowHost(shadowRoot: ShadowRoot): HTMLElement | null {
 
 /**
  * 获取 ShadowRoot 中的节点 ID
+ * @param element DOM 节点
+ * @returns nodeId 或 null
  */
 export function getNodeIdFromShadow(element: HTMLElement): string | null {
     const shadowRoot = getShadowRoot(element);
@@ -32,6 +38,8 @@ export function getNodeIdFromShadow(element: HTMLElement): string | null {
 
 /**
  * 获取节点 ID（支持普通和 Shadow DOM）
+ * @param element DOM 节点
+ * @returns nodeId 或 null
  */
 export function getNodeId(element: HTMLElement): string | null {
     // 尝试从 Shadow DOM 获取
@@ -43,13 +51,21 @@ export function getNodeId(element: HTMLElement): string | null {
 }
 
 /**
- * 比较思源配置快照与插件配置。
- * 变化时用于触发样式更新。
+ * 判断是否为 Record 结构。
+ * @param value 任意值
+ * @returns 是否为 Record
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
 }
 
+/**
+ * 比较思源配置快照与插件配置。
+ * 变化时用于触发样式更新。
+ * @param pluginConfig 插件配置快照
+ * @param siyuanConfig 思源配置快照
+ * @returns 是否一致
+ */
 export function compareConfig(pluginConfig: unknown, siyuanConfig: unknown): boolean {
     if (!isRecord(pluginConfig) || !isRecord(siyuanConfig)) {
         return false;
@@ -62,6 +78,7 @@ export function compareConfig(pluginConfig: unknown, siyuanConfig: unknown): boo
 
 /**
  * 获取思源配置
+ * @returns 关键配置字段
  */
 export function getSiyuanConfig(): Record<string, unknown> {
     return {
@@ -79,6 +96,8 @@ export function getSiyuanConfig(): Record<string, unknown> {
 
 /**
  * 同步思源配置到插件数据对象。
+ * @param data 插件配置对象
+ * @returns void
  */
 export function syncSiyuanConfig(data: Record<string, unknown>): void {
     const properties = getSiyuanConfig();

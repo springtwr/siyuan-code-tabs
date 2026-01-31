@@ -29,12 +29,17 @@ export class DebugLogManager {
 
     /**
      * 初始化调试日志开关与写入器。
+     * @returns void
      */
     init(): void {
         logger.setDebugEnabled(this.getDebugEnabled());
         this.initLogWriter();
     }
 
+    /**
+     * 构建调试开关输入控件。
+     * @returns 开关元素
+     */
     createToggle(): HTMLInputElement {
         const debugToggle = document.createElement("input");
         debugToggle.type = "checkbox";
@@ -46,6 +51,11 @@ export class DebugLogManager {
         return debugToggle;
     }
 
+    /**
+     * 设置调试开关状态。
+     * @param enabled 是否启用
+     * @returns void
+     */
     setDebugEnabled(enabled: boolean): void {
         try {
             localStorage.setItem(this.storageKey, enabled ? "true" : "false");
@@ -56,6 +66,10 @@ export class DebugLogManager {
         logger.info("调试日志开关变更", { enabled });
     }
 
+    /**
+     * 获取调试开关状态。
+     * @returns 是否启用
+     */
     getDebugEnabled(): boolean {
         try {
             return localStorage.getItem(this.storageKey) === "true";
@@ -66,6 +80,7 @@ export class DebugLogManager {
 
     /**
      * 清理内存缓冲与写入器。
+     * @returns void
      */
     cleanup(): void {
         this.logBuffer = [];
@@ -75,6 +90,7 @@ export class DebugLogManager {
 
     /**
      * 注册 logger 写入器并做防抖写盘。
+     * @returns void
      */
     private initLogWriter(): void {
         const flush = debounce(() => {

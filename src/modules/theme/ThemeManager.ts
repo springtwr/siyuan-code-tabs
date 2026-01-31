@@ -46,6 +46,8 @@ export class ThemeManager {
 
     /**
      * 生成并写入样式文件（代码高亮、背景与 markdown）。
+     * @param options 更新选项
+     * @returns 更新结果
      */
     static async putStyleFile(options: ThemeUpdateOptions = {}): Promise<ThemeUpdateResult> {
         logger.info("开始生成主题样式文件");
@@ -195,6 +197,7 @@ ${extraCss}
 
     /**
      * 清理缓存，强制下次重新采样主题样式。
+     * @returns void
      */
     static invalidateStyleProbe(): void {
         this.lastThemeKey = undefined;
@@ -203,6 +206,8 @@ ${extraCss}
 
     /**
      * 按需触发现有 tabs 的样式刷新。
+     * @param changes 变更结果
+     * @returns void
      */
     static updateAllTabsStyle(changes?: ThemeUpdateResult) {
         if (changes && !changes.changed) {
@@ -256,6 +261,8 @@ ${extraCss}
 
     /**
      * 用于判定样式内容是否变化（减少写文件次数）。
+     * @param input 输入字符串
+     * @returns hash 字符串
      */
     private static hashString(input: string): string {
         let hash = 2166136261;
@@ -268,6 +275,7 @@ ${extraCss}
 
     /**
      * 加载外部主题适配配置（YAML）。
+     * @returns 主题补丁列表
      */
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = THEME_ADAPTION_YAML.replace("/data", "");

@@ -50,6 +50,8 @@ export class SettingsPanel {
 
     /**
      * 注册设置面板项（仅构建 UI，不做业务扫描）。
+     * @param setting Setting 实例
+     * @returns void
      */
     init(setting: Setting): void {
         setting.addItem({
@@ -85,6 +87,7 @@ export class SettingsPanel {
 
     /**
      * 确保必要的配置默认值存在。
+     * @returns void
      */
     ensureSettings(): void {
         this.ensureActiveColorSettings();
@@ -93,6 +96,7 @@ export class SettingsPanel {
 
     /**
      * 将当前配置应用到界面样式。
+     * @returns void
      */
     applySettings(): void {
         this.applyActiveTabColors();
@@ -101,6 +105,7 @@ export class SettingsPanel {
 
     /**
      * 同步表单输入框显示值。
+     * @returns void
      */
     syncInputs(): void {
         this.syncActiveColorInputValue();
@@ -117,6 +122,7 @@ export class SettingsPanel {
 
     /**
      * 构建“激活标签颜色”配置项。
+     * @returns DOM 元素
      */
     private buildActiveColorSetting(): HTMLDivElement {
         const activeColorWrapper = document.createElement("div");
@@ -152,6 +158,7 @@ export class SettingsPanel {
 
     /**
      * 构建“标签宽度”配置项。
+     * @returns DOM 元素
      */
     private buildTabWidthSetting(): HTMLDivElement {
         const wrapper = document.createElement("div");

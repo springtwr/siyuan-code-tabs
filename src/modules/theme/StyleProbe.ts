@@ -53,6 +53,7 @@ export const StyleProbe = (() => {
 
     /**
      * 构建隐藏的 protyle DOM，用于获取计算样式。
+     * @returns 虚拟 protyle 节点
      */
     function createVirtualProtyle(): VirtualProtyle {
         const root = document.createElement("div");
@@ -104,6 +105,7 @@ export const StyleProbe = (() => {
 
     /**
      * 采样并返回当前主题样式快照。
+     * @returns 样式快照
      */
     function probe(): StyleSnapshot {
         const { block, action, hljs, content } = getVirtualProtyle();
@@ -125,6 +127,7 @@ export const StyleProbe = (() => {
         },
         /**
          * 采样完整样式并缓存。
+         * @returns 完整主题样式
          */
         getFullStyle(): ThemeStyle {
             logger.debug("采集完整主题样式");
@@ -167,6 +170,7 @@ export const StyleProbe = (() => {
         },
         /**
          * 清理虚拟 DOM，释放引用。
+         * @returns void
          */
         cleanup(): void {
             if (!cached) return;

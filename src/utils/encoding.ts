@@ -71,6 +71,8 @@ export function stripInvisibleChars(str: string): string {
 
 /**
  * 去除围栏代码块包裹（```），保留内部内容
+ * @param markdown 原始 markdown
+ * @returns 去除围栏后的内容
  */
 export function stripCodeFence(markdown: string): string {
     const trimmed = markdown.trim();
@@ -88,6 +90,8 @@ export function stripCodeFence(markdown: string): string {
 
 /**
  * 从 SQL 查询的块内容中提取代码文本
+ * @param block SQL 返回的块数据
+ * @returns 代码文本或 null
  */
 export function resolveCodeTextFromSqlBlock(block: {
     content?: string;

@@ -137,6 +137,7 @@ export class ThemeObserver {
 
     /**
      * 启动监听（仅在 onLayoutReady 后调用）。
+     * @returns void
      */
     start(): void {
         if (this.observer) {
@@ -157,6 +158,7 @@ export class ThemeObserver {
 
     /**
      * 停止监听，避免重复注册。
+     * @returns void
      */
     stop(): void {
         this.observer?.disconnect();
@@ -165,6 +167,8 @@ export class ThemeObserver {
 
     /**
      * 根据计划写入样式并刷新现有 tabs。
+     * @param plan 更新计划
+     * @returns 是否有样式变更
      */
     async applyThemeStyles(plan?: StyleUpdatePlan): Promise<boolean> {
         const result = await ThemeManager.putStyleFile({
@@ -186,6 +190,9 @@ export class ThemeObserver {
 
     /**
      * 将 DOM 变更归因成更新计划。
+     * @param mutationsList 变更列表
+     * @param onPlan 计划回调
+     * @returns void
      */
     private handleThemeMutations(
         mutationsList: MutationRecord[],

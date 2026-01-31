@@ -11,6 +11,10 @@ type ToggleKey = "codeLineWrap" | "codeLigatures" | "codeSyntaxHighlightLineNum"
 export class DevToggleManager {
     /**
      * 切换编辑器配置并触发相关样式刷新。
+     * @param key 配置字段
+     * @param data 插件配置对象
+     * @param onReload 刷新回调
+     * @returns void
      */
     static toggleEditorSetting(
         key: ToggleKey,

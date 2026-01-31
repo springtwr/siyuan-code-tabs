@@ -13,6 +13,9 @@ import type { TabsData } from "./types";
 
 /**
  * 优先从 DOM 读取，再回退到属性；必要时升级旧数据。
+ * @param nodeId 块 ID
+ * @param htmlBlock HTML 块
+ * @returns TabsData 或 null
  */
 async function resolveTabsData(
     nodeId: string,
@@ -37,6 +40,10 @@ async function resolveTabsData(
 /**
  * 写入 HTML 与属性，并触发可选刷新。
  * 副作用：更新块内容、写入属性。
+ * @param nodeId 块 ID
+ * @param data tabs 数据
+ * @param onReload 可选刷新回调
+ * @returns Promise<void>
  */
 async function persistTabsData(
     nodeId: string,
@@ -72,6 +79,8 @@ async function copyTextToClipboard(text: string, i18n: IObject) {
 
 /**
  * 从事件目标定位 HTML 块宿主，兼容 ShadowRoot。
+ * @param target 事件目标
+ * @returns HTML 块元素或 null
  */
 function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof HTMLElement)) return null;
@@ -87,6 +96,8 @@ function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | 
 
 /**
  * 向上查找包含 tabs 数据属性的 HTML 块。
+ * @param host Shadow host
+ * @returns HTML 块元素或 null
  */
 function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     let current: HTMLElement | null = host;
@@ -314,6 +325,8 @@ export class TabManager {
 
         /**
          * 刷新 tabs 溢出状态（支持文档与 ShadowRoot）。
+         * @param root 根节点
+         * @returns void
          */
         const refreshOverflow = (root?: HTMLElement | ShadowRoot) => {
             const scope: HTMLElement | ShadowRoot | Document = root ?? document;

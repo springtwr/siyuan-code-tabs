@@ -27,6 +27,8 @@ export type ParseResult = {
 export class TabParser {
     /**
      * 识别语法类型并分派到对应解析器。
+     * @param codeText 输入文本
+     * @returns 解析结果
      */
     static checkCodeText(codeText: string): ParseResult {
         codeText = codeText.trim();
@@ -47,6 +49,8 @@ export class TabParser {
 
     /**
      * 解析新语法（::: 标记）。
+     * @param codeText 输入文本
+     * @returns 解析结果
      */
     private static parseNew(codeText: string): ParseResult {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
@@ -138,6 +142,8 @@ export class TabParser {
 
     /**
      * 解析旧语法（tab::: 标记）。
+     * @param codeText 输入文本
+     * @returns 解析结果
      */
     private static parseLegacy(codeText: string): ParseResult {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
@@ -221,6 +227,8 @@ export class TabParser {
 
     /**
      * 生成可读的错误预览行，避免错误信息过长。
+     * @param text 原始文本
+     * @returns 预览行
      */
     private static getPreviewLine(text: string): string {
         const line = text.split("\n")[0]?.trim() ?? "";
@@ -230,6 +238,8 @@ export class TabParser {
 
     /**
      * 统一错误输出结构。
+     * @param error 错误信息
+     * @returns 失败结果
      */
     private static fail(error: ParseError): ParseResult {
         return { result: false, code: [], errors: [error] };

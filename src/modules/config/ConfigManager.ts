@@ -67,6 +67,7 @@ export class ConfigManager {
 
     /**
      * 加载配置并触发必要的样式更新。
+     * @returns 是否完成加载
      */
     async loadAndApply(): Promise<void> {
         const configFile = await fetchFileFromUrlSimple(
@@ -92,6 +93,7 @@ export class ConfigManager {
 
     /**
      * 写入配置文件（含版本号）。
+     * @returns Promise<void>
      */
     async saveConfig(): Promise<void> {
         syncSiyuanConfig(this.data);

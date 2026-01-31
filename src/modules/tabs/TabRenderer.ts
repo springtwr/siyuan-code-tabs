@@ -19,6 +19,8 @@ import { getActiveEditor, Viz } from "siyuan";
 export class TabRenderer {
     /**
      * 生成 HTML 块内容（包含 tabs 结构与内容渲染）。
+     * @param data tabs 数据
+     * @returns HTML 字符串
      */
     static async createProtyleHtml(data: TabsData): Promise<string> {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
@@ -127,6 +129,8 @@ export class TabRenderer {
 
     /**
      * Markdown 二次渲染入口（并行处理多种块类型）。
+     * @param container 容器元素
+     * @returns 渲染后的 HTML 字符串
      */
     private static async renderMarkdown(container: HTMLElement): Promise<string> {
         const promises: Promise<void>[] = [];
@@ -294,7 +298,11 @@ export class TabRenderer {
         });
     }
 
-    /** ABCJS 解析 %%params 的辅助函数 */
+    /**
+     * ABCJS 解析 %%params 的辅助函数。
+     * @param code 原始五线谱内容
+     * @returns 解析后的配置对象
+     */
     private static parseAbcParams(code: string) {
         const lines = code.split("\n");
         const firstLine = lines[0] || "";

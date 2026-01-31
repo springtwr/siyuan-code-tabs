@@ -71,6 +71,7 @@
   "msg.mergeNeedMultipleBlocks": "至少需要选中两个代码块",
   "msg.mergeContainsTabSyntax": "检测到 tab 语法代码块，已自动展开并合并",
   "msg.mergeCodeBlocksCompleted": "合并代码块完成，数量：{0}",
+  "msg.mergeSkipEmptyBlocks": "已忽略空代码块：{0}",
   "task.progress.codeToTabs": "批量转换：代码块 → 标签页",
   "task.progress.tabsToCode": "批量转换：标签页 → 代码块",
   "task.progress.tabsToPlainCode": "批量转换：标签页 → 标准代码块",

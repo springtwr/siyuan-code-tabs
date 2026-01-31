@@ -478,6 +478,9 @@ export class TabConverter {
                     /\n+$/,
                     ""
                 );
+                if (codeText.trim().length === 0) {
+                    return { id, codeText, languageRaw, titleAttr, isEmpty: true };
+                }
                 return { id, codeText, languageRaw, titleAttr };
             })
             .filter(Boolean) as Array<{
@@ -485,9 +488,21 @@ export class TabConverter {
             codeText: string;
             languageRaw: string;
             titleAttr: string;
+            isEmpty?: boolean;
         }>;
 
-        if (blocks.length < 2) {
+        const emptyBlocks = blocks.filter((block) => block.isEmpty);
+        const filteredBlocks = blocks.filter((block) => !block.isEmpty);
+        if (emptyBlocks.length > 0) {
+            pushMsg(
+                `${t(this.i18n, "msg.mergeSkipEmptyBlocks").replace(
+                    "{0}",
+                    emptyBlocks.length.toString()
+                )}`
+            );
+        }
+
+        if (filteredBlocks.length < 2) {
             pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
             return;
         }
@@ -495,7 +510,7 @@ export class TabConverter {
         const codeArr: CodeTab[] = [];
         let hasTabSyntaxBlock = false;
         let fallbackIndex = 1;
-        for (const item of blocks) {
+        for (const item of filteredBlocks) {
             const parsed = TabParser.checkCodeText(item.codeText);
             if (parsed.result && parsed.code.length > 0) {
                 codeArr.push(
@@ -514,20 +529,20 @@ export class TabConverter {
         }
 
         const data = TabDataManager.fromCodeTabs(codeArr);
-        const targetId = blocks[0].id;
+        const targetId = filteredBlocks[0].id;
         const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
         await TabDataManager.writeToBlock(targetId, data);
-        const restIds = blocks.slice(1).map((item) => item.id);
+        const restIds = filteredBlocks.slice(1).map((item) => item.id);
         await Promise.all(restIds.map((id) => deleteBlock(id)));
-        logger.info("合并代码块为标签页完成", { count: blocks.length });
+        logger.info("合并代码块为标签页完成", { count: filteredBlocks.length });
         if (hasTabSyntaxBlock) {
             pushMsg(`${t(this.i18n, "msg.mergeContainsTabSyntax")}`).then();
         }
         pushMsg(
             `${t(this.i18n, "msg.mergeCodeBlocksCompleted").replace(
                 "{0}",
-                blocks.length.toString()
+                filteredBlocks.length.toString()
             )}`
         );
     }

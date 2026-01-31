@@ -71,6 +71,7 @@
   "msg.mergeNeedMultipleBlocks": "Select at least two code blocks",
   "msg.mergeContainsTabSyntax": "Detected tab syntax blocks and expanded them before merging",
   "msg.mergeCodeBlocksCompleted": "Merged code blocks completed, count: {0}",
+  "msg.mergeSkipEmptyBlocks": "Skipped empty code blocks: {0}",
   "task.progress.codeToTabs": "Batch: code-block -> tabs",
   "task.progress.tabsToCode": "Batch: tabs -> code-block",
   "task.progress.tabsToPlainCode": "Batch: tabs -> standard code blocks",

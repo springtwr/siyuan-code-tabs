@@ -5,7 +5,13 @@ import { syncSiyuanConfig } from "@/utils/dom";
 
 type ToggleKey = "codeLineWrap" | "codeLigatures" | "codeSyntaxHighlightLineNum";
 
+/**
+ * 开发模式下快速切换编辑器配置。
+ */
 export class DevToggleManager {
+    /**
+     * 切换编辑器配置并触发相关样式刷新。
+     */
     static toggleEditorSetting(
         key: ToggleKey,
         data: Record<string, unknown>,

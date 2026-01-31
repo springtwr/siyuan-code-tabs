@@ -11,6 +11,9 @@ import { TabDataManager } from "./TabDataManager";
 import { TabEditor } from "./TabEditor";
 import type { TabsData } from "./types";
 
+/**
+ * 优先从 DOM 读取，再回退到属性；必要时升级旧数据。
+ */
 async function resolveTabsData(
     nodeId: string,
     htmlBlock: HTMLElement | null
@@ -31,6 +34,10 @@ async function resolveTabsData(
     return null;
 }
 
+/**
+ * 写入 HTML 与属性，并触发可选刷新。
+ * 副作用：更新块内容、写入属性。
+ */
 async function persistTabsData(
     nodeId: string,
     data: TabsData,
@@ -63,6 +70,9 @@ async function copyTextToClipboard(text: string, i18n: IObject) {
     pushErrMsg(t(i18n, "msg.copyToClipboardFailed"));
 }
 
+/**
+ * 从事件目标定位 HTML 块宿主，兼容 ShadowRoot。
+ */
 function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof HTMLElement)) return null;
     const direct = target.closest('[data-node-id][data-type="NodeHTMLBlock"]');
@@ -75,6 +85,9 @@ function getHtmlBlockFromEventTarget(target: EventTarget | null): HTMLElement | 
     return host instanceof HTMLElement ? findHtmlBlockFromHost(host) : null;
 }
 
+/**
+ * 向上查找包含 tabs 数据属性的 HTML 块。
+ */
 function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     let current: HTMLElement | null = host;
     while (current) {
@@ -91,6 +104,10 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
     return null;
 }
 
+/**
+ * tabs 交互与全局函数注册入口。
+ * 副作用：注册全局函数、监听尺寸变化。
+ */
 export class TabManager {
     private static resizeObserver: ResizeObserver | null = null;
 
@@ -158,6 +175,7 @@ export class TabManager {
             menu.open({ x: evt.clientX, y: evt.clientY });
         };
 
+        // 计算可见 tab 并决定是否显示 “更多” 溢出入口
         const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
             const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
             if (!tabsEl) return;
@@ -271,6 +289,7 @@ export class TabManager {
             moreItem.classList.toggle("tab-item--more-active", activeHidden);
         };
 
+        // 统一 ResizeObserver，避免多实例带来的性能损耗
         const setupResizeObserver = () => {
             if (TabManager.resizeObserver) return;
             let timer: ReturnType<typeof setTimeout> | null = null;
@@ -293,6 +312,9 @@ export class TabManager {
             TabManager.resizeObserver?.observe(tabsEl);
         };
 
+        /**
+         * 刷新 tabs 溢出状态（支持文档与 ShadowRoot）。
+         */
         const refreshOverflow = (root?: HTMLElement | ShadowRoot) => {
             const scope: HTMLElement | ShadowRoot | Document = root ?? document;
             const scan = (containerRoot: ParentNode) => {
@@ -311,6 +333,7 @@ export class TabManager {
             });
         };
 
+        // 暴露给 HTML 块内的全局交互函数
         const pluginCodeTabs = {
             codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {

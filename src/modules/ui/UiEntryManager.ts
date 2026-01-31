@@ -6,6 +6,10 @@ import { TabDataManager } from "@/modules/tabs/TabDataManager";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { t } from "@/utils/i18n";
 
+/**
+ * 顶部入口与斜杠菜单入口的统一管理。
+ * 副作用：注册 UI 入口、更新块内容。
+ */
 type TopBarOptions = {
     icon: string;
     title: string;
@@ -36,6 +40,9 @@ export function buildSlashMenuHtml(i18n: IObject): string {
     )}</span></div>`;
 }
 
+/**
+ * 负责注册顶部按钮与斜杠菜单入口。
+ */
 export class UiEntryManager {
     private readonly i18n: IObject;
     private readonly addTopBar: (options: TopBarOptions) => void;
@@ -62,6 +69,9 @@ export class UiEntryManager {
         });
     }
 
+    /**
+     * 注册斜杠菜单入口，插入默认 Tabs 块。
+     */
     registerSlashMenu(): void {
         this.protyleSlash.push({
             filter: ["bq", "tabs", "标签页"],

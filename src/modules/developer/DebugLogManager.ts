@@ -9,6 +9,10 @@ type DebugLogManagerOptions = {
     debounceMs?: number;
 };
 
+/**
+ * 调试日志开关与写入管理。
+ * 副作用：写入 debug.log、修改 logger 行为。
+ */
 export class DebugLogManager {
     private readonly logPath: string;
     private readonly bufferLimit: number;
@@ -23,6 +27,9 @@ export class DebugLogManager {
         this.debounceMs = options.debounceMs ?? 1000;
     }
 
+    /**
+     * 初始化调试日志开关与写入器。
+     */
     init(): void {
         logger.setDebugEnabled(this.getDebugEnabled());
         this.initLogWriter();
@@ -57,12 +64,18 @@ export class DebugLogManager {
         }
     }
 
+    /**
+     * 清理内存缓冲与写入器。
+     */
     cleanup(): void {
         this.logBuffer = [];
         this.flushLogFile = () => {};
         logger.setLogWriter(undefined);
     }
 
+    /**
+     * 注册 logger 写入器并做防抖写盘。
+     */
     private initLogWriter(): void {
         const flush = debounce(() => {
             if (this.logBuffer.length === 0) return;

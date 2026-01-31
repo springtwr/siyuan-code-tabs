@@ -9,6 +9,10 @@ import {
 import { t } from "@/utils/i18n";
 import type { TabWidthSetting } from "@/modules/tabs/types";
 
+/**
+ * 设置面板构建与应用入口。
+ * 副作用：读写配置与更新全局 CSS 变量。
+ */
 type SettingsPanelOptions = {
     i18n: Record<string, string>;
     data: Record<string, unknown>;
@@ -18,6 +22,9 @@ type SettingsPanelOptions = {
     buildDebugToggle: () => HTMLInputElement;
 };
 
+/**
+ * 负责构建设置项与应用配置。
+ */
 export class SettingsPanel {
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
@@ -41,6 +48,9 @@ export class SettingsPanel {
         this.buildDebugToggle = options.buildDebugToggle;
     }
 
+    /**
+     * 注册设置面板项（仅构建 UI，不做业务扫描）。
+     */
     init(setting: Setting): void {
         setting.addItem({
             title: `${t(this.i18n, "setting.allTabsToPlainCode.title")}`,
@@ -73,16 +83,25 @@ export class SettingsPanel {
         });
     }
 
+    /**
+     * 确保必要的配置默认值存在。
+     */
     ensureSettings(): void {
         this.ensureActiveColorSettings();
         this.ensureTabWidthSettings();
     }
 
+    /**
+     * 将当前配置应用到界面样式。
+     */
     applySettings(): void {
         this.applyActiveTabColors();
         this.applyTabWidthSetting();
     }
 
+    /**
+     * 同步表单输入框显示值。
+     */
     syncInputs(): void {
         this.syncActiveColorInputValue();
         this.syncTabWidthSettingInputs();
@@ -96,6 +115,9 @@ export class SettingsPanel {
         return button;
     }
 
+    /**
+     * 构建“激活标签颜色”配置项。
+     */
     private buildActiveColorSetting(): HTMLDivElement {
         const activeColorWrapper = document.createElement("div");
         activeColorWrapper.className = "fn__flex fn__flex-center code-tabs__setting-color";
@@ -128,6 +150,9 @@ export class SettingsPanel {
         return activeColorWrapper;
     }
 
+    /**
+     * 构建“标签宽度”配置项。
+     */
     private buildTabWidthSetting(): HTMLDivElement {
         const wrapper = document.createElement("div");
         wrapper.className = "code-tabs__setting-width";

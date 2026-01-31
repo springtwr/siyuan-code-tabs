@@ -1,5 +1,9 @@
 import { FENCED_BLOCK_MARKDOWN } from "@/constants";
 
+/**
+ * Tabs 相关类型定义。
+ */
+
 export type CodeTab = {
     title: string;
     language: string;

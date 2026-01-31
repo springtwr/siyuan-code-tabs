@@ -2,6 +2,10 @@ import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { getActiveEditor } from "siyuan";
 import logger from "@/utils/logger";
 
+/**
+ * tabs 代码块行号管理。
+ * 副作用：注入行号 DOM、监听尺寸变化。
+ */
 export class LineNumberManager {
     private static readonly lineNumClass = "tab-line-num";
     private static readonly lineNumEnabledClass = "tab-content--linenumber";
@@ -11,10 +15,16 @@ export class LineNumberManager {
     private static measurers = new Map<ShadowRoot, HTMLElement>();
     private static attachedNodes = new WeakSet<HTMLElement>();
 
+    /**
+     * 是否启用行号显示（取决于思源配置）。
+     */
     static isEnabled(): boolean {
         return window.siyuan?.config?.editor?.codeSyntaxHighlightLineNum === true;
     }
 
+    /**
+     * 扫描当前编辑器的所有 tabs 容器并挂载行号。
+     */
     static scanAll(): void {
         if (!this.isEnabled()) {
             this.disableAll();
@@ -27,6 +37,9 @@ export class LineNumberManager {
         this.scan(editor.protyle?.contentElement);
     }
 
+    /**
+     * 扫描指定 protyle 范围内的 tabs 容器。
+     */
     static scanProtyle(root?: HTMLElement): void {
         if (!this.isEnabled()) {
             this.disableAll();
@@ -40,6 +53,9 @@ export class LineNumberManager {
         this.scan(scope);
     }
 
+    /**
+     * 触发一次完整刷新（用于配置变更后重算）。
+     */
     static refreshAll(): void {
         if (!this.isEnabled()) {
             this.disableAll();
@@ -57,6 +73,9 @@ export class LineNumberManager {
         });
     }
 
+    /**
+     * 仅刷新当前激活 tab 的行号。
+     */
     static refreshActive(tabContainer: HTMLElement): void {
         if (!this.isEnabled()) {
             this.disableAll();
@@ -68,6 +87,9 @@ export class LineNumberManager {
         this.ensureLineNumbers(active);
     }
 
+    /**
+     * 关闭并清理所有行号相关 DOM 与监听。
+     */
     private static disableAll(): void {
         const hasLineNumbers = document.querySelector(`.${this.lineNumClass}`);
         const hasEnabledTab = document.querySelector(`.${this.lineNumEnabledClass}`);
@@ -96,6 +118,9 @@ export class LineNumberManager {
         this.attachedNodes = new WeakSet<HTMLElement>();
     }
 
+    /**
+     * 清理已移除节点的 ResizeObserver。
+     */
     private static pruneObservers(): void {
         if (this.resizeObservers.size === 0) return;
         for (const [tabContent, observer] of this.resizeObservers.entries()) {
@@ -112,6 +137,9 @@ export class LineNumberManager {
         this.disableAll();
     }
 
+    /**
+     * 绑定 HTML 块并初始化行号。
+     */
     private static attachNode(node: HTMLElement): void {
         if (this.attachedNodes.has(node)) return;
         const shadowRoot = node.querySelector("protyle-html")?.shadowRoot;
@@ -125,6 +153,9 @@ export class LineNumberManager {
         this.attachedNodes.add(node);
     }
 
+    /**
+     * 在范围内查找 tabs HTML 块并挂载行号。
+     */
     private static scan(scope?: HTMLElement): void {
         if (!scope) return;
         const nodes = scope.querySelectorAll<HTMLElement>(
@@ -138,8 +169,12 @@ export class LineNumberManager {
         });
     }
 
+    /**
+     * 确保指定 tab-content 存在行号 DOM。
+     */
     private static ensureLineNumbers(tabContent: HTMLElement): void {
         if (tabContent.dataset.lang === "markdown-render") {
+            // markdown-render 不显示行号
             tabContent.classList.remove(this.lineNumEnabledClass);
             tabContent
                 .querySelectorAll<HTMLElement>(`.${this.lineNumClass}`)

@@ -58,7 +58,14 @@ export function buildEditorDialogContent(i18n: IObject): string {
 `.trim();
 }
 
+/**
+ * 标签页编辑弹窗，包含标题/语言/代码编辑与排序。
+ * 副作用：创建 Dialog、绑定多种交互事件。
+ */
 export class TabEditor {
+    /**
+     * 打开编辑面板并绑定交互。
+     */
     static open(options: EditorOptions): void {
         const state: EditorState = {
             data: TabDataManager.clone(options.data),
@@ -134,6 +141,9 @@ export class TabEditor {
             });
         };
 
+        /**
+         * 构建语言联想列表（基于 hljs）。
+         */
         const ensureLanguageSuggestions = () => {
             const hljs = window.hljs as unknown as { listLanguages?: () => string[] };
             if (!hljs?.listLanguages) return;
@@ -157,6 +167,9 @@ export class TabEditor {
             inputLang.setAttribute("list", datalistId);
         };
 
+        /**
+         * 将输入框状态写回当前 tab。
+         */
         const updateCurrentTab = () => {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
@@ -166,6 +179,9 @@ export class TabEditor {
             renderList();
         };
 
+        /**
+         * 生成草稿快照，用于未保存提示。
+         */
         const getDraftSnapshot = () => {
             const draft = TabDataManager.clone(state.data);
             const tab = draft.tabs[state.currentIndex];
@@ -205,6 +221,9 @@ export class TabEditor {
             );
         };
 
+        /**
+         * 关闭弹窗入口，强制关闭用于保存成功后。
+         */
         const close = (force = false) => {
             if (force) {
                 forceClose = true;
@@ -215,6 +234,9 @@ export class TabEditor {
             dialog.destroy();
         };
 
+        /**
+         * 切换编辑中的 tab，并根据需要保存当前修改。
+         */
         const selectIndex = (index: number, saveCurrent: boolean) => {
             if (saveCurrent) {
                 updateCurrentTab();
@@ -255,6 +277,9 @@ export class TabEditor {
             updateCurrentTab();
         });
 
+        /**
+         * 删除 tab 后修正 active 索引，避免越界。
+         */
         const updateActiveIndexAfterDelete = (deleteIndex: number) => {
             if (state.data.active === deleteIndex) {
                 state.data.active = Math.max(deleteIndex - 1, 0);
@@ -269,6 +294,9 @@ export class TabEditor {
                 .forEach((item) => item.classList.remove("code-tabs__editor-item--drop"));
         };
 
+        /**
+         * 拖拽排序逻辑，维护 active 索引一致性。
+         */
         const applyReorder = (fromIndex: number, toIndex: number) => {
             if (fromIndex === toIndex) return;
             updateCurrentTab();

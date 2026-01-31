@@ -21,7 +21,13 @@ export type ParseResult = {
     errors: ParseError[];
 };
 
+/**
+ * tabs 语法解析器（含旧语法兼容）。
+ */
 export class TabParser {
+    /**
+     * 识别语法类型并分派到对应解析器。
+     */
     static checkCodeText(codeText: string): ParseResult {
         codeText = codeText.trim();
         // 兼容旧语法
@@ -39,6 +45,9 @@ export class TabParser {
         });
     }
 
+    /**
+     * 解析新语法（::: 标记）。
+     */
     private static parseNew(codeText: string): ParseResult {
         // 使用正则分割，匹配行首的 ::: (忽略前面的换行)
         const parts = codeText.split(/(?:^|\n):::/g);
@@ -85,7 +94,7 @@ export class TabParser {
                 }
             }
 
-            // 智能推断语言
+            // 兼容：无语言时尝试用标题推断
             if (!language) {
                 language = resolveLanguage(title);
             } else {
@@ -127,6 +136,9 @@ export class TabParser {
         return { result: true, code: codeResult, errors: [] };
     }
 
+    /**
+     * 解析旧语法（tab::: 标记）。
+     */
     private static parseLegacy(codeText: string): ParseResult {
         const codeArr = codeText.match(/tab:::([\s\S]*?)(?=\ntab:::|$)/g);
         if (!codeArr) {
@@ -207,12 +219,18 @@ export class TabParser {
         return { result: true, code: codeResult, errors: [] };
     }
 
+    /**
+     * 生成可读的错误预览行，避免错误信息过长。
+     */
     private static getPreviewLine(text: string): string {
         const line = text.split("\n")[0]?.trim() ?? "";
         if (line.length <= 60) return line || "(空)";
         return `${line.slice(0, 57)}...`;
     }
 
+    /**
+     * 统一错误输出结构。
+     */
     private static fail(error: ParseError): ParseResult {
         return { result: false, code: [], errors: [error] };
     }

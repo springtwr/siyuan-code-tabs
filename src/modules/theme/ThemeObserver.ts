@@ -5,6 +5,10 @@ import { getSiyuanConfig } from "@/utils/dom";
 import { ThemeManager } from "@/modules/theme/ThemeManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 
+/**
+ * 主题变更监听与更新计划生成。
+ * 副作用：监听 DOM 变更、触发样式与行号刷新。
+ */
 export type StyleUpdatePlan = {
     codeStyle: boolean;
     background: boolean;
@@ -115,6 +119,9 @@ type ThemeObserverOptions = {
     onSaveConfig: () => Promise<void>;
 };
 
+/**
+ * 监听主题与配置变化并调度样式更新。
+ */
 export class ThemeObserver {
     private readonly data: Record<string, unknown>;
     private readonly i18n: Record<string, string>;
@@ -128,6 +135,9 @@ export class ThemeObserver {
         this.onSaveConfig = options.onSaveConfig;
     }
 
+    /**
+     * 启动监听（仅在 onLayoutReady 后调用）。
+     */
     start(): void {
         if (this.observer) {
             this.stop();
@@ -145,11 +155,17 @@ export class ThemeObserver {
         this.observer.observe(head, { attributes: true, childList: true, subtree: true });
     }
 
+    /**
+     * 停止监听，避免重复注册。
+     */
     stop(): void {
         this.observer?.disconnect();
         this.observer = undefined;
     }
 
+    /**
+     * 根据计划写入样式并刷新现有 tabs。
+     */
     async applyThemeStyles(plan?: StyleUpdatePlan): Promise<boolean> {
         const result = await ThemeManager.putStyleFile({
             forceProbe: plan?.forceProbe,
@@ -168,6 +184,9 @@ export class ThemeObserver {
         return result.changed;
     }
 
+    /**
+     * 将 DOM 变更归因成更新计划。
+     */
     private handleThemeMutations(
         mutationsList: MutationRecord[],
         onPlan: (plan: StyleUpdatePlan, persistConfig: boolean) => void

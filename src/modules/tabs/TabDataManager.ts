@@ -7,6 +7,9 @@ import { normalizeLanguageInput } from "@/modules/tabs/language";
 import type { CodeTab, TabDataItem, TabsData } from "./types";
 
 const CURRENT_VERSION = 2;
+/**
+ * 规范化标签数组，保证标题与语言字段可用。
+ */
 function normalizeTabs(tabs: TabDataItem[]): TabDataItem[] {
     return tabs
         .map((tab) => ({
@@ -24,7 +27,14 @@ function decodeLegacyHtmlEntities(input: string): string {
     return textarea.value;
 }
 
+/**
+ * Tabs 数据的读写、校验与迁移入口。
+ * 副作用：读写块属性。
+ */
 export class TabDataManager {
+    /**
+     * 深拷贝并规范化数据，避免 UI 直接修改原对象。
+     */
     static clone(data: TabsData): TabsData {
         let cloned: TabsData;
         if (typeof structuredClone === "function") {
@@ -65,6 +75,7 @@ export class TabDataManager {
     }
 
     static validate(data: TabsData): { ok: boolean; errors: string[] } {
+        // 校验要基于原始输入，避免 normalize 掩盖错误
         const errors: string[] = [];
         if (!data || typeof data !== "object") {
             return { ok: false, errors: ["data.invalid"] };
@@ -137,11 +148,13 @@ export class TabDataManager {
     }
 
     static async writeToBlock(nodeId: string, data: TabsData): Promise<void> {
+        // 副作用：写入块属性
         const encoded = this.encode(data);
         await setBlockAttrs(nodeId, { [CODE_TABS_DATA_ATTR]: encoded });
     }
 
     static upgradeFromLegacy(codeText: string): TabsData | null {
+        // 兼容：旧版本使用 tab::: 且包含 HTML 实体
         let text = codeText;
         if (text.trim().startsWith("tab:::")) {
             text = decodeLegacyHtmlEntities(text);

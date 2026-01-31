@@ -30,6 +30,10 @@ type ThemeUpdateOptions = {
     update?: Partial<Pick<ThemeUpdateResult, "codeStyle" | "background" | "markdown">>;
 };
 
+/**
+ * 主题样式生成与更新入口。
+ * 副作用：写入样式文件、触发 DOM 更新。
+ */
 export class ThemeManager {
     private static lastCodeStyleHref?: string;
     private static lastMarkdownMode?: "light" | "dark";
@@ -40,6 +44,9 @@ export class ThemeManager {
     };
     private static lastThemeKey?: string;
 
+    /**
+     * 生成并写入样式文件（代码高亮、背景与 markdown）。
+     */
     static async putStyleFile(options: ThemeUpdateOptions = {}): Promise<ThemeUpdateResult> {
         logger.info("开始生成主题样式文件");
         const update = {
@@ -186,11 +193,17 @@ ${extraCss}
         return result;
     }
 
+    /**
+     * 清理缓存，强制下次重新采样主题样式。
+     */
     static invalidateStyleProbe(): void {
         this.lastThemeKey = undefined;
         StyleProbe.resetCachedStyle();
     }
 
+    /**
+     * 按需触发现有 tabs 的样式刷新。
+     */
     static updateAllTabsStyle(changes?: ThemeUpdateResult) {
         if (changes && !changes.changed) {
             return;
@@ -241,6 +254,9 @@ ${extraCss}
         return false;
     }
 
+    /**
+     * 用于判定样式内容是否变化（减少写文件次数）。
+     */
     private static hashString(input: string): string {
         let hash = 2166136261;
         for (let i = 0; i < input.length; i++) {
@@ -250,6 +266,9 @@ ${extraCss}
         return (hash >>> 0).toString(16);
     }
 
+    /**
+     * 加载外部主题适配配置（YAML）。
+     */
     private static async loadThemeConfig(): Promise<ThemePatch[]> {
         const fetchPath = THEME_ADAPTION_YAML.replace("/data", "");
         const storagePath = THEME_ADAPTION_YAML;

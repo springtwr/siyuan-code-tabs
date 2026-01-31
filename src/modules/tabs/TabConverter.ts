@@ -41,6 +41,10 @@ type BatchResult = {
     cancelledCount: number;
 };
 
+/**
+ * tabs 与代码块之间的批量转换入口。
+ * 副作用：批量更新/删除块、写入属性。
+ */
 export class TabConverter {
     private readonly i18n: IObject;
     private readonly onSuccess?: () => void;
@@ -52,6 +56,9 @@ export class TabConverter {
         this.onSuccess = onSuccess;
     }
 
+    /**
+     * 取消当前批量任务并销毁进度 UI。
+     */
     cancelCurrentTask(): void {
         if (!this.currentTask) return;
         this.currentTask.cancel();
@@ -65,6 +72,9 @@ export class TabConverter {
             .replace("{1}", String(total));
     }
 
+    /**
+     * 创建批量任务的进度 UI（数量较大时才显示）。
+     */
     private createProgressTask(taskLabel: string, total: number): BatchTask | null {
         if (!document.body || total < TabConverter.progressThreshold) {
             return null;
@@ -161,6 +171,9 @@ export class TabConverter {
         return { results, cancelledCount };
     }
 
+    /**
+     * 批量将代码块转换为标签页（选区入口）。
+     */
     async codeToTabsBatch(blockList: HTMLElement[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${t(this.i18n, "msg.noCodeBlockToConvert")}`);
@@ -183,6 +196,9 @@ export class TabConverter {
         return this.runCodeToTabsBatch(toProcess, skipped, invalid, "代码块 -> 标签页（SQL）");
     }
 
+    /**
+     * 当前文档内的代码块转换入口（SQL 查询）。
+     */
     async codeToTabsInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
         if (!currentDocument) return;
@@ -411,6 +427,9 @@ export class TabConverter {
         return { toProcess, invalid };
     }
 
+    /**
+     * 批量将标签页拆分为标准代码块。
+     */
     async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${t(this.i18n, "msg.noTabsToSplit")}`);
@@ -456,6 +475,9 @@ export class TabConverter {
         return { success, failure };
     }
 
+    /**
+     * 合并多个代码块为标签页（支持 tab 语法展开）。
+     */
     async mergeCodeBlocksToTabSyntax(blockList: HTMLElement[]): Promise<void> {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${t(this.i18n, "msg.noCodeBlockToMerge")}`);
@@ -571,6 +593,9 @@ export class TabConverter {
         this.tabsToPlainCodeBlocksBatch(blockList);
     }
 
+    /**
+     * 全局拆分标签页为标准代码块。
+     */
     async allTabsToPlainCode(): Promise<void> {
         logger.info("全局标签页 -> 多个标准代码块 查询开始");
         const blockList = (await sql(
@@ -580,6 +605,9 @@ export class TabConverter {
         this.tabsToPlainCodeBlocksBatch(blockList);
     }
 
+    /**
+     * 全局升级旧版标签页（旧属性数据迁移）。
+     */
     async upgradeLegacyTabsAll(): Promise<ConversionStats> {
         logger.info("全局旧版标签页升级查询开始");
         const blockList = (await sql(

@@ -12,7 +12,14 @@ import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
 import { getActiveEditor, Viz } from "siyuan";
 
+/**
+ * Tabs HTML 渲染与第三方库加载编排。
+ * 副作用：插入/删除临时块、触发库加载、生成 HTML 字符串。
+ */
 export class TabRenderer {
+    /**
+     * 生成 HTML 块内容（包含 tabs 结构与内容渲染）。
+     */
     static async createProtyleHtml(data: TabsData): Promise<string> {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
         const containerDiv = document.createElement("div");
@@ -50,6 +57,7 @@ export class TabRenderer {
             content.dataset.lang = language;
             let hlText = code;
             if (language === "markdown-render") {
+                // markdown-render 使用 Lute 渲染并进行二次渲染（图表/公式等）
                 content.dataset.raw = encodeSource(code);
                 const rawHtml = lute.MarkdownStr("markdown", code);
                 const mdDiv = document.createElement("div");
@@ -57,6 +65,7 @@ export class TabRenderer {
                 hlText = await this.renderMarkdown(mdDiv);
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
+                // 普通代码块走 hljs 高亮，缺失时回退为纯文本
                 if (!window.hljs) {
                     await this.ensureLibraryLoaded("hljs");
                 }
@@ -116,6 +125,9 @@ export class TabRenderer {
         return `<div>${escaped}</div>`;
     }
 
+    /**
+     * Markdown 二次渲染入口（并行处理多种块类型）。
+     */
     private static async renderMarkdown(container: HTMLElement): Promise<string> {
         const promises: Promise<void>[] = [];
 

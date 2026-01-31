@@ -7,6 +7,10 @@ import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { isDevMode } from "@/utils/env";
 
+/**
+ * 命令与块菜单的注册与构建入口。
+ * 副作用：注册菜单项，触发批量转换。
+ */
 type AddCommandFn = (command: {
     langKey: string;
     hotkey: string;
@@ -28,6 +32,9 @@ type CommandManagerOptions = {
     addCommand: AddCommandFn;
 };
 
+/**
+ * 负责命令注册与块菜单构建。
+ */
 export class CommandManager {
     private readonly i18n: IObject;
     private readonly data: Record<string, unknown>;
@@ -43,6 +50,9 @@ export class CommandManager {
         this.addCommand = options.addCommand;
     }
 
+    /**
+     * 注册快捷命令（仅注册，不直接执行）。
+     */
     registerCommands(): void {
         this.addCommand({
             langKey: t(this.i18n, "menu.more.tabsToPlainCode"),
@@ -64,6 +74,9 @@ export class CommandManager {
         });
     }
 
+    /**
+     * 处理块菜单事件，按当前选区构建菜单项。
+     */
     handleBlockIconEvent(detail: BlockIconEventDetail): void {
         this.buildBlockMenu(detail);
         this.buildDevMenu(detail);
@@ -83,6 +96,9 @@ export class CommandManager {
         return blockList;
     }
 
+    /**
+     * 构建与 tabs 相关的块菜单入口。
+     */
     private buildBlockMenu(detail: BlockIconEventDetail): void {
         detail.menu.addItem({
             iconHTML: "",
@@ -117,6 +133,9 @@ export class CommandManager {
         });
     }
 
+    /**
+     * 仅在开发模式下暴露的菜单项。
+     */
     private buildDevMenu(detail: BlockIconEventDetail): void {
         if (!isDevMode()) {
             return;

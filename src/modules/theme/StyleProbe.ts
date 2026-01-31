@@ -1,6 +1,10 @@
 import { ThemeStyle } from "@/modules/theme/types";
 import logger from "@/utils/logger";
 
+/**
+ * 通过虚拟 code-block 采样主题样式。
+ * 副作用：创建隐藏 DOM 节点用于测量。
+ */
 export const StyleProbe = (() => {
     const SYNC_PROPS = {
         block: [
@@ -47,6 +51,9 @@ export const StyleProbe = (() => {
     let cached: VirtualProtyle | null = null;
     let lastStyle: ThemeStyle | null = null;
 
+    /**
+     * 构建隐藏的 protyle DOM，用于获取计算样式。
+     */
     function createVirtualProtyle(): VirtualProtyle {
         const root = document.createElement("div");
         root.className = "protyle";
@@ -95,6 +102,9 @@ export const StyleProbe = (() => {
         return cached;
     }
 
+    /**
+     * 采样并返回当前主题样式快照。
+     */
     function probe(): StyleSnapshot {
         const { block, action, hljs, content } = getVirtualProtyle();
 
@@ -113,6 +123,9 @@ export const StyleProbe = (() => {
             logger.debug("采集代码块样式快照");
             return probe();
         },
+        /**
+         * 采样完整样式并缓存。
+         */
         getFullStyle(): ThemeStyle {
             logger.debug("采集完整主题样式");
             const cache = probe();
@@ -152,6 +165,9 @@ export const StyleProbe = (() => {
         resetCachedStyle(): void {
             lastStyle = null;
         },
+        /**
+         * 清理虚拟 DOM，释放引用。
+         */
         cleanup(): void {
             if (!cached) return;
             cached.root.remove();

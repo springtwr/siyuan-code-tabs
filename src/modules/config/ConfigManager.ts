@@ -4,6 +4,9 @@ import { compareConfig, getSiyuanConfig, syncSiyuanConfig } from "@/utils/dom";
 import { fetchFileFromUrlSimple, loadJsonFromFile } from "@/utils/network";
 import logger from "@/utils/logger";
 
+/**
+ * 配置加载、合并与保存的编排入口。
+ */
 export type ConfigManagerOptions = {
     data: Record<string, unknown>;
     onApplyThemeStyles: () => Promise<unknown>;
@@ -47,6 +50,10 @@ function cleanupDeprecatedKeys(target: Record<string, unknown>): void {
     });
 }
 
+/**
+ * 负责插件配置文件的加载与写入。
+ * 副作用：写入配置文件、触发主题样式更新。
+ */
 export class ConfigManager {
     private readonly data: Record<string, unknown>;
     private readonly onApplyThemeStyles: () => Promise<unknown>;
@@ -58,6 +65,9 @@ export class ConfigManager {
         this.onAfterLoad = options.onAfterLoad;
     }
 
+    /**
+     * 加载配置并触发必要的样式更新。
+     */
     async loadAndApply(): Promise<void> {
         const configFile = await fetchFileFromUrlSimple(
             CONFIG_JSON.replace("/data", ""),
@@ -80,6 +90,9 @@ export class ConfigManager {
         }
     }
 
+    /**
+     * 写入配置文件（含版本号）。
+     */
     async saveConfig(): Promise<void> {
         syncSiyuanConfig(this.data);
         const file = new File([buildConfigPayload(this.data)], "config.json", {

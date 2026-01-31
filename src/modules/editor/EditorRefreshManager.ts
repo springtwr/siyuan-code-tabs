@@ -2,6 +2,9 @@ import { getActiveEditor } from "siyuan";
 
 import logger from "@/utils/logger";
 
+/**
+ * 编辑器刷新能力的薄封装，避免上层直接耦合 Siyuan Editor 实例。
+ */
 type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
 
 type EditorRefreshManagerOptions = {
@@ -9,6 +12,10 @@ type EditorRefreshManagerOptions = {
     getRefreshOverflow?: () => RefreshOverflow | undefined;
 };
 
+/**
+ * 负责触发编辑器刷新与溢出重算。
+ * 副作用：调用编辑器 reload / 触发 DOM 渲染刷新。
+ */
 export class EditorRefreshManager {
     private readonly getEditor: (
         readOnly?: boolean
@@ -27,10 +34,16 @@ export class EditorRefreshManager {
                 ).pluginCodeTabs?.refreshOverflow);
     }
 
+    /**
+     * 注入刷新回调，避免模块之间的强引用。
+     */
     setRefreshOverflowProvider(provider: () => RefreshOverflow | undefined): void {
         this.getRefreshOverflow = provider;
     }
 
+    /**
+     * 刷新当前文档（重建渲染）。
+     */
     reloadActiveDocument(): void {
         const activeEditor = this.getEditor(true);
         if (activeEditor) {
@@ -39,6 +52,9 @@ export class EditorRefreshManager {
         }
     }
 
+    /**
+     * 刷新 overflow 与行号等依赖布局的计算。
+     */
     refreshOverflow(root?: HTMLElement | ShadowRoot): void {
         const refresh = this.getRefreshOverflow();
         if (refresh) {

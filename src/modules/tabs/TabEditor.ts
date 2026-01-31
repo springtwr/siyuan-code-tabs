@@ -4,7 +4,7 @@ import { CODE_TABS_ICONS } from "@/constants";
 import { Dialog, type IObject, confirm } from "siyuan";
 import { TabDataManager } from "./TabDataManager";
 import type { TabsData } from "./types";
-import { resolveLanguage } from "./language";
+import { isLanguageSupported, normalizeLanguageInput } from "./language";
 
 type EditorOptions = {
     i18n: IObject;
@@ -120,11 +120,34 @@ export class TabEditor {
             });
         };
 
+        const ensureLanguageSuggestions = () => {
+            const hljs = window.hljs as unknown as { listLanguages?: () => string[] };
+            if (!hljs?.listLanguages) return;
+            const datalistId = "code-tabs-lang-suggestions";
+            let datalist = root.querySelector<HTMLDataListElement>(`#${datalistId}`);
+            if (!datalist) {
+                datalist = document.createElement("datalist");
+                datalist.id = datalistId;
+                root.appendChild(datalist);
+            }
+            const languages = new Set<string>(hljs.listLanguages());
+            languages.add("plaintext");
+            languages.add("markdown-render");
+            const sorted = Array.from(languages).sort();
+            datalist.innerHTML = "";
+            sorted.forEach((lang) => {
+                const option = document.createElement("option");
+                option.value = lang;
+                datalist?.appendChild(option);
+            });
+            inputLang.setAttribute("list", datalistId);
+        };
+
         const updateCurrentTab = () => {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
             tab.title = inputTitle.value.trim();
-            tab.lang = resolveLanguage(inputLang.value);
+            tab.lang = normalizeLanguageInput(inputLang.value);
             tab.code = inputCode.value;
             renderList();
         };
@@ -134,7 +157,7 @@ export class TabEditor {
             const tab = draft.tabs[state.currentIndex];
             if (tab) {
                 tab.title = inputTitle.value.trim();
-                tab.lang = resolveLanguage(inputLang.value);
+                tab.lang = normalizeLanguageInput(inputLang.value);
                 tab.code = inputCode.value;
             }
             return buildSnapshot(draft);
@@ -402,6 +425,26 @@ export class TabEditor {
                             return;
                         }
                     }
+                    const activeTab = state.data.tabs[state.currentIndex];
+                    const lang = normalizeLanguageInput(activeTab?.lang ?? "");
+                    const shouldConfirm =
+                        lang !== "markdown-render" && lang && !isLanguageSupported(lang);
+                    if (shouldConfirm) {
+                        confirm(
+                            t(options.i18n, "editor.confirmUnsupportedLangTitle"),
+                            t(options.i18n, "editor.confirmUnsupportedLang").replace("{0}", lang),
+                            () => {
+                                options.onSubmit(TabDataManager.normalize(state.data));
+                                close(true);
+                            },
+                            () => {
+                                requestAnimationFrame(() => {
+                                    inputLang.focus();
+                                });
+                            }
+                        );
+                        return;
+                    }
                     options.onSubmit(TabDataManager.normalize(state.data));
                     close(true);
                     break;
@@ -416,6 +459,7 @@ export class TabEditor {
         });
 
         renderList();
+        ensureLanguageSuggestions();
         syncFields();
         inputTitle.focus();
     }

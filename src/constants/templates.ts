@@ -145,6 +145,21 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     width: 100%;
 }
 
+.code-tabs__editor-input[data-field="lang"][list] {
+    -webkit-appearance: none;
+    appearance: textfield;
+    background-image: none;
+}
+
+.code-tabs__editor-input[data-field="lang"][list]::-webkit-calendar-picker-indicator {
+    display: none;
+    opacity: 0;
+}
+
+.code-tabs__editor-input[data-field="lang"][list]::-webkit-list-button {
+    display: none;
+}
+
 .code-tabs__editor-textarea {
     min-height: 140px;
     flex: 1;

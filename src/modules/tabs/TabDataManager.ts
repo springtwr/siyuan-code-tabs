@@ -3,7 +3,7 @@ import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { TabParser } from "./TabParser";
-import { resolveLanguage } from "@/modules/tabs/language";
+import { normalizeLanguageInput } from "@/modules/tabs/language";
 import type { CodeTab, TabDataItem, TabsData } from "./types";
 
 const CURRENT_VERSION = 2;
@@ -11,7 +11,7 @@ function normalizeTabs(tabs: TabDataItem[]): TabDataItem[] {
     return tabs
         .map((tab) => ({
             title: tab.title?.trim() ?? "",
-            lang: resolveLanguage(tab.lang ?? ""),
+            lang: normalizeLanguageInput(tab.lang ?? ""),
             code: tab.code ?? "",
         }))
         .filter((tab) => tab.title.length > 0);
@@ -75,7 +75,7 @@ export class TabDataManager {
         const tabs = Array.isArray(data.tabs) ? data.tabs : [];
         tabs.forEach((tab, index) => {
             const title = tab.title?.trim() ?? "";
-            const lang = resolveLanguage(tab.lang ?? "");
+            const lang = normalizeLanguageInput(tab.lang ?? "");
             const code = tab.code ?? "";
             if (!title) errors.push(`tab.${index}.title.empty`);
             if (!lang) errors.push(`tab.${index}.lang.empty`);

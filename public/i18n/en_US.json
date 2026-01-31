@@ -35,6 +35,8 @@
   "editor.cancel": "Cancel",
   "editor.confirmDiscard": "Changes have not been saved. Are you sure you want to discard them?",
   "editor.confirmDiscardTitle": "Confirm close",
+  "editor.confirmUnsupportedLangTitle": "Confirm save",
+  "editor.confirmUnsupportedLang": "Language \"{0}\" may not be highlighted. Save anyway?",
   "editor.emptyTitle": "Title cannot be empty",
   "editor.emptyCode": "Code cannot be empty",
   "editor.deleteLast": "At least one tab is required",

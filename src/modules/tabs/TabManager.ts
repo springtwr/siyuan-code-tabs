@@ -15,9 +15,6 @@ async function resolveTabsData(
     nodeId: string,
     htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
-    if (!window.hljs) {
-        await TabRenderer.ensureLibraryLoaded("hljs");
-    }
     const dataFromDom = TabDataManager.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;
     const attrs = await getBlockAttrs(nodeId);
@@ -307,7 +304,7 @@ export class TabManager {
                 return;
             }
             scan(scope);
-            const hosts = (scope as ParentNode).querySelectorAll?.("protyle-html") ?? [];
+            const hosts = (scope as ParentNode).querySelectorAll<HTMLElement>("protyle-html");
             hosts.forEach((host) => {
                 const shadow = (host as HTMLElement).shadowRoot;
                 if (shadow) scan(shadow);

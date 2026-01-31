@@ -7,6 +7,9 @@ export const TAB_WIDTH_MAX = 20;
 export const TAB_WIDTH_DEFAULT = 12;
 export const TAB_WIDTH_SETTING_KEY = "codeTabsTabWidth";
 
+export const HLJS_SCRIPT_ID = "protyleHljsScript";
+export const HLJS_THIRD_SCRIPT_ID = "protyleHljsThirdScript";
+
 export const FENCED_BLOCK_MARKDOWN = {
     katex: "$$\n\n$$",
     hljs: "```\n\n```",

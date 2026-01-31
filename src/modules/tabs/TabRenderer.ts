@@ -1,5 +1,12 @@
 import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
-import { FENCED_BLOCK_MARKDOWN, PROTYLE_HTML } from "@/constants";
+import {
+    FENCED_BLOCK_MARKDOWN,
+    HLJS_SCRIPT,
+    HLJS_SCRIPT_ID,
+    HLJS_THIRD_SCRIPT,
+    HLJS_THIRD_SCRIPT_ID,
+    PROTYLE_HTML,
+} from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
@@ -50,13 +57,38 @@ export class TabRenderer {
                 hlText = await this.renderMarkdown(mdDiv);
                 hlText = `<div class="markdown-body">${hlText}</div>`;
             } else {
-                hlText = window.hljs.highlight(code, {
-                    language: language,
-                    ignoreIllegals: true,
-                }).value;
-                hlText = `<div class="code language-${language}" style="white-space: pre-wrap;">${hlText}</div>`;
+                if (!window.hljs) {
+                    await this.ensureLibraryLoaded("hljs");
+                }
+                const safeLang =
+                    window.hljs?.getLanguage && window.hljs.getLanguage(language)
+                        ? language
+                        : "plaintext";
+                let highlighted: string | null = null;
+                if (window.hljs?.highlight) {
+                    try {
+                        highlighted = window.hljs.highlight(code, {
+                            language: safeLang,
+                            ignoreIllegals: true,
+                        }).value;
+                    } catch (error) {
+                        logger.warn("hljs 渲染失败，回退为纯文本", { error, language });
+                        highlighted = null;
+                    }
+                }
+                if (highlighted !== null) {
+                    hlText = `<div class="code language-${safeLang}" style="white-space: pre-wrap;">${highlighted}</div>`;
+                } else {
+                    hlText = `<div class="code language-${safeLang}" style="white-space: pre-wrap;"></div>`;
+                }
             }
             content.innerHTML = hlText;
+            if (language !== "markdown-render") {
+                const codeBlock = content.querySelector<HTMLElement>(".code");
+                if (codeBlock && !codeBlock.innerHTML) {
+                    codeBlock.textContent = code;
+                }
+            }
             if (i === activeIndex) {
                 content.classList.add("tab-content--active");
             }
@@ -134,10 +166,36 @@ export class TabRenderer {
             await this.ensureLibraryLoaded("katex");
         }
         // 预处理 Macros 配置
-        const macros = JSON.parse(window.siyuan.config.editor.katexMacros || "{}");
+        let macros: Record<string, string> = {};
+        let macrosError: string | null = null;
+        try {
+            const parsed = JSON.parse(window.siyuan.config.editor.katexMacros || "{}");
+            if (parsed && typeof parsed === "object") {
+                const entries = Object.entries(parsed as Record<string, unknown>);
+                macros = entries.reduce<Record<string, string>>((acc, [key, value]) => {
+                    if (typeof value === "string") {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+            } else {
+                macrosError = "KaTeX 宏配置无效";
+            }
+        } catch (error) {
+            logger.warn("KaTeX 宏配置解析失败", { error });
+            macrosError = "KaTeX 宏配置无效";
+        }
         mathBlocks.forEach((el) => {
             const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
             if (!code.trim()) return;
+            if (macrosError) {
+                el.innerHTML = "";
+                const errorEl = document.createElement("span");
+                errorEl.className = "ft__error";
+                errorEl.textContent = macrosError;
+                el.appendChild(errorEl);
+                return;
+            }
             try {
                 window.katex.render(code, el, {
                     displayMode: el.tagName === "DIV",
@@ -146,6 +204,12 @@ export class TabRenderer {
                 });
             } catch (e) {
                 logger.warn("KaTeX 渲染失败", e);
+                el.innerHTML = "";
+                const errorEl = document.createElement("span");
+                errorEl.className = "ft__error";
+                const message = e instanceof Error ? e.message : "KaTeX Render Error";
+                errorEl.textContent = `KaTeX Render Error: ${message}`;
+                el.appendChild(errorEl);
             }
         });
     }
@@ -176,14 +240,19 @@ export class TabRenderer {
             await this.ensureLibraryLoaded("hljs");
         }
         codeBlocks.forEach((el) => {
-            const code = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
-            if (!code.trim()) return;
+            const raw = window.Lute.UnEscapeHTMLStr(el.textContent) || "";
+            if (!raw.trim()) return;
 
             try {
-                const code = el.innerText;
-                const language = el.className.replace("language-", "");
+                const code = el.innerText || el.textContent || raw;
+                const langClass = Array.from(el.classList).find((cls) =>
+                    cls.startsWith("language-")
+                );
+                const language = langClass ? langClass.replace("language-", "") : "";
+                const safeLang =
+                    language && window.hljs.getLanguage?.(language) ? language : "plaintext";
                 const result = window.hljs.highlight(code, {
-                    language: language,
+                    language: safeLang,
                     ignoreIllegals: true,
                 });
                 el.innerHTML = result.value;
@@ -304,8 +373,33 @@ export class TabRenderer {
 
     static async ensureLibraryLoaded(type: FencedBlockType): Promise<void> {
         const editor = getActiveEditor(true);
-        const previousId = (editor?.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset
+        if (!editor?.protyle?.wysiwyg?.element) {
+            logger.warn("无法触发库加载：未找到活动编辑器", { scriptType: type });
+            // 其它类型的库一般不会出现这种情况
+            // 只有 hljs 在没有打开文档的情况下升级旧版标签页才会出现这种情况
+            if (type !== "hljs") return;
+            logger.info("尝试手动加载 hljs");
+            const loadScript = (src: string, id: string) => {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement("script");
+                    script.src = src;
+                    script.id = id;
+                    script.async = false;
+                    script.onload = () => resolve(`手动加载 ${id} 成功`);
+                    script.onerror = () => reject(new Error(`手动加载 ${src} 失败`));
+                    document.head.appendChild(script);
+                });
+            };
+            const msg = await loadScript(HLJS_SCRIPT, HLJS_SCRIPT_ID);
+            logger.debug(msg);
+            const msg2 = await loadScript(HLJS_THIRD_SCRIPT, HLJS_THIRD_SCRIPT_ID);
+            logger.debug(msg2);
+            return;
+        }
+        logger.debug("触发库加载", { scriptType: type });
+        const previousId = (editor.protyle.wysiwyg.element.lastChild as HTMLElement)?.dataset
             .nodeId;
+        logger.debug("插入临时块以触发库加载", { previousId, scriptType: type });
         const result = await insertBlock(
             "markdown",
             FENCED_BLOCK_MARKDOWN[type],
@@ -315,6 +409,7 @@ export class TabRenderer {
         );
         const tempId = result[0].doOperations[0].id;
         await new Promise((resolve) => setTimeout(resolve, 100));
+        logger.debug("删除临时块", { tempId, scriptType: type });
         await deleteBlock(tempId);
     }
 

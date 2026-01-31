@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import type { TabsData } from "@/modules/tabs/types";
 
@@ -34,5 +34,39 @@ describe("TabRenderer", () => {
         };
         const html = await TabRenderer.createProtyleHtml(data);
         expect(html).toContain("markdown-body");
+    });
+
+    it("renderCode 解析 language-* class", async () => {
+        const original = window.hljs;
+        const highlight = vi.fn(() => ({ value: "ok" }));
+        window.hljs = {
+            ...original,
+            highlight,
+            getLanguage: vi.fn(() => "js"),
+        } as unknown as typeof original;
+
+        const originalLute = window.Lute;
+        window.Lute = {
+            New: () => ({
+                MarkdownStr: () => `<pre><code class="language-js hljs">const a = 1;</code></pre>`,
+            }),
+            UnEscapeHTMLStr: (input: string) => input,
+            EscapeHTMLStr: (input: string) => input,
+            EChartsMindmapStr: (input: string) => input,
+        };
+
+        const data: TabsData = {
+            version: 2,
+            active: 0,
+            tabs: [{ title: "MD", lang: "markdown-render", code: "```js\\nconst a=1\\n```" }],
+        };
+        await TabRenderer.createProtyleHtml(data);
+        expect(highlight).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ language: "js" })
+        );
+
+        window.Lute = originalLute;
+        window.hljs = original;
     });
 });

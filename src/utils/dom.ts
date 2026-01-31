@@ -1,5 +1,5 @@
 /**
- * 通用 DOM 操作工具函数
+ * 通用 DOM 操作工具函数（含 Shadow DOM 兼容）。
  */
 
 /**
@@ -43,7 +43,8 @@ export function getNodeId(element: HTMLElement): string | null {
 }
 
 /**
- * 比较两个对象的配置
+ * 比较思源配置快照与插件配置。
+ * 变化时用于触发样式更新。
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
@@ -77,7 +78,7 @@ export function getSiyuanConfig(): Record<string, unknown> {
 }
 
 /**
- * 同步思源配置
+ * 同步思源配置到插件数据对象。
  */
 export function syncSiyuanConfig(data: Record<string, unknown>): void {
     const properties = getSiyuanConfig();

@@ -1,5 +1,6 @@
 /**
- * 通用网络请求工具函数
+ * 通用网络请求工具函数。
+ * 副作用：发起网络请求与读写 File/Blob。
  */
 
 import logger from "@/utils/logger";
@@ -7,6 +8,9 @@ import { delay } from "@/utils/common";
 import { BACKGROUND_CSS, CODE_STYLE_CSS, THEME_ADAPTION_YAML } from "@/constants";
 import * as yaml from "js-yaml";
 
+/**
+ * 兼容 baseURL 的相对路径解析。
+ */
 function resolveUrl(route: string): string {
     if (!route) return route;
     if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(route)) {
@@ -24,7 +28,8 @@ function resolveUrl(route: string): string {
 }
 
 /**
- * 带重试功能的网络请求
+ * 带重试功能的网络请求。
+ * 兼容：特定样式文件 404 时允许透传。
  */
 export async function fetchWithRetry(
     route: string,
@@ -61,8 +66,12 @@ export async function fetchWithRetry(
     throw new Error("fetchWithRetry: retries exhausted");
 }
 
+// 强制跳过缓存，避免主题文件读取旧内容
 const NO_CACHE_HEADERS = { "Cache-Control": "no-cache" };
 
+/**
+ * 获取文件并包装为 File（可选重试）。
+ */
 async function fetchFileFromUrlCore(
     route: string,
     fileName: string,

@@ -1,7 +1,7 @@
 import { pushErrMsg } from "@/api";
 import { t } from "@/utils/i18n";
 import { CODE_TABS_ICONS } from "@/constants";
-import { Dialog, type IObject } from "siyuan";
+import { Dialog, type IObject, confirm } from "siyuan";
 import { TabDataManager } from "./TabDataManager";
 import type { TabsData } from "./types";
 import { resolveLanguage } from "./language";
@@ -140,18 +140,43 @@ export class TabEditor {
             return buildSnapshot(draft);
         };
 
-        const confirmClose = () => {
-            if (getDraftSnapshot() === initialSnapshot) return true;
-            return window.confirm(t(options.i18n, "editor.confirmDiscard"));
+        const rawDestroy = dialog.destroy.bind(dialog);
+        let isConfirmingClose = false;
+        let forceClose = false;
+        dialog.destroy = (destroyOptions?: IObject) => {
+            if (forceClose || getDraftSnapshot() === initialSnapshot) {
+                rawDestroy(destroyOptions);
+                return;
+            }
+            if (isConfirmingClose) return;
+            isConfirmingClose = true;
+            confirm(
+                t(options.i18n, "editor.confirmDiscardTitle"),
+                t(options.i18n, "editor.confirmDiscard"),
+                () => {
+                    isConfirmingClose = false;
+                    forceClose = true;
+                    rawDestroy(destroyOptions);
+                    forceClose = false;
+                },
+                () => {
+                    isConfirmingClose = false;
+                    requestAnimationFrame(() => {
+                        inputTitle.focus();
+                    });
+                }
+            );
         };
 
-        const rawDestroy = dialog.destroy.bind(dialog);
         const close = (force = false) => {
-            if (force || confirmClose()) {
+            if (force) {
+                forceClose = true;
                 rawDestroy();
+                forceClose = false;
+                return;
             }
+            dialog.destroy();
         };
-        dialog.destroy = () => close();
 
         const selectIndex = (index: number, saveCurrent: boolean) => {
             if (saveCurrent) {

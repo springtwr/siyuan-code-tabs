@@ -282,6 +282,7 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
 .code-tabs__editor-dialog .b3-dialog__action {
     flex-shrink: 0;
 }
+
 `.trim();
 
 export const PROTYLE_HTML = `

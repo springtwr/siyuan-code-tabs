@@ -31,6 +31,7 @@
   "editor.add": "Add",
   "editor.delete": "Delete",
   "editor.dragTip": "Drag to sort",
+  "editor.setDefault": "Set as default",
   "editor.save": "Save",
   "editor.cancel": "Cancel",
   "editor.confirmDiscard": "Changes have not been saved. Are you sure you want to discard them?",

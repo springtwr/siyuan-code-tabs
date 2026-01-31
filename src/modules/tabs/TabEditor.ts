@@ -105,7 +105,20 @@ export class TabEditor {
                 if (index === state.currentIndex) {
                     item.classList.add("code-tabs__editor-item--active");
                 }
+                if (state.data.active === index) {
+                    item.classList.add("code-tabs__editor-item--default");
+                }
                 item.dataset.index = String(index);
+                const defaultBtn = document.createElement("button");
+                defaultBtn.type = "button";
+                defaultBtn.className = "code-tabs__editor-item-default";
+                if (state.data.active === index) {
+                    defaultBtn.classList.add("code-tabs__editor-item-default--active");
+                }
+                defaultBtn.dataset.action = "set-default";
+                defaultBtn.dataset.index = String(index);
+                defaultBtn.title = t(options.i18n, "editor.setDefault");
+                defaultBtn.innerHTML = `<svg width="12" height="12" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconStar"></use></svg>`;
                 const text = document.createElement("span");
                 text.className = "code-tabs__editor-item-text";
                 text.textContent = tab.title;
@@ -114,6 +127,7 @@ export class TabEditor {
                 handle.title = t(options.i18n, "editor.dragTip");
                 handle.setAttribute("draggable", "true");
                 handle.innerHTML = `<svg width="12" height="12" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconDrag"></use></svg>`;
+                item.appendChild(defaultBtn);
                 item.appendChild(text);
                 item.appendChild(handle);
                 listEl.appendChild(item);
@@ -386,6 +400,17 @@ export class TabEditor {
 
         root.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;
+            const defaultBtn = target.closest<HTMLElement>("[data-action='set-default']");
+            if (defaultBtn) {
+                event.preventDefault();
+                event.stopPropagation();
+                const index = Number(defaultBtn.dataset.index ?? -1);
+                if (!Number.isNaN(index) && index >= 0) {
+                    state.data.active = index;
+                    renderList();
+                }
+                return;
+            }
             const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
             if (!action) return;
             switch (action) {

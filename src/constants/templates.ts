@@ -204,6 +204,31 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     white-space: nowrap;
 }
 
+.code-tabs__editor-item-default {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--b3-theme-on-surface, #666);
+}
+
+.code-tabs__editor-item-default svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+.code-tabs__editor-item-default--active {
+    color: var(--b3-theme-primary, #5b8def);
+}
+
+.code-tabs__editor-item-default:hover {
+    background: var(--b3-theme-surface-lighter, #f2f2f2);
+}
+
 .code-tabs__editor-item-handle {
     flex-shrink: 0;
     padding: 2px 4px;

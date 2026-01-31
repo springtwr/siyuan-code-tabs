@@ -31,6 +31,7 @@
   "editor.add": "新增",
   "editor.delete": "删除",
   "editor.dragTip": "拖动排序",
+  "editor.setDefault": "设为默认标签",
   "editor.save": "保存",
   "editor.cancel": "取消",
   "editor.confirmDiscard": "内容已修改，确认放弃并关闭吗？",

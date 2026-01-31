@@ -1,5 +1,4 @@
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
 
 type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
 
@@ -40,7 +39,6 @@ export class ProtyleLifecycleManager {
         )?.detail;
         const root = detail?.protyle?.wysiwyg?.element || detail?.element;
         LineNumberManager.scanProtyle(root);
-        TabRenderer.renderChartInDom(root);
         if (!this.onRefreshOverflow) return;
         this.onRefreshOverflow(root);
         requestAnimationFrame(() => {

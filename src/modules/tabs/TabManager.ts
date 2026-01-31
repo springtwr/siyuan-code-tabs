@@ -123,7 +123,6 @@ export class TabManager {
             });
             refreshOverflowForContainer(tabContainer);
             LineNumberManager.refreshActive(tabContainer);
-            TabRenderer.renderChartInDom(tabContainer);
         };
 
         const createMoreTab = () => {

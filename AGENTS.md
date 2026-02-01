@@ -26,11 +26,11 @@ src/
   index.ts                  # 入口：生命周期、事件注册、调用各模块
   modules/
     tabs/
-      TabParser.ts          # 语法解析/格式转换（纯逻辑）
+      LegacyTabParser.ts          # 语法解析/格式转换（纯逻辑）
       TabRenderer.ts        # 渲染 HTML（仅视图层）
-      TabConverter.ts       # 批量转换/统计与 API 调用
+      TabTransformManager.ts       # 批量转换/统计与 API 调用
       TabManager.ts         # tabs 交互与全局函数注册
-      TabDataManager.ts     # tabs 数据读写/迁移与校验
+      TabDataService.ts     # tabs 数据读写/迁移与校验
       TabEditor.ts          # tabs 编辑弹窗与交互
       types.ts              # codeTab 等与 tabs 相关类型
     theme/
@@ -81,11 +81,11 @@ docs/
 
 ## 4. 模块职责边界
 
-- `TabParser`：仅处理语法解析与格式转换，不操作 DOM、API。
+- `LegacyTabParser`：仅处理语法解析与格式转换，不操作 DOM、API。
 - `TabRenderer`：仅生成 HTML 字符串，不访问 API、不读写存储。
-- `TabConverter`：负责批量转换、统计与 API 调用，不直接处理生命周期与设置 UI。
+- `TabTransformManager`：负责批量转换、统计与 API 调用，不直接处理生命周期与设置 UI。
 - `TabManager`：管理 tabs 交互（`window.pluginCodeTabs`）与用户交互逻辑，不负责渲染与语法解析。
-- `TabDataManager`：负责 tabs 数据编码/解码、迁移与校验，不负责 UI 与渲染。
+- `TabDataService`：负责 tabs 数据编码/解码、迁移与校验，不负责 UI 与渲染。
 - `TabEditor`：负责 tabs 编辑 UI 与交互，不负责解析与渲染。
 - `ThemeManager/StyleProbe`：只处理主题样式、CSS 生成与更新，不参与转换流程。
 - `ThemeObserver`：只负责主题监听与样式更新计划编排，不处理设置 UI 与业务转换。
@@ -138,7 +138,15 @@ docs/
 - 提交前检查：必须运行 `pnpm check`（同时执行 tsc、lint、test），确保全部通过再提交。
 - 代码改动后必须运行 `pnpm check`，确保无误后再交付。
 - 规范维护：每次项目结构或重大变更时必须同步更新本文件。
-- 提交信息风格：使用中文。第一行概述本次提交内容，后续用要点分条说明改动细节。
+- 提交信息风格：使用中文。第一行概述本次提交内容，后续用要点分条说明改动细节。如：
+
+  ```
+  简要说明更改
+
+  - 要点1
+  - 要点2
+  ……
+  ```
 
 ## 9. 注释规范
 
@@ -175,6 +183,7 @@ docs/
 ### 9.6 模板
 
 函数/方法（JSDoc）：
+
 ```
 /**
  * {简要说明}
@@ -186,6 +195,7 @@ docs/
 ```
 
 模块/类说明：
+
 ```
 /**
  * {模块/类用途}
@@ -194,16 +204,19 @@ docs/
 ```
 
 异步副作用：
+
 ```
 // 副作用：{例如插入 DOM/触发 API/注册监听}
 ```
 
 兼容/降级逻辑：
+
 ```
 // 兼容：{旧格式/缺失库} -> {处理策略}
 ```
 
 复杂分支说明：
+
 ```
 // 原因：{为何要走此分支}
 ```

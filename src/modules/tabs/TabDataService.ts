@@ -33,7 +33,7 @@ function decodeLegacyHtmlEntities(input: string): string {
  * Tabs 数据的读写、校验与迁移入口。
  * 副作用：读写块属性。
  */
-export class TabDataManager {
+export class TabDataService {
     /**
      * 深拷贝并规范化数据，避免 UI 直接修改原对象。
      * @param data tabs 数据

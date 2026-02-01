@@ -8,7 +8,7 @@ import {
     LEGACY_EXISTS_KEY,
     PLUGIN_VERSION,
 } from "@/constants";
-import { TabConverter } from "@/modules/tabs/TabConverter";
+import { TabTransformManager } from "@/modules/tabs/TabTransformManager";
 import { TabManager } from "@/modules/tabs/TabManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
@@ -30,7 +30,7 @@ import { delay } from "@/utils/common";
  */
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
-    private tabConverter!: TabConverter;
+    private tabTransformManager!: TabTransformManager;
     private editorRefreshManager!: EditorRefreshManager;
     private themeObserver!: ThemeObserver;
     private settingsPanel!: SettingsPanel;
@@ -92,7 +92,7 @@ export default class CodeTabs extends Plugin {
         this.unregisterBlockIconEvent();
         this.unregisterProtyleEvents();
         this.themeObserver?.stop();
-        this.tabConverter?.cancelCurrentTask();
+        this.tabTransformManager?.cancelCurrentTask();
         LineNumberManager.cleanup();
         TabManager.cleanup();
         StyleProbe.cleanup();
@@ -148,7 +148,7 @@ export default class CodeTabs extends Plugin {
         );
         this.editorRefreshManager.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
-        this.tabConverter = new TabConverter(this.i18n, () =>
+        this.tabTransformManager = new TabTransformManager(this.i18n, () =>
             this.editorRefreshManager.reloadActiveDocument()
         );
     }
@@ -161,7 +161,7 @@ export default class CodeTabs extends Plugin {
         this.settingsPanel = new SettingsPanel({
             i18n: this.i18n,
             data: this.data,
-            onAllTabsToCodeBlocks: () => this.tabConverter.allTabsToCodeBlocks(),
+            onAllTabsToCodeBlocks: () => this.tabTransformManager.allTabsToCodeBlocks(),
             onUpgradeLegacyTabs: () => this.upgradeLegacyTabs(),
             onSaveConfig: () => this.configManager.saveConfig(),
             buildDebugToggle: () => this.debugLogManager.createToggle(),
@@ -176,7 +176,7 @@ export default class CodeTabs extends Plugin {
         this.commandManager = new CommandManager({
             i18n: this.i18n,
             data: this.data,
-            tabConverter: this.tabConverter,
+            tabTransformManager: this.tabTransformManager,
             onReload: () => this.editorRefreshManager.reloadActiveDocument(),
             addCommand: (command) => this.addCommand(command),
         });
@@ -223,7 +223,7 @@ export default class CodeTabs extends Plugin {
             }
             return;
         }
-        const legacyCount = await this.tabConverter.countLegacyTabs();
+        const legacyCount = await this.tabTransformManager.countLegacyTabs();
         this.data[LEGACY_CHECK_VERSION_KEY] = PLUGIN_VERSION;
         this.data[LEGACY_EXISTS_KEY] = legacyCount > 0;
         this.data[LEGACY_COUNT_KEY] = legacyCount;
@@ -241,7 +241,7 @@ export default class CodeTabs extends Plugin {
      * @returns Promise<void>
      */
     private async upgradeLegacyTabs(): Promise<void> {
-        await this.tabConverter.upgradeLegacyTabs();
+        await this.tabTransformManager.upgradeLegacyTabs();
         const remaining = await this.waitForLegacyCount(3, 300);
         logger.debug(`升级完成，剩余 ${remaining} 个旧版标签页`);
         this.data[LEGACY_EXISTS_KEY] = remaining > 0;
@@ -259,12 +259,12 @@ export default class CodeTabs extends Plugin {
      * @returns 剩余旧版标签页数量
      */
     private async waitForLegacyCount(retries: number, delayMs: number): Promise<number> {
-        let remaining = await this.tabConverter.countLegacyTabs();
+        let remaining = await this.tabTransformManager.countLegacyTabs();
         logger.debug(`升级后第1次查询旧版标签页数量，剩余 ${remaining} 个`);
         if (remaining === 0) return 0;
         for (let attempt = 0; attempt < retries; attempt += 1) {
             await delay(delayMs);
-            remaining = await this.tabConverter.countLegacyTabs();
+            remaining = await this.tabTransformManager.countLegacyTabs();
             logger.debug(`升级后第${attempt + 1}次重试查询旧版标签页数量，剩余 ${remaining} 个`);
             if (remaining === 0) return 0;
         }

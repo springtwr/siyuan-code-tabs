@@ -2,7 +2,7 @@ import { pushErrMsg } from "@/api";
 import { t } from "@/utils/i18n";
 import { CODE_TABS_ICONS } from "@/constants";
 import { Dialog, type IObject, confirm } from "siyuan";
-import { TabDataManager } from "./TabDataManager";
+import { TabDataService } from "./TabDataService";
 import type { TabsData } from "./types";
 import { isLanguageSupported, normalizeLanguageInput } from "./language";
 
@@ -75,7 +75,7 @@ export class TabEditor {
      */
     static open(options: EditorOptions): void {
         const state: EditorState = {
-            data: TabDataManager.clone(options.data),
+            data: TabDataService.clone(options.data),
             currentIndex: Math.min(
                 Math.max(options.currentIndex, 0),
                 Math.max(options.data.tabs.length - 1, 0)
@@ -88,7 +88,7 @@ export class TabEditor {
             width: "720px",
         });
 
-        const buildSnapshot = (data: TabsData) => JSON.stringify(TabDataManager.normalize(data));
+        const buildSnapshot = (data: TabsData) => JSON.stringify(TabDataService.normalize(data));
         const initialSnapshot = buildSnapshot(state.data);
 
         const root = dialog.element;
@@ -193,7 +193,7 @@ export class TabEditor {
          * @returns 草稿快照字符串
          */
         const getDraftSnapshot = () => {
-            const draft = TabDataManager.clone(state.data);
+            const draft = TabDataService.clone(state.data);
             const tab = draft.tabs[state.currentIndex];
             if (tab) {
                 tab.title = inputTitle.value.trim();
@@ -487,7 +487,7 @@ export class TabEditor {
                 }
                 case "save": {
                     updateCurrentTab();
-                    const validation = TabDataManager.validate(state.data);
+                    const validation = TabDataService.validate(state.data);
                     if (!validation.ok) {
                         if (validation.errors.some((err) => err.includes("title"))) {
                             pushErrMsg(t(options.i18n, "editor.emptyTitle")).then();
@@ -507,7 +507,7 @@ export class TabEditor {
                             t(options.i18n, "editor.confirmUnsupportedLangTitle"),
                             t(options.i18n, "editor.confirmUnsupportedLang").replace("{0}", lang),
                             () => {
-                                options.onSubmit(TabDataManager.normalize(state.data));
+                                options.onSubmit(TabDataService.normalize(state.data));
                                 close(true);
                             },
                             () => {
@@ -518,7 +518,7 @@ export class TabEditor {
                         );
                         return;
                     }
-                    options.onSubmit(TabDataManager.normalize(state.data));
+                    options.onSubmit(TabDataService.normalize(state.data));
                     close(true);
                     break;
                 }

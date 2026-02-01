@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { TabDataManager } from "@/modules/tabs/TabDataManager";
+import { TabDataService } from "@/modules/tabs/TabDataService";
 import { resolveLanguage } from "@/modules/tabs/language";
 
-describe("TabDataManager", () => {
+describe("TabDataService", () => {
     it("encode/decode should roundtrip", () => {
-        const data = TabDataManager.createDefaultData();
+        const data = TabDataService.createDefaultData();
         data.tabs[0].title = "JS";
         data.tabs[0].lang = "js";
         data.tabs[0].code = "console.log('ok')";
 
-        const encoded = TabDataManager.encode(data);
-        const decoded = TabDataManager.decode(encoded);
+        const encoded = TabDataService.encode(data);
+        const decoded = TabDataService.decode(encoded);
 
         expect(decoded).not.toBeNull();
         expect(decoded?.tabs[0].title).toBe("JS");
@@ -45,14 +45,14 @@ describe("TabDataManager", () => {
             active: 0,
             tabs: [{ title: "", lang: "", code: "" }],
         };
-        const result = TabDataManager.validate(invalid);
+        const result = TabDataService.validate(invalid);
         expect(result.ok).toBe(false);
         expect(result.errors.length).toBeGreaterThan(0);
     });
 
     it("upgradeFromLegacy converts tab syntax", () => {
         const legacy = `tab::: JS\nlang::: js\nconsole.log('ok')`;
-        const upgraded = TabDataManager.upgradeFromLegacy(legacy);
+        const upgraded = TabDataService.upgradeFromLegacy(legacy);
         expect(upgraded).not.toBeNull();
         expect(upgraded?.tabs[0].title).toBe("JS");
         expect(upgraded?.tabs[0].lang).toBe("js");

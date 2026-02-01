@@ -2,7 +2,7 @@ import type { IObject } from "siyuan";
 
 import { pushErrMsg, updateBlock } from "@/api";
 import { ICON_MAIN } from "@/constants";
-import { TabDataManager } from "@/modules/tabs/TabDataManager";
+import { TabDataService } from "@/modules/tabs/TabDataService";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import { t } from "@/utils/i18n";
 
@@ -91,12 +91,12 @@ export class UiEntryManager {
                 if (!window.hljs) {
                     await TabRenderer.ensureLibraryLoaded("hljs");
                 }
-                const data = TabDataManager.createDefaultData();
+                const data = TabDataService.createDefaultData();
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 const targetId = nodeElement?.dataset?.nodeId ?? "";
                 if (targetId) {
                     await updateBlock("markdown", htmlBlock, targetId);
-                    await TabDataManager.writeToBlock(targetId, data);
+                    await TabDataService.writeToBlock(targetId, data);
                     this.onReload();
                     return;
                 }

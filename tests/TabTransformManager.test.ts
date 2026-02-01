@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabConverter } from "@/modules/tabs/TabConverter";
+import { TabTransformManager } from "@/modules/tabs/TabTransformManager";
 import { CODE_TABS_DATA_ATTR } from "@/constants";
 import { TabRenderer } from "@/modules/tabs/TabRenderer";
 import * as api from "@/api";
-import { TabDataManager } from "@/modules/tabs/TabDataManager";
+import { TabDataService } from "@/modules/tabs/TabDataService";
 
 vi.mock("@/api", () => ({
     deleteBlock: vi.fn().mockResolvedValue(undefined),
@@ -24,7 +24,7 @@ vi.mock("@/modules/tabs/TabRenderer", () => ({
 
 const i18n = {} as IObject;
 
-describe("TabConverter", () => {
+describe("TabTransformManager", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -38,7 +38,7 @@ describe("TabConverter", () => {
         content.textContent = "::: JS | js\nconsole.log('ok')\n";
         block.appendChild(content);
 
-        const converter = new TabConverter(i18n);
+        const converter = new TabTransformManager(i18n);
         const stats = await converter.codeToTabsBatch([block]);
 
         expect(stats.success).toBe(1);
@@ -56,16 +56,16 @@ describe("TabConverter", () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "tab-2";
         block.dataset.type = "NodeHTMLBlock";
-        const data = TabDataManager.createDefaultData();
+        const data = TabDataService.createDefaultData();
         data.tabs = [
             { title: "Custom1", lang: "js", code: "console.log('a')" },
             { title: "Custom2", lang: "python", code: "print('b')" },
         ];
         vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
-            [CODE_TABS_DATA_ATTR]: TabDataManager.encode(data),
+            [CODE_TABS_DATA_ATTR]: TabDataService.encode(data),
         });
 
-        const converter = new TabConverter(i18n);
+        const converter = new TabTransformManager(i18n);
         const stats = await converter.tabsToCodeBlocksBatch([block]);
 
         expect(stats.success).toBe(1);
@@ -92,7 +92,7 @@ describe("TabConverter", () => {
         const blockA = makeBlock("a", "js", "console.log('a')");
         const blockB = makeBlock("b", "python", "print('b')");
 
-        const converter = new TabConverter(i18n);
+        const converter = new TabTransformManager(i18n);
         await converter.mergeCodeBlocksToTabSyntax([blockA, blockB]);
 
         expect(api.updateBlock).toHaveBeenCalledWith("markdown", expect.any(String), "a");

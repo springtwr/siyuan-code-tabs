@@ -2,7 +2,7 @@ import type { IMenu, IObject } from "siyuan";
 
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { DevToggleManager } from "@/modules/developer/DevToggleManager";
-import type { TabConverter } from "@/modules/tabs/TabConverter";
+import type { TabTransformManager } from "@/modules/tabs/TabTransformManager";
 import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { isDevMode } from "@/utils/env";
@@ -27,7 +27,7 @@ export type BlockIconEventDetail = {
 type CommandManagerOptions = {
     i18n: IObject;
     data: Record<string, unknown>;
-    tabConverter: TabConverter;
+    tabTransformManager: TabTransformManager;
     onReload: () => void;
     addCommand: AddCommandFn;
 };
@@ -38,14 +38,14 @@ type CommandManagerOptions = {
 export class CommandManager {
     private readonly i18n: IObject;
     private readonly data: Record<string, unknown>;
-    private readonly tabConverter: TabConverter;
+    private readonly tabTransformManager: TabTransformManager;
     private readonly onReload: () => void;
     private readonly addCommand: AddCommandFn;
 
     constructor(options: CommandManagerOptions) {
         this.i18n = options.i18n;
         this.data = options.data;
-        this.tabConverter = options.tabConverter;
+        this.tabTransformManager = options.tabTransformManager;
         this.onReload = options.onReload;
         this.addCommand = options.addCommand;
     }
@@ -62,7 +62,7 @@ export class CommandManager {
                 const blockList = getSelectedElements(
                     `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
                 );
-                this.tabConverter.tabsToCodeBlocksBatch(blockList);
+                this.tabTransformManager.tabsToCodeBlocksBatch(blockList);
             },
         });
         this.addCommand({
@@ -70,7 +70,7 @@ export class CommandManager {
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
+                this.tabTransformManager.mergeCodeBlocksToTabSyntax(blockList);
             },
         });
     }
@@ -110,7 +110,7 @@ export class CommandManager {
             label: t(this.i18n, "menu.more.mergeCodeBlocks"),
             click: async () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
-                await this.tabConverter.mergeCodeBlocksToTabSyntax(blockList);
+                await this.tabTransformManager.mergeCodeBlocksToTabSyntax(blockList);
                 this.onReload();
             },
         });
@@ -125,7 +125,7 @@ export class CommandManager {
                         item.dataset?.type === "NodeHTMLBlock"
                     );
                 });
-                this.tabConverter.tabsToCodeBlocksBatch(blockList);
+                this.tabTransformManager.tabsToCodeBlocksBatch(blockList);
             },
         });
         detail.menu.addItem({ type: "separator" });
@@ -133,7 +133,7 @@ export class CommandManager {
             iconHTML: "",
             label: t(this.i18n, "menu.more.tabsToCodeBlocksInDocument"),
             click: () => {
-                this.tabConverter.tabsToCodeBlocksInDocument();
+                this.tabTransformManager.tabsToCodeBlocksInDocument();
             },
         });
     }

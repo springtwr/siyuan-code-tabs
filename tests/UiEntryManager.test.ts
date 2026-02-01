@@ -10,8 +10,8 @@ vi.mock("@/api", () => ({
     updateBlock: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/modules/tabs/TabDataManager", () => ({
-    TabDataManager: {
+vi.mock("@/modules/tabs/TabDataService", () => ({
+    TabDataService: {
         createDefaultData: () => ({
             version: 1,
             active: 0,

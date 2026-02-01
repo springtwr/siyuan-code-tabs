@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandManager } from "@/modules/command/CommandManager";
-import type { TabConverter } from "@/modules/tabs/TabConverter";
+import type { TabTransformManager } from "@/modules/tabs/TabTransformManager";
 import type { IMenu } from "siyuan";
 
 const getSelectedElements = vi.fn();
@@ -30,17 +30,17 @@ describe("CommandManager", () => {
     });
 
     it("registerCommands 注册两个命令并执行回调", () => {
-        const tabConverter = {
+        const tabTransformManager = {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
-        } as unknown as TabConverter;
+        } as unknown as TabTransformManager;
         const addCommand = vi.fn();
         getSelectedElements.mockReturnValue([document.createElement("div")]);
 
         const manager = new CommandManager({
             i18n: {},
             data: {},
-            tabConverter,
+            tabTransformManager,
             onReload: vi.fn(),
             addCommand,
         });
@@ -49,18 +49,18 @@ describe("CommandManager", () => {
         expect(addCommand).toHaveBeenCalledTimes(2);
 
         addCommand.mock.calls[0][0].editorCallback();
-        expect(tabConverter.tabsToCodeBlocksBatch).toHaveBeenCalledTimes(1);
+        expect(tabTransformManager.tabsToCodeBlocksBatch).toHaveBeenCalledTimes(1);
 
         addCommand.mock.calls[1][0].editorCallback();
-        expect(tabConverter.mergeCodeBlocksToTabSyntax).toHaveBeenCalledTimes(1);
+        expect(tabTransformManager.mergeCodeBlocksToTabSyntax).toHaveBeenCalledTimes(1);
     });
 
     it("handleBlockIconEvent 构建开发菜单并触发开关", () => {
-        const tabConverter = {
+        const tabTransformManager = {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
             tabsToCodeBlocksInDocument: vi.fn(),
-        } as unknown as TabConverter;
+        } as unknown as TabTransformManager;
         const addCommand = vi.fn();
         const menuItems: IMenu[] = [];
         const node = document.createElement("div");
@@ -70,7 +70,7 @@ describe("CommandManager", () => {
         const manager = new CommandManager({
             i18n: {},
             data: {},
-            tabConverter,
+            tabTransformManager,
             onReload: vi.fn(),
             addCommand,
         });
@@ -91,16 +91,16 @@ describe("CommandManager", () => {
 
     it("handleBlockIconEvent 在非开发模式下不添加开发菜单", () => {
         isDevMode.mockReturnValue(false);
-        const tabConverter = {
+        const tabTransformManager = {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
-        } as unknown as TabConverter;
+        } as unknown as TabTransformManager;
         const menuItems: IMenu[] = [];
 
         const manager = new CommandManager({
             i18n: {},
             data: {},
-            tabConverter,
+            tabTransformManager,
             onReload: vi.fn(),
             addCommand: vi.fn(),
         });

@@ -7,7 +7,7 @@ import { TabRenderer } from "./TabRenderer";
 import { IObject, Menu } from "siyuan";
 import { StyleProbe } from "../theme/StyleProbe";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
-import { TabDataManager } from "./TabDataManager";
+import { TabDataService } from "./TabDataService";
 import { TabEditor } from "./TabEditor";
 import type { TabsData } from "./types";
 
@@ -21,16 +21,16 @@ async function resolveTabsData(
     nodeId: string,
     htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
-    const dataFromDom = TabDataManager.readFromElement(htmlBlock);
+    const dataFromDom = TabDataService.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;
     const attrs = await getBlockAttrs(nodeId);
-    const dataFromAttr = TabDataManager.readFromAttrs(attrs);
+    const dataFromAttr = TabDataService.readFromAttrs(attrs);
     if (dataFromAttr) return dataFromAttr;
-    const legacy = TabDataManager.decodeLegacySourceFromAttrs(attrs);
+    const legacy = TabDataService.decodeLegacySourceFromAttrs(attrs);
     if (legacy) {
-        const upgraded = TabDataManager.upgradeFromLegacy(legacy);
+        const upgraded = TabDataService.upgradeFromLegacy(legacy);
         if (upgraded) {
-            await TabDataManager.writeToBlock(nodeId, upgraded);
+            await TabDataService.writeToBlock(nodeId, upgraded);
             return upgraded;
         }
     }
@@ -52,7 +52,7 @@ async function persistTabsData(
 ): Promise<void> {
     const htmlBlock = await TabRenderer.createProtyleHtml(data);
     await updateBlock("markdown", htmlBlock, nodeId);
-    await TabDataManager.writeToBlock(nodeId, data);
+    await TabDataService.writeToBlock(nodeId, data);
     onReload?.();
 }
 

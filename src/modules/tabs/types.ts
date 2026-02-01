@@ -1,4 +1,4 @@
-import { FENCED_BLOCK_MARKDOWN } from "@/constants";
+import { FENCED_BLOCK_META } from "@/constants";
 
 /**
  * Tabs 相关类型定义。
@@ -28,4 +28,4 @@ export type TabsData = {
     tabs: TabDataItem[];
 };
 
-export type FencedBlockType = keyof typeof FENCED_BLOCK_MARKDOWN;
+export type FencedBlockType = keyof typeof FENCED_BLOCK_META;

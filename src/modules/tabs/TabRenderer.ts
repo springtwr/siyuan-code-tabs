@@ -1,12 +1,5 @@
 import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
-import {
-    FENCED_BLOCK_MARKDOWN,
-    HLJS_SCRIPT,
-    HLJS_SCRIPT_ID,
-    HLJS_THIRD_SCRIPT,
-    HLJS_THIRD_SCRIPT_ID,
-    PROTYLE_HTML,
-} from "@/constants";
+import { FENCED_BLOCK_META, PROTYLE_HTML } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
@@ -395,10 +388,13 @@ export class TabRenderer {
         const editor = getActiveEditor(true);
         if (!editor?.protyle?.wysiwyg?.element) {
             logger.warn("无法触发库加载：未找到活动编辑器", { scriptType: type });
-            // 其它类型的库一般不会出现这种情况
-            // 只有 hljs 在没有打开文档的情况下升级旧版标签页才会出现这种情况
-            if (type !== "hljs") return;
-            logger.info("尝试手动加载 hljs");
+            // 兼容：无活动编辑器时升级旧版标签页也需要加载资源
+            const manualScripts = this.resolveManualScripts(type);
+            if (!manualScripts) {
+                logger.warn("无活动编辑器且缺少手动加载脚本", { scriptType: type });
+                return;
+            }
+            logger.info(`尝试手动加载 ${type}`);
             const loadScript = (src: string, id: string) => {
                 return new Promise((resolve, reject) => {
                     const script = document.createElement("script");
@@ -410,10 +406,10 @@ export class TabRenderer {
                     document.head.appendChild(script);
                 });
             };
-            const msg = await loadScript(HLJS_SCRIPT, HLJS_SCRIPT_ID);
-            logger.debug(msg);
-            const msg2 = await loadScript(HLJS_THIRD_SCRIPT, HLJS_THIRD_SCRIPT_ID);
-            logger.debug(msg2);
+            for (const manualScript of manualScripts) {
+                const msg = await loadScript(manualScript.src, manualScript.id);
+                logger.debug(msg);
+            }
             return;
         }
         logger.debug("触发库加载", { scriptType: type });
@@ -422,7 +418,7 @@ export class TabRenderer {
         logger.debug("插入临时块以触发库加载", { previousId, scriptType: type });
         const result = await insertBlock(
             "markdown",
-            FENCED_BLOCK_MARKDOWN[type],
+            FENCED_BLOCK_META[type].markdown,
             "",
             previousId,
             ""
@@ -431,6 +427,19 @@ export class TabRenderer {
         await new Promise((resolve) => setTimeout(resolve, 100));
         logger.debug("删除临时块", { tempId, scriptType: type });
         await deleteBlock(tempId);
+    }
+
+    /**
+     * 返回手动加载脚本信息（无活动编辑器时兜底）。
+     * @param type 代码块类型
+     * @returns 脚本信息或 null
+     */
+    private static resolveManualScripts(
+        type: FencedBlockType
+    ): Array<{ src: string; id: string }> | null {
+        const scripts = [...FENCED_BLOCK_META[type].scripts];
+        if (scripts.length === 0) return null;
+        return scripts;
     }
 
     private static normalizeHtmlBlockContent(input: string): string {

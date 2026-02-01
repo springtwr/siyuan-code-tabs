@@ -44,7 +44,7 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
 
 .code-tabs__setting-width {
     display: grid;
-    grid-template-columns: 140px 56px auto;
+    grid-template-columns: 140px 56px;
     gap: 6px;
     align-items: center;
 }
@@ -62,11 +62,6 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
 
 .code-tabs__setting-width-input:disabled {
     opacity: 0.6;
-}
-
-.code-tabs__setting-width-unit {
-    font-size: 12px;
-    opacity: 0.7;
 }
 
 .code-tabs__task {

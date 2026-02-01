@@ -182,10 +182,6 @@ export class SettingsPanel {
         maxInput.step = "1";
         maxInput.className = "b3-text-field code-tabs__setting-width-input";
 
-        const unit = document.createElement("span");
-        unit.className = "code-tabs__setting-width-unit";
-        unit.textContent = t(this.i18n, "setting.tabWidth.unit");
-
         this.tabWidthSelect = modeSelect;
         this.tabWidthInput = maxInput;
 
@@ -205,7 +201,6 @@ export class SettingsPanel {
 
         wrapper.appendChild(modeSelect);
         wrapper.appendChild(maxInput);
-        wrapper.appendChild(unit);
 
         this.syncTabWidthSettingInputs();
         return wrapper;

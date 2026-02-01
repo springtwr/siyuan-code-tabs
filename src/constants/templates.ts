@@ -197,6 +197,7 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     justify-content: space-between;
     gap: 6px;
     min-height: 28px;
+    position: relative;
 }
 
 .code-tabs__editor-item-text {
@@ -258,9 +259,23 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     color: var(--b3-theme-on-primary, #1a1a1a);
 }
 
-.code-tabs__editor-item--drop {
-    border-color: var(--b3-theme-primary, #5b8def);
-    box-shadow: 0 0 0 1px var(--b3-theme-primary, #5b8def);
+.code-tabs__editor-item--drop-before::before,
+.code-tabs__editor-item--drop-after::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 2px;
+    background: var(--b3-theme-primary, #5b8def);
+    border-radius: 2px;
+}
+
+.code-tabs__editor-item--drop-before::before {
+    top: -1px;
+}
+
+.code-tabs__editor-item--drop-after::after {
+    bottom: -1px;
 }
 
 .code-tabs__editor-actions {

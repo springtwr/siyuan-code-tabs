@@ -315,8 +315,33 @@ export class TabEditor {
 
         const clearDropIndicator = () => {
             listEl
-                .querySelectorAll<HTMLElement>(".code-tabs__editor-item--drop")
-                .forEach((item) => item.classList.remove("code-tabs__editor-item--drop"));
+                .querySelectorAll<HTMLElement>(
+                    ".code-tabs__editor-item--drop-before, .code-tabs__editor-item--drop-after"
+                )
+                .forEach((item) =>
+                    item.classList.remove(
+                        "code-tabs__editor-item--drop-before",
+                        "code-tabs__editor-item--drop-after"
+                    )
+                );
+        };
+
+        const resolveDropPosition = (event: { clientY: number }, item: HTMLElement) => {
+            const rect = item.getBoundingClientRect();
+            return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+        };
+
+        const resolveDropIndex = (
+            fromIndex: number,
+            targetIndex: number,
+            position: "before" | "after"
+        ) => {
+            let nextIndex = position === "after" ? targetIndex + 1 : targetIndex;
+            if (fromIndex < nextIndex) {
+                nextIndex -= 1;
+            }
+            const maxIndex = Math.max(state.data.tabs.length - 1, 0);
+            return Math.min(Math.max(nextIndex, 0), maxIndex);
         };
 
         /**
@@ -363,7 +388,12 @@ export class TabEditor {
             if (!item) return;
             event.preventDefault();
             clearDropIndicator();
-            item.classList.add("code-tabs__editor-item--drop");
+            const position = resolveDropPosition(event, item);
+            item.classList.add(
+                position === "before"
+                    ? "code-tabs__editor-item--drop-before"
+                    : "code-tabs__editor-item--drop-after"
+            );
             if (event.dataTransfer) {
                 event.dataTransfer.dropEffect = "move";
             }
@@ -383,7 +413,9 @@ export class TabEditor {
             const item = target.closest<HTMLElement>(".code-tabs__editor-item");
             if (!item) return;
             event.preventDefault();
-            const dropIndex = Number(item.dataset.index ?? 0);
+            const rawIndex = Number(item.dataset.index ?? 0);
+            const position = resolveDropPosition(event, item);
+            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
             clearDropIndicator();
             if (dropIndex === dragIndex) {
                 dragIndex = null;
@@ -400,6 +432,7 @@ export class TabEditor {
 
         let pointerDragIndex: number | null = null;
         let pointerDropIndex: number | null = null;
+        let pointerDropPosition: "before" | "after" | null = null;
         let pointerId: number | null = null;
         const resolvePointerItem = (event: PointerEvent) => {
             const target = document.elementFromPoint(event.clientX, event.clientY);
@@ -415,10 +448,11 @@ export class TabEditor {
             if (!item) return;
             pointerDragIndex = Number(item.dataset.index ?? 0);
             pointerDropIndex = pointerDragIndex;
+            pointerDropPosition = "after";
             pointerId = event.pointerId;
             handle.setPointerCapture?.(event.pointerId);
             clearDropIndicator();
-            item.classList.add("code-tabs__editor-item--drop");
+            item.classList.add("code-tabs__editor-item--drop-after");
             event.preventDefault();
         });
 
@@ -428,24 +462,33 @@ export class TabEditor {
             if (!item) {
                 clearDropIndicator();
                 pointerDropIndex = null;
+                pointerDropPosition = null;
                 return;
             }
             const dropIndex = Number(item.dataset.index ?? 0);
             pointerDropIndex = dropIndex;
+            pointerDropPosition = resolveDropPosition(event, item);
             clearDropIndicator();
-            item.classList.add("code-tabs__editor-item--drop");
+            item.classList.add(
+                pointerDropPosition === "before"
+                    ? "code-tabs__editor-item--drop-before"
+                    : "code-tabs__editor-item--drop-after"
+            );
             event.preventDefault();
         });
 
         const finishPointerDrag = (event: PointerEvent) => {
             if (pointerDragIndex === null || pointerId !== event.pointerId) return;
             const dropIndex = pointerDropIndex;
+            const dropPosition = pointerDropPosition;
             clearDropIndicator();
-            if (dropIndex !== null) {
-                applyReorder(pointerDragIndex, dropIndex);
+            if (dropIndex !== null && dropPosition) {
+                const nextIndex = resolveDropIndex(pointerDragIndex, dropIndex, dropPosition);
+                applyReorder(pointerDragIndex, nextIndex);
             }
             pointerDragIndex = null;
             pointerDropIndex = null;
+            pointerDropPosition = null;
             pointerId = null;
             const target = event.target as HTMLElement | null;
             target?.releasePointerCapture?.(event.pointerId);

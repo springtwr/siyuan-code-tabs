@@ -120,12 +120,12 @@ export function syncSiyuanConfig(data: Record<string, unknown>): void {
  */
 export function getSelectedElements(selector: string): HTMLElement[] {
     // 优先检查是否有视觉多选
-    const visuallySelected = document.querySelectorAll<HTMLElement>(
-        `.protyle-wysiwyg--select${selector}, .protyle-wysiwyg--select ${selector}`
-    );
+    const visuallySelected = Array.from(
+        document.querySelectorAll<HTMLElement>(".protyle-wysiwyg--select")
+    ).filter((el) => el.matches(selector));
 
     if (visuallySelected.length > 0) {
-        return Array.from(visuallySelected);
+        return visuallySelected;
     }
 
     // 无多选则回退到 Selection 焦点位置

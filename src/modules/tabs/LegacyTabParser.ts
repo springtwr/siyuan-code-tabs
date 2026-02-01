@@ -22,15 +22,15 @@ export type ParseResult = {
 };
 
 /**
- * tabs 语法解析器（含旧语法兼容）。
+ * 旧版 tabs 语法解析器（保留新语法兼容）。
  */
-export class TabParser {
+export class LegacyTabParser {
     /**
      * 识别语法类型并分派到对应解析器。
      * @param codeText 输入文本
      * @returns 解析结果
      */
-    static checkCodeText(codeText: string): ParseResult {
+    static parseTabSyntax(codeText: string): ParseResult {
         codeText = codeText.trim();
         // 兼容旧语法
         if (codeText.startsWith("tab:::")) {

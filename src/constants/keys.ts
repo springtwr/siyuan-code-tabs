@@ -29,7 +29,7 @@ const ECHARTS_SCRIPTS = [
 
 export const FENCED_BLOCK_META = {
     katex: {
-        markdown: "$$\n\n$$",
+        triggerMarkdown: "$$\n\n$$",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/katex/katex.min.js`,
@@ -42,7 +42,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     hljs: {
-        markdown: "```\n\n```",
+        triggerMarkdown: "```\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/highlight.js/highlight.min.js`,
@@ -55,7 +55,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     mermaid: {
-        markdown: "```mermaid\n\n```",
+        triggerMarkdown: "```mermaid\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/mermaid/mermaid.min.js`,
@@ -68,7 +68,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     abc: {
-        markdown: "```abc\n\n```",
+        triggerMarkdown: "```abc\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/abcjs/abcjs-basic-min.min.js`,
@@ -77,7 +77,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     graphviz: {
-        markdown: "```graphviz\n\n```",
+        triggerMarkdown: "```graphviz\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/graphviz/viz.js`,
@@ -86,7 +86,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     plantuml: {
-        markdown: "```plantuml\n\n```",
+        triggerMarkdown: "```plantuml\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/plantuml/plantuml-encoder.min.js`,
@@ -95,7 +95,7 @@ export const FENCED_BLOCK_META = {
         ],
     },
     flowchart: {
-        markdown: "```flowchart\n\n```",
+        triggerMarkdown: "```flowchart\n\n```",
         scripts: [
             {
                 src: `${SIYUAN_PATH}/js/flowchart.js/flowchart.min.js`,
@@ -104,11 +104,11 @@ export const FENCED_BLOCK_META = {
         ],
     },
     mindmap: {
-        markdown: "```mindmap\n\n```",
+        triggerMarkdown: "```mindmap\n\n```",
         scripts: ECHARTS_SCRIPTS,
     },
     echarts: {
-        markdown: "```echarts\n\n```",
+        triggerMarkdown: "```echarts\n\n```",
         scripts: ECHARTS_SCRIPTS,
     },
 } as const;

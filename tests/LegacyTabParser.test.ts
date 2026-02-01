@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { TabParser } from "@/modules/tabs/TabParser";
+import { LegacyTabParser } from "@/modules/tabs/LegacyTabParser";
 
-describe("TabParser 语法解析", () => {
+describe("LegacyTabParser 语法解析", () => {
     it("解析新语法：多标签与 active", () => {
         const input = `::: JS | javascript | active
 console.log("ok");
@@ -9,7 +9,7 @@ console.log("ok");
 ::: Python
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(2);
         expect(result.code[0].isActive).toBe(true);
@@ -24,7 +24,7 @@ print("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(1);
         expect(result.code[0].language).toBe("js");
@@ -35,7 +35,7 @@ console.log("ok")
         const input = `:::
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noTitle");
         expect(result.errors[0]?.index).toBe(1);
@@ -44,7 +44,7 @@ console.log("ok")
     it("新语法：缺少代码应失败", () => {
         const input = `::: JS
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noCode");
     });
@@ -53,7 +53,7 @@ console.log("ok")
         const input = `:: title
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.headErr");
     });
@@ -62,7 +62,7 @@ console.log("ok")
         const input = `::: TypeScript
 const a = 1;
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("typescript");
     });
@@ -71,7 +71,7 @@ const a = 1;
         const input = `::: Demo | js | active | ignored
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
     });
@@ -83,7 +83,7 @@ console.log("ok");
 ::: Python | active
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.multiActive");
     });
@@ -92,7 +92,7 @@ print("ok")
         const input = `::: Title | js
 
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noCode");
     });
@@ -102,7 +102,7 @@ print("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
@@ -112,7 +112,7 @@ console.log("ok")
 lang:::
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noLang");
     });
@@ -121,7 +121,7 @@ console.log("ok")
         const input = `tab::: JS
 lang::: js
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noCode");
     });
@@ -131,7 +131,7 @@ lang::: js
 lang::: js
 
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noCode");
     });
@@ -140,7 +140,7 @@ lang::: js
         const input = `tab::: JS
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("js");
     });
@@ -151,7 +151,7 @@ console.log("ok")
 ::: JS | js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(1);
     });
@@ -160,7 +160,7 @@ console.log("ok")
         const input = `::: Title | active | js
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
         expect(result.code[0].language).toBe("js");
@@ -170,7 +170,7 @@ console.log("ok");
         const input = `::: Demo |  | active
 console.log("ok");
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].language).toBe("demo");
     });
@@ -180,7 +180,7 @@ console.log("ok");
 
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
@@ -190,7 +190,7 @@ console.log("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.noTitle");
     });
@@ -200,7 +200,7 @@ console.log("ok")
 lang::: js
 console.log("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code[0].isActive).toBe(true);
     });
@@ -214,7 +214,7 @@ tab::: Python :::active
 lang::: python
 print("ok")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(false);
         expect(result.errors[0]?.key).toBe("parser.multiActive");
     });
@@ -226,7 +226,7 @@ console.log("a");
 ::: B | python
 print("b")
 `;
-        const result = TabParser.checkCodeText(input);
+        const result = LegacyTabParser.parseTabSyntax(input);
         expect(result.result).toBe(true);
         expect(result.code.length).toBe(2);
     });

@@ -2,7 +2,7 @@ import { getBlockAttrs, setBlockAttrs } from "@/api";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
-import { TabParser } from "./TabParser";
+import { LegacyTabParser } from "./LegacyTabParser";
 import { normalizeLanguageInput } from "@/modules/tabs/language";
 import type { CodeTab, TabDataItem, TabsData } from "./types";
 
@@ -219,7 +219,7 @@ export class TabDataManager {
         if (text.trim().startsWith("tab:::")) {
             text = decodeLegacyHtmlEntities(text);
         }
-        const parsed = TabParser.checkCodeText(text);
+        const parsed = LegacyTabParser.parseTabSyntax(text);
         if (!parsed.result) return null;
         return this.fromCodeTabs(parsed.code);
     }

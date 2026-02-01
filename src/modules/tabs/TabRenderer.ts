@@ -418,7 +418,7 @@ export class TabRenderer {
         logger.debug("插入临时块以触发库加载", { previousId, scriptType: type });
         const result = await insertBlock(
             "markdown",
-            FENCED_BLOCK_META[type].markdown,
+            FENCED_BLOCK_META[type].triggerMarkdown,
             "",
             previousId,
             ""

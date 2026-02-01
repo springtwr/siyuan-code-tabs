@@ -13,7 +13,7 @@ import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constan
 import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
-import { TabParser } from "./TabParser";
+import { LegacyTabParser } from "./LegacyTabParser";
 import { CodeTab, TabsData } from "./types";
 import { TabRenderer } from "./TabRenderer";
 import { TabDataManager } from "./TabDataManager";
@@ -263,7 +263,7 @@ export class TabConverter {
             }
 
             const codeText = stripInvisibleChars(contentEl.textContent || "");
-            const checkResult = TabParser.checkCodeText(codeText);
+            const checkResult = LegacyTabParser.parseTabSyntax(codeText);
             if (!checkResult.result) {
                 const msg = "代码块不符合 Tab 格式";
                 skipped.push({ nodeId: id, reason: msg });
@@ -302,7 +302,7 @@ export class TabConverter {
                 continue;
             }
 
-            const checkResult = TabParser.checkCodeText(codeText);
+            const checkResult = LegacyTabParser.parseTabSyntax(codeText);
             if (!checkResult.result) {
                 const msg = "代码块不符合 Tab 格式";
                 skipped.push({ nodeId: id, reason: msg });
@@ -441,7 +441,7 @@ export class TabConverter {
     }
 
     /**
-     * 批量将标签页拆分为标准代码块。
+     * 批量将标签页拆分为代码块。
      * @param blockList 标签页块列表
      * @returns 转换统计
      */
@@ -450,7 +450,7 @@ export class TabConverter {
             pushMsg(`${t(this.i18n, "msg.noTabsToSplit")}`);
             return { success: 0, failure: 0 };
         }
-        logger.info("开始标签页 -> 多个标准代码块 批量转换", { count: blockList.length });
+        logger.info("开始标签页 -> 多个代码块 批量转换", { count: blockList.length });
 
         const { toProcess, invalid } = await this.collectTabsDataBlocks(
             blockList,
@@ -486,7 +486,7 @@ export class TabConverter {
                 `${t(this.i18n, "msg.tabsToCodeBlocksFailed").replace("{0}", failure.toString())}`
             );
         }
-        logger.info("标签页 -> 多个标准代码块 转换统计", { success, failure });
+        logger.info("标签页 -> 多个代码块 转换统计", { success, failure });
         return { success, failure };
     }
 
@@ -550,7 +550,7 @@ export class TabConverter {
         let hasTabSyntaxBlock = false;
         let fallbackIndex = 1;
         for (const item of filteredBlocks) {
-            const parsed = TabParser.checkCodeText(item.codeText);
+            const parsed = LegacyTabParser.parseTabSyntax(item.codeText);
             if (parsed.result && parsed.code.length > 0) {
                 codeArr.push(
                     ...parsed.code.map((tab) => ({
@@ -595,15 +595,15 @@ export class TabConverter {
             (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
                 ?.rootId;
         if (!rootId) {
-            logger.warn("当前文档标签页 -> 多个标准代码块 失败：缺少 rootId");
+            logger.warn("当前文档标签页 -> 多个代码块 失败：缺少 rootId");
             pushErrMsg(t(this.i18n, "msg.noRootId"));
             return;
         }
-        logger.info("当前文档标签页 -> 多个标准代码块 查询开始", { rootId });
+        logger.info("当前文档标签页 -> 多个代码块 查询开始", { rootId });
         const blockList = (await sql(
             `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='html' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
-        logger.info("当前文档标签页 -> 多个标准代码块 查询完成", {
+        logger.info("当前文档标签页 -> 多个代码块 查询完成", {
             count: blockList.length,
             rootId,
         });
@@ -611,15 +611,15 @@ export class TabConverter {
     }
 
     /**
-     * 全局拆分标签页为标准代码块。
+     * 全局拆分标签页为代码块。
      * @returns Promise<void>
      */
     async allTabsToCodeBlocks(): Promise<void> {
-        logger.info("全局标签页 -> 多个标准代码块 查询开始");
+        logger.info("全局标签页 -> 多个代码块 查询开始");
         const blockList = (await sql(
             `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
-        logger.info("全局标签页 -> 多个标准代码块 查询完成", { count: blockList.length });
+        logger.info("全局标签页 -> 多个代码块 查询完成", { count: blockList.length });
         this.tabsToCodeBlocksBatch(blockList);
     }
 
@@ -641,7 +641,7 @@ export class TabConverter {
      * 全局升级旧版标签页（旧属性数据迁移）。
      * @returns 转换统计
      */
-    async upgradeLegacyTabsAll(): Promise<ConversionStats> {
+    async upgradeLegacyTabs(): Promise<ConversionStats> {
         logger.info("全局旧版标签页升级查询开始");
         const blockList = (await sql(
             `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
@@ -757,7 +757,7 @@ export class TabConverter {
             previousId = newId;
         }
         await deleteBlock(id);
-        logger.info("标签页已拆分为标准代码块", { id, count: tabs.length });
+        logger.info("标签页已拆分为代码块", { id, count: tabs.length });
     }
 
     private shouldPersistTitle(title: string): boolean {

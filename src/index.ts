@@ -241,7 +241,7 @@ export default class CodeTabs extends Plugin {
      * @returns Promise<void>
      */
     private async upgradeLegacyTabs(): Promise<void> {
-        await this.tabConverter.upgradeLegacyTabsAll();
+        await this.tabConverter.upgradeLegacyTabs();
         const remaining = await this.waitForLegacyCount(3, 300);
         logger.debug(`升级完成，剩余 ${remaining} 个旧版标签页`);
         this.data[LEGACY_EXISTS_KEY] = remaining > 0;

@@ -2,51 +2,75 @@
 
 [中文版](./README_zh_CN.md)
 
-## Introduction
+A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
-Siyuan plugin that allows you to put code in multiple languages under a set of tabs
+## Features
 
-## Known Issues
+- Tabbed code blocks with quick editing
+- Tab editor panel: add, remove, rename, change language, and edit code
+- Set a default tab and copy current tab code
+- Batch actions: merge code blocks, split tabs into code blocks (block/document/global)
+- Theme adaptation support
 
-- Unable to adapt to all third-party themes.
-- When exporting to markdown or html, all the code-tabs styles will be lost, only when exporting pdf or image can the
-  code-tabs be displayed normally.
-- The style of the code-tabs may appear abnormally when switching themes, then please try the following methods:
-  - change appearance mode
-  - change theme
-  - Close document and reopen it
-  - Try the above method again after restarting SiYuan Notes
-- **_Only SiYuan 3.5.0 and above can be used normally_**
+## Compatibility
 
-## Tips
+- **Requires SiYuan 3.5.0+**
+- Enable: Settings -> Editor -> `Allow execution of scripts within HTML blocks`
 
-- Please enable `Allow execution of scripts within HTML blocks` in Settings -> Editor.
-- All raw tab data is stored as Base64 in custom attributes. As long as the attributes remain, data can be recovered even if the UI breaks.
-- v2.0.0 provides a tab editor panel and removes “Toggle to code-block”. Please use the **Edit** button.
+## Quick Start
+
+1. Insert a default tab block via slash menu `Tabs` / `tab` / `bq`
+2. Or select multiple code blocks and use block menu `Block: merge selected code blocks`
+3. Click **Edit** in the top-right corner of the tab block
 
 ## Usage
 
-1. Insert a default tab block via the slash menu `Tabs`/`tab`/`bq`, or select multiple code blocks and use “Block: merge selected code blocks”.
-2. Click the **Edit** button to modify tab title, language, and code. You can also add/remove tabs.
-   - When the language is `markdown-render`, SiYuan’s built-in Lute handles markdown and supports KaTeX / Mermaid / Graphviz / PlantUML / ECharts / Flowchart / Mindmap / ABC.
-3. Click **Set default** to make the current tab the default.
-4. Click **Copy** to copy the current tab’s code.
-5. More block menu actions are available:
-   - `Block: merge selected code blocks`: merge multiple code blocks into tabs
-   - `Block: split tabs into code blocks`: split a tab block into multiple code blocks
-   - `Document: split tabs into code blocks`: split all tabs in the current document
-6. The settings panel provides a global entry: `Split all code-tabs into standard code blocks` (for recovering when deprecating the plugin).
-7. The settings panel provides a legacy migration entry: `Migrate legacy tabs` (migrate `custom-plugin-code-tabs-sourcecode` to the new format).
-8. If there are too many tabs, some will be hidden. Use the “More” tab to view them.
-9. Demo.  
-   ![fig5](./images/demo.gif)
-10. Due to the complexity of third-party themes, version 0.7.0 adds a custom configuration file for theme adaptation. The config file path is `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`. Follow the examples and use developer tools to adapt themes. You can also submit a PR; the repo adaptation file path is `/public/asset/theme-adaption.yaml`.
+1. **Edit tabs**
+   - Update title, language, and code
+   - Add/remove tabs
+   - `markdown-render` uses SiYuan’s Lute renderer, supporting KaTeX / Mermaid / Graphviz / PlantUML / ABC
+2. **Set default**
+   - Click **Set default** to make the current tab the default
+3. **Copy**
+   - Click **Copy** to copy the current tab’s code
+4. **More actions (block menu)**
+   - `Block: merge selected code blocks`
+   - `Block: split tabs into code blocks`
+   - `Document: split tabs into code blocks`
+5. **Settings panel (global)**
+   - `Split all code-tabs into code blocks` (for recovery when deprecating the plugin)
+   - `Migrate legacy tabs` (upgrade legacy tabs to the new version)
 
-## Comment
+## Theme Adaptation
 
-- Essentially, this plugin was written with the help of Wenxin Yiyan and ChatGPT.
-- This plugin was developed following the example of [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- The version of SiYuan Notes at the time of testing: 3.5.3
+- If styles look wrong, try:
+  - Switching appearance mode / theme
+  - Closing and reopening documents
+  - Restarting SiYuan
+- Customize theme adaptation:
+  - Path: `SiYuan workspace/data/plugins/code-tabs/custom/theme-adaption.yaml`
+  - Reference: `/public/asset/theme-adaption.yaml`
+
+## Data Notes
+
+- Raw tab data is stored as Base64 in custom block attributes
+- Data can be recovered as long as attributes remain
+
+## Known Issues
+
+- Not guaranteed to fit all third-party themes
+- Styles are lost when exporting to markdown / HTML
+- PDF/image exports keep styles but tabs are not switchable
+
+## Demo
+
+![Demo](./images/demo.gif)
+
+## Notes
+
+- Built with AI assistance
+- Inspired by [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
+- Tested with SiYuan 3.5.3
 
 ## Changelog
 
@@ -56,7 +80,7 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ### v1.1.1
 
-- Fixed a text error in the plugin's shortcut settings.
+- Fixed a text error in the plugin's shortcut settings
 
 ### v1.1.0
 
@@ -66,69 +90,69 @@ Siyuan plugin that allows you to put code in multiple languages under a set of t
 
 ### v1.0.0
 
-- Refactored theme style collection and application; theme switching no longer requires at least one open document.
-- Added line number display and styling; code tabs now show line numbers when enabled in code blocks.
-- Adapted code block scrollbars for some themes.
-- Partial style adjustments and optimizations.
+- Refactored theme style collection and application; theme switching no longer requires at least one open document
+- Added line number display and styling; code tabs now show line numbers when enabled in code blocks
+- Adapted code block scrollbars for some themes
+- Partial style adjustments and optimizations
 
 ### v0.8.0
 
 - Synchronized `Code block ligature` and `Code block wraps` settings
-- Added `markdown-render` type tab, now you can control whether markdown is rendered in the tab by switching between `markdown` / `markdown-render` languages
+- Added `markdown-render` type tab; switch between `markdown` / `markdown-render` to control markdown rendering
 - Partial style adjustments and optimizations
 
 ### v0.7.0
 
-- **Major update: Syntax format change** - Changed from the old `tab:::title:::active` and `lang:::language` syntax to the new `::: title | language | active` syntax
-- Compatibility with old syntax, when reverting from code tabs back to code blocks it will automatically update the old syntax format to the new syntax format
-- Added theme adaptation file, allowing users to adapt third-party themes themselves
-- Implemented bidirectional batch conversion functionality between code blocks and code tabs
-- Modified source code storage method, changed to Base64 encoding for storing source code
-- Updated dependencies, code highlighting now uses siyuan's built-in hljs
-- Added settings item, moved global conversion functionality from block menu to settings panel
-- Optimized theme change detection method, fixed DOM refresh issues
-- Fixed the issue of inconsistent width between tabs and code blocks
+- **Major update: Syntax format change** - Changed from old `tab:::title:::active` and `lang:::language` syntax to new `::: title | language | active`
+- Compatibility with old syntax; converting back to code blocks updates old syntax to the new format
+- Added theme adaptation file for third-party themes
+- Implemented bidirectional batch conversion between code blocks and code tabs
+- Changed source storage to Base64 encoding
+- Updated dependencies; code highlighting now uses SiYuan’s built-in hljs
+- Added settings entry; moved global conversion from block menu to settings panel
+- Optimized theme change detection; fixed DOM refresh issues
+- Fixed inconsistent width between tabs and code blocks
 - Fixed angle bracket loss issue
 
 ### v0.6.2
 
-- Fix missing line breaks when "Toggle to code-block".
-- Adjust spacing between tags and code in some themes.
+- Fix missing line breaks when toggling back to code blocks
+- Adjust spacing between tags and code in some themes
 
 ### v0.6.1
 
-- Adjust the minimum width of the tag.
+- Adjust the minimum width of the tag
 
 ### v0.6.0
 
-- Copy button can now copy markdown.
-- Swipe left or right to view tags when there are too many tags on mobile.
-- Fixed the problem that the copy button doesn't work when using docker.
-- Optimize tag style.
+- Copy button can now copy markdown
+- Swipe left/right to view tabs on mobile
+- Fixed copy button not working when using docker
+- Optimized tab styles
 
 ### v0.5.0
 
-- Optimize the display effect and adapt more themes.
-- Fix display anomalies when using docker that may be caused by CORS issues.
-- Fix padding being too small.
+- Optimized display and adapted more themes
+- Fixed docker display anomalies caused by CORS
+- Fixed padding being too small
 
 ### v0.4.2
 
-- Support for docker.
+- Support for docker
 
 ### v0.4.1
 
-- The plugin checks if the Allow execution of scripts within HTML blocks is turned on when it loads.
+- Checks if “Allow execution of scripts within HTML blocks” is enabled on load
 
 ### v0.4.0
 
-- Fix the problem of escaping pointed brackets.
-- Limit the length of tab title and add horizontal scroll bar automatically when there are too many tabs.
-- Adjust the font size of plaintext and code blocks in markdown.
+- Fixed angle bracket escaping
+- Limited tab title length and added horizontal scrollbar for many tabs
+- Adjusted font size for plaintext and markdown code blocks
 
 ### v0.3.0
 
-- Optimize CSS display effects.
-- Adapt the code-tabs to support more themes.
-- Now you can specify the default active tab when the document is opened.
-- Fixed a few bugs.
+- Optimized CSS display
+- Adapted code-tabs to support more themes
+- Added default active tab on document open
+- Fixed a few bugs

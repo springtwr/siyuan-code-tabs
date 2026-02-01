@@ -59,6 +59,7 @@
   "msg.noTabsToConvert": "No code-tabs found to restore",
   "msg.noTabsToSplit": "No code-tabs found to split",
   "msg.noLegacyTabsToUpgrade": "No legacy tabs to upgrade",
+  "msg.legacyTabsDetected": "{1}: Detected {0} legacy tabs. Open Settings and click \"Upgrade legacy tabs\" to upgrade",
   "msg.allCodeToTabsCompleted": "Convert code-blocks to tabs completed, success count: {0}",
   "msg.allCodeToTabsCompletedFailed": "Convert code-blocks to tabs completed, failed count: {0}",
   "msg.upgradeLegacyCompleted": "Upgrade legacy tabs completed, success count: {0}",

@@ -9,6 +9,10 @@ export const TAB_WIDTH_MIN = 3;
 export const TAB_WIDTH_MAX = 20;
 export const TAB_WIDTH_DEFAULT = 12;
 export const TAB_WIDTH_SETTING_KEY = "codeTabsTabWidth";
+export const LEGACY_CHECK_VERSION_KEY = "codeTabsLegacyCheckVersion";
+export const LEGACY_EXISTS_KEY = "codeTabsLegacyExists";
+export const LEGACY_COUNT_KEY = "codeTabsLegacyCount";
+export const PLUGIN_VERSION = __PLUGIN_VERSION__;
 
 export const HLJS_SCRIPT_ID = "protyleHljsScript";
 export const HLJS_THIRD_SCRIPT_ID = "protyleHljsThirdScript";

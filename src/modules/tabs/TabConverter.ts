@@ -77,10 +77,15 @@ export class TabConverter {
      * 创建批量任务的进度 UI（数量较大时才显示）。
      * @param taskLabel 任务标题
      * @param total 总数
+     * @param force 是否强制显示
      * @returns BatchTask 或 null
      */
-    private createProgressTask(taskLabel: string, total: number): BatchTask | null {
-        if (!document.body || total < TabConverter.progressThreshold) {
+    private createProgressTask(
+        taskLabel: string,
+        total: number,
+        force: boolean = false
+    ): BatchTask | null {
+        if (!document.body || (!force && total < TabConverter.progressThreshold)) {
             return null;
         }
         if (this.currentTask) {
@@ -137,10 +142,11 @@ export class TabConverter {
     private async runBatch<T>(
         title: string,
         items: T[],
-        handler: (item: T) => Promise<void>
+        handler: (item: T) => Promise<void>,
+        options?: { forceProgress?: boolean }
     ): Promise<BatchResult> {
         const total = items.length;
-        const task = this.createProgressTask(title, total);
+        const task = this.createProgressTask(title, total, options?.forceProgress ?? false);
         if (task) {
             task.update(0, total);
         }
@@ -618,6 +624,20 @@ export class TabConverter {
     }
 
     /**
+     * 检测是否存在旧版标签页（仅统计，不做转换）。
+     * @returns 旧版标签页数量
+     */
+    async countLegacyTabs(): Promise<number> {
+        const rows = (await sql(
+            `SELECT id FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}') AND id NOT IN (SELECT block_id FROM attributes AS b WHERE b.name='${CODE_TABS_DATA_ATTR}')`
+        )) as Array<{ id?: string }>;
+        const ids = rows.map((row) => row.id).filter((id): id is string => Boolean(id));
+        logger.debug("旧版标签页计数完成", { count: ids.length });
+        logger.debug("旧版标签页块明细", { ids });
+        return ids.length;
+    }
+
+    /**
      * 全局升级旧版标签页（旧属性数据迁移）。
      * @returns 转换统计
      */
@@ -677,6 +697,18 @@ export class TabConverter {
             toProcess.push({ id, data: upgraded });
         }
 
+        logger.debug("旧版标签页升级统计", {
+            total: blockList.length,
+            toProcess: toProcess.length,
+            skipped: skipped.length,
+            invalid: invalid.length,
+        });
+        logger.debug("旧版标签页升级明细", {
+            toProcess: toProcess.map((item) => item.id),
+            skipped: skipped.map((item) => item.nodeId),
+            invalid: invalid.map((item) => item.nodeId),
+        });
+
         const messages = {
             completed: t(this.i18n, "msg.upgradeLegacyCompleted"),
             failed: t(this.i18n, "msg.upgradeLegacyFailed"),
@@ -693,10 +725,12 @@ export class TabConverter {
             t(this.i18n, "task.progress.upgradeLegacy"),
             toProcess,
             async ({ id, data }) => {
+                logger.debug("升级旧版标签页", { id });
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
                 await TabDataManager.writeToBlock(id, data);
-            }
+            },
+            { forceProgress: true }
         );
 
         return this.resultCounter(

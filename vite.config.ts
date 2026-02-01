@@ -1,4 +1,5 @@
 import { resolve } from "path";
+import { readFileSync } from "fs";
 import { defineConfig } from "vite";
 import minimist from "minimist";
 import { viteStaticCopy } from "vite-plugin-static-copy";
@@ -13,6 +14,7 @@ const args = minimist(process.argv.slice(2));
 const isWatch = args.watch || args.w || false;
 const devDistDir = "dev";
 const distDir = isWatch ? devDistDir : "dist";
+const pluginManifest = JSON.parse(readFileSync(resolve(__dirname, "plugin.json"), "utf-8"));
 
 console.log("isWatch=>", isWatch);
 console.log("distDir=>", distDir);
@@ -22,6 +24,9 @@ export default defineConfig({
         alias: {
             "@": resolve(__dirname, "src"),
         },
+    },
+    define: {
+        __PLUGIN_VERSION__: JSON.stringify(pluginManifest.version ?? ""),
     },
 
     plugins: [

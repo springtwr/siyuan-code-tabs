@@ -59,6 +59,7 @@
   "msg.noTabsToConvert": "没有需要还原的代码标签页",
   "msg.noTabsToSplit": "没有需要拆分的代码标签页",
   "msg.noLegacyTabsToUpgrade": "没有需要升级的旧标签页",
+  "msg.legacyTabsDetected": "{1}：检测到 {0} 个旧版标签页，请在设置中点击“升级旧标签页”进行升级",
   "msg.allCodeToTabsCompleted": "将代码块转换为标签页，成功数量：{0}",
   "msg.allCodeToTabsCompletedFailed": "将代码块转换为标签页，失败数量：{0}",
   "msg.upgradeLegacyCompleted": "升级旧标签页完成，成功数量：{0}",

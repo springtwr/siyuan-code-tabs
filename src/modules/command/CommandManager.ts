@@ -56,7 +56,7 @@ export class CommandManager {
      */
     registerCommands(): void {
         this.addCommand({
-            langKey: t(this.i18n, "menu.more.tabsToCodeBlocks"),
+            langKey: "menu.more.tabsToCodeBlocks",
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements(
@@ -66,7 +66,7 @@ export class CommandManager {
             },
         });
         this.addCommand({
-            langKey: t(this.i18n, "menu.more.mergeCodeBlocks"),
+            langKey: "menu.more.mergeCodeBlocks",
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');

@@ -165,6 +165,14 @@ export class TabEditor {
             const languages = new Set<string>(hljs.listLanguages());
             languages.add("plaintext");
             languages.add("markdown-render");
+            if (window.hljs?.getLanguage) {
+                Array.from(languages).forEach((lang) => {
+                    const info = window.hljs?.getLanguage?.(lang) as
+                        | { aliases?: string[] }
+                        | undefined;
+                    info?.aliases?.forEach((alias) => languages.add(alias));
+                });
+            }
             const sorted = Array.from(languages).sort();
             datalist.innerHTML = "";
             sorted.forEach((lang) => {

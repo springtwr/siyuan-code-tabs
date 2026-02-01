@@ -78,6 +78,11 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.0.0
+
+- Major upgrade: no longer uses code blocks as an intermediate format
+- Added an editor panel to add or remove tabs directly
+
 ### v1.1.2
 
 - Fixed an issue where submenus in the block menu would disappear

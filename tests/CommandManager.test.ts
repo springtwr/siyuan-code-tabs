@@ -31,7 +31,7 @@ describe("CommandManager", () => {
 
     it("registerCommands 注册两个命令并执行回调", () => {
         const tabConverter = {
-            tabsToPlainCodeBlocksBatch: vi.fn(),
+            tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
         } as unknown as TabConverter;
         const addCommand = vi.fn();
@@ -49,7 +49,7 @@ describe("CommandManager", () => {
         expect(addCommand).toHaveBeenCalledTimes(2);
 
         addCommand.mock.calls[0][0].editorCallback();
-        expect(tabConverter.tabsToPlainCodeBlocksBatch).toHaveBeenCalledTimes(1);
+        expect(tabConverter.tabsToCodeBlocksBatch).toHaveBeenCalledTimes(1);
 
         addCommand.mock.calls[1][0].editorCallback();
         expect(tabConverter.mergeCodeBlocksToTabSyntax).toHaveBeenCalledTimes(1);
@@ -57,9 +57,9 @@ describe("CommandManager", () => {
 
     it("handleBlockIconEvent 构建开发菜单并触发开关", () => {
         const tabConverter = {
-            tabsToPlainCodeBlocksBatch: vi.fn(),
+            tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
-            tabsToPlainCodeInDocument: vi.fn(),
+            tabsToCodeBlocksInDocument: vi.fn(),
         } as unknown as TabConverter;
         const addCommand = vi.fn();
         const menuItems: IMenu[] = [];
@@ -92,7 +92,7 @@ describe("CommandManager", () => {
     it("handleBlockIconEvent 在非开发模式下不添加开发菜单", () => {
         isDevMode.mockReturnValue(false);
         const tabConverter = {
-            tabsToPlainCodeBlocksBatch: vi.fn(),
+            tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
         } as unknown as TabConverter;
         const menuItems: IMenu[] = [];

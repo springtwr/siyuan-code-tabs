@@ -16,7 +16,7 @@ import type { TabWidthSetting } from "@/modules/tabs/types";
 type SettingsPanelOptions = {
     i18n: Record<string, string>;
     data: Record<string, unknown>;
-    onAllTabsToPlainCode: () => void;
+    onAllTabsToCodeBlocks: () => void;
     onUpgradeLegacyTabs: () => void;
     onSaveConfig: () => Promise<void>;
     buildDebugToggle: () => HTMLInputElement;
@@ -28,7 +28,7 @@ type SettingsPanelOptions = {
 export class SettingsPanel {
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
-    private readonly onAllTabsToPlainCode: () => void;
+    private readonly onAllTabsToCodeBlocks: () => void;
     private readonly onUpgradeLegacyTabs: () => void;
     private readonly onSaveConfig: () => Promise<void>;
     private readonly buildDebugToggle: () => HTMLInputElement;
@@ -42,7 +42,7 @@ export class SettingsPanel {
     constructor(options: SettingsPanelOptions) {
         this.i18n = options.i18n;
         this.data = options.data;
-        this.onAllTabsToPlainCode = options.onAllTabsToPlainCode;
+        this.onAllTabsToCodeBlocks = options.onAllTabsToCodeBlocks;
         this.onUpgradeLegacyTabs = options.onUpgradeLegacyTabs;
         this.onSaveConfig = options.onSaveConfig;
         this.buildDebugToggle = options.buildDebugToggle;
@@ -55,10 +55,10 @@ export class SettingsPanel {
      */
     init(setting: Setting): void {
         setting.addItem({
-            title: `${t(this.i18n, "setting.allTabsToPlainCode.title")}`,
-            description: `${t(this.i18n, "setting.allTabsToPlainCode.desc")}`,
-            actionElement: this.createSettingButton("setting.allTabsToPlainCode.button", () => {
-                this.onAllTabsToPlainCode();
+            title: `${t(this.i18n, "setting.allTabsToCodeBlocks.title")}`,
+            description: `${t(this.i18n, "setting.allTabsToCodeBlocks.desc")}`,
+            actionElement: this.createSettingButton("setting.allTabsToCodeBlocks.button", () => {
+                this.onAllTabsToCodeBlocks();
             }),
         });
         setting.addItem({

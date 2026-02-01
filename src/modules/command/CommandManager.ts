@@ -56,13 +56,13 @@ export class CommandManager {
      */
     registerCommands(): void {
         this.addCommand({
-            langKey: t(this.i18n, "menu.more.tabsToPlainCode"),
+            langKey: t(this.i18n, "menu.more.tabsToCodeBlocks"),
             hotkey: "",
             editorCallback: () => {
                 const blockList = getSelectedElements(
                     `[data-type="NodeHTMLBlock"][${CUSTOM_ATTR}], [data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}]`
                 );
-                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
+                this.tabConverter.tabsToCodeBlocksBatch(blockList);
             },
         });
         this.addCommand({
@@ -116,7 +116,7 @@ export class CommandManager {
         });
         detail.menu.addItem({
             iconHTML: "",
-            label: t(this.i18n, "menu.more.tabsToPlainCode"),
+            label: t(this.i18n, "menu.more.tabsToCodeBlocks"),
             click: () => {
                 const blockList = this.collectBlockElements(detail, (item) => {
                     return (
@@ -125,15 +125,15 @@ export class CommandManager {
                         item.dataset?.type === "NodeHTMLBlock"
                     );
                 });
-                this.tabConverter.tabsToPlainCodeBlocksBatch(blockList);
+                this.tabConverter.tabsToCodeBlocksBatch(blockList);
             },
         });
         detail.menu.addItem({ type: "separator" });
         detail.menu.addItem({
             iconHTML: "",
-            label: t(this.i18n, "menu.more.tabsToPlainCodeInDocument"),
+            label: t(this.i18n, "menu.more.tabsToCodeBlocksInDocument"),
             click: () => {
-                this.tabConverter.tabsToPlainCodeInDocument();
+                this.tabConverter.tabsToCodeBlocksInDocument();
             },
         });
     }

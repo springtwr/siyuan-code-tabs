@@ -7,7 +7,7 @@ const createPanel = (data: Record<string, unknown>) =>
     new SettingsPanel({
         i18n: {},
         data,
-        onAllTabsToPlainCode: vi.fn(),
+        onAllTabsToCodeBlocks: vi.fn(),
         onUpgradeLegacyTabs: vi.fn(),
         onSaveConfig: vi.fn().mockResolvedValue(undefined),
         buildDebugToggle: () => document.createElement("input"),

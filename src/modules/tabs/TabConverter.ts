@@ -445,7 +445,7 @@ export class TabConverter {
      * @param blockList 标签页块列表
      * @returns 转换统计
      */
-    async tabsToPlainCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
+    async tabsToCodeBlocksBatch(blockList: TabBlock[]): Promise<ConversionStats> {
         if (!blockList || blockList.length === 0) {
             pushMsg(`${t(this.i18n, "msg.noTabsToSplit")}`);
             return { success: 0, failure: 0 };
@@ -454,7 +454,7 @@ export class TabConverter {
 
         const { toProcess, invalid } = await this.collectTabsDataBlocks(
             blockList,
-            "tabsToPlainCode"
+            "tabsToCodeBlocks"
         );
 
         if (toProcess.length === 0) {
@@ -467,10 +467,10 @@ export class TabConverter {
         }
 
         const { results } = await this.runBatch(
-            t(this.i18n, "task.progress.tabsToPlainCode"),
+            t(this.i18n, "task.progress.tabsToCodeBlocks"),
             toProcess,
             async ({ id, data }) => {
-                await this.replaceWithPlainCodeBlocks(id, data.tabs);
+                await this.replaceWithCodeBlocks(id, data.tabs);
             }
         );
 
@@ -478,12 +478,12 @@ export class TabConverter {
         const failure = results.length - success;
         if (success > 0) {
             pushMsg(
-                `${t(this.i18n, "msg.tabsToPlainCodeCompleted").replace("{0}", success.toString())}`
+                `${t(this.i18n, "msg.tabsToCodeBlocksCompleted").replace("{0}", success.toString())}`
             );
         }
         if (failure > 0) {
             pushMsg(
-                `${t(this.i18n, "msg.tabsToPlainCodeFailed").replace("{0}", failure.toString())}`
+                `${t(this.i18n, "msg.tabsToCodeBlocksFailed").replace("{0}", failure.toString())}`
             );
         }
         logger.info("标签页 -> 多个标准代码块 转换统计", { success, failure });
@@ -586,7 +586,7 @@ export class TabConverter {
         );
     }
 
-    async tabsToPlainCodeInDocument(): Promise<void> {
+    async tabsToCodeBlocksInDocument(): Promise<void> {
         const currentDocument = getActiveEditor(true);
         if (!currentDocument) return;
         const rootId =
@@ -607,20 +607,20 @@ export class TabConverter {
             count: blockList.length,
             rootId,
         });
-        this.tabsToPlainCodeBlocksBatch(blockList);
+        this.tabsToCodeBlocksBatch(blockList);
     }
 
     /**
      * 全局拆分标签页为标准代码块。
      * @returns Promise<void>
      */
-    async allTabsToPlainCode(): Promise<void> {
+    async allTabsToCodeBlocks(): Promise<void> {
         logger.info("全局标签页 -> 多个标准代码块 查询开始");
         const blockList = (await sql(
             `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CODE_TABS_DATA_ATTR}', '${CUSTOM_ATTR}'))`
         )) as SqlBlock[];
         logger.info("全局标签页 -> 多个标准代码块 查询完成", { count: blockList.length });
-        this.tabsToPlainCodeBlocksBatch(blockList);
+        this.tabsToCodeBlocksBatch(blockList);
     }
 
     /**
@@ -742,7 +742,7 @@ export class TabConverter {
         );
     }
 
-    private async replaceWithPlainCodeBlocks(
+    private async replaceWithCodeBlocks(
         id: string,
         tabs: Array<{ title: string; lang: string; code: string }>
     ): Promise<void> {

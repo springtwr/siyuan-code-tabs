@@ -52,7 +52,7 @@ describe("TabConverter", () => {
         expect(api.deleteBlock).not.toHaveBeenCalledWith("block-1");
     });
 
-    it("tabsToPlainCodeBlocksBatch: 应拆分为多个标准代码块", async () => {
+    it("tabsToCodeBlocksBatch: 应拆分为多个代码块", async () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "tab-2";
         block.dataset.type = "NodeHTMLBlock";
@@ -66,7 +66,7 @@ describe("TabConverter", () => {
         });
 
         const converter = new TabConverter(i18n);
-        const stats = await converter.tabsToPlainCodeBlocksBatch([block]);
+        const stats = await converter.tabsToCodeBlocksBatch([block]);
 
         expect(stats.success).toBe(1);
         expect(api.insertBlock).toHaveBeenCalledTimes(2);

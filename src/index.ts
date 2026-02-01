@@ -161,7 +161,7 @@ export default class CodeTabs extends Plugin {
         this.settingsPanel = new SettingsPanel({
             i18n: this.i18n,
             data: this.data,
-            onAllTabsToPlainCode: () => this.tabConverter.allTabsToPlainCode(),
+            onAllTabsToCodeBlocks: () => this.tabConverter.allTabsToCodeBlocks(),
             onUpgradeLegacyTabs: () => this.upgradeLegacyTabs(),
             onSaveConfig: () => this.configManager.saveConfig(),
             buildDebugToggle: () => this.debugLogManager.createToggle(),

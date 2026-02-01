@@ -64,7 +64,11 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Demo
 
-![Demo](./images/demo.gif)
+![slash](./images/demo_slash.png)
+
+![Preview](./images/demo_preview.png)
+
+![Edit](./images/demo_edit.png)
 
 ## Notes
 

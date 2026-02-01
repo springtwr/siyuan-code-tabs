@@ -64,7 +64,11 @@
 
 ## 演示
 
-![演示](./images/demo.gif)
+![斜杠菜单](./images/demo_slash.png)
+
+![预览](./images/demo_preview.png)
+
+![编辑](./images/demo_edit.png)
 
 ## 备注
 

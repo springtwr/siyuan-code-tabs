@@ -106,7 +106,7 @@ export class CommandManager {
      */
     private buildBlockMenu(detail: BlockIconEventDetail): void {
         detail.menu.addItem({
-            iconHTML: "",
+            icon: "iconCodeTabsMain",
             label: t(this.i18n, "menu.more.mergeCodeBlocks"),
             click: async () => {
                 const blockList = getSelectedElements('[data-type="NodeCodeBlock"]');
@@ -115,7 +115,7 @@ export class CommandManager {
             },
         });
         detail.menu.addItem({
-            iconHTML: "",
+            icon: "iconCodeTabsMain",
             label: t(this.i18n, "menu.more.tabsToCodeBlocks"),
             click: () => {
                 const blockList = this.collectBlockElements(detail, (item) => {
@@ -130,7 +130,7 @@ export class CommandManager {
         });
         detail.menu.addItem({ type: "separator" });
         detail.menu.addItem({
-            iconHTML: "",
+            icon: "iconCodeTabsMain",
             label: t(this.i18n, "menu.more.tabsToCodeBlocksInDocument"),
             click: () => {
                 this.tabTransformManager.tabsToCodeBlocksInDocument();

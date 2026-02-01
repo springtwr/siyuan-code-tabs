@@ -3,6 +3,7 @@ import { pushErrMsg, pushMsg } from "@/api";
 import logger from "@/utils/logger";
 import {
     CODE_TABS_STYLE,
+    ICON_MAIN,
     LEGACY_CHECK_VERSION_KEY,
     LEGACY_COUNT_KEY,
     LEGACY_EXISTS_KEY,
@@ -47,6 +48,7 @@ export default class CodeTabs extends Plugin {
      */
     async onload() {
         this.registerBlockIconEvent();
+        this.registerIcons();
         this.debugLogManager = new DebugLogManager();
         this.editorRefreshManager = new EditorRefreshManager();
         this.initLogging();
@@ -128,6 +130,10 @@ export default class CodeTabs extends Plugin {
 
     private unregisterBlockIconEvent(): void {
         this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
+    }
+
+    private registerIcons(): void {
+        this.addIcons(ICON_MAIN);
     }
 
     private registerProtyleEvents(): void {

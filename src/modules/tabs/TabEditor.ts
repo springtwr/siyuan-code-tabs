@@ -1,8 +1,11 @@
+import { Dialog, type IObject, confirm } from "siyuan";
+
 import { pushErrMsg } from "@/api";
+import { CODE_TABS_ICONS } from "@/constants";
+import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
-import { CODE_TABS_ICONS } from "@/constants";
-import { Dialog, type IObject, confirm, getBackend } from "siyuan";
+
 import { TabDataService } from "./TabDataService";
 import type { TabsData } from "./types";
 import { isLanguageSupported, normalizeLanguageInput } from "./language";
@@ -153,15 +156,8 @@ export class TabEditor {
             });
         };
 
-        const isMobileEnv = (() => {
-            try {
-                const backend = getBackend?.();
-                logger.debug(`当前后端：${backend}`);
-                return backend === "android" || backend === "ios" || backend === "harmony";
-            } catch {
-                return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            }
-        })();
+        const isMobileEnv = isMobileBackend();
+        logger.debug(`当前后端：${isMobileEnv ? "mobile" : "desktop"}`);
 
         /**
          * 获取语言候选列表，合并 hljs 与别名。
@@ -694,6 +690,8 @@ export class TabEditor {
         renderList();
         initLanguageSuggest();
         syncFields();
-        inputTitle.focus();
+        if (!isMobileEnv) {
+            inputTitle.focus();
+        }
     }
 }

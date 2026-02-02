@@ -1,14 +1,17 @@
+import { IObject, Menu } from "siyuan";
+
 import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
-import { decodeSource } from "@/utils/encoding";
-import logger from "@/utils/logger";
-import { t } from "@/utils/i18n";
-import { TabRenderer } from "./TabRenderer";
-import { IObject, Menu } from "siyuan";
-import { StyleProbe } from "../theme/StyleProbe";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { decodeSource } from "@/utils/encoding";
+import { isMobileBackend } from "@/utils/env";
+import { t } from "@/utils/i18n";
+import logger from "@/utils/logger";
+
+import { StyleProbe } from "../theme/StyleProbe";
 import { TabDataService } from "./TabDataService";
 import { TabEditor } from "./TabEditor";
+import { TabRenderer } from "./TabRenderer";
 import type { TabsData } from "./types";
 
 /**
@@ -105,6 +108,18 @@ async function copyTextToClipboard(text: string, i18n: IObject): Promise<void> {
         return;
     }
     pushErrMsg(t(i18n, "msg.copyToClipboardFailed"));
+}
+
+/**
+ * 释放当前焦点，避免移动端输入法误触发。
+ * @returns void
+ */
+function blurActiveElementOnMobile(): void {
+    if (!isMobileBackend()) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (active && typeof active.blur === "function") {
+        active.blur();
+    }
 }
 
 /**
@@ -380,6 +395,7 @@ export class TabManager {
         const pluginCodeTabs = {
             codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {
+                blurActiveElementOnMobile();
                 const clicked = evt.target as HTMLElement;
                 const tabContainer = clicked.closest(".tabs-container") as HTMLElement | null;
                 if (!tabContainer) return;
@@ -456,6 +472,7 @@ export class TabManager {
             editTab: async (evt: MouseEvent) => {
                 const trigger = (evt.currentTarget || evt.target) as HTMLElement | null;
                 if (!trigger) return;
+                blurActiveElementOnMobile();
                 const tabContainer = trigger.closest(".tabs-container");
                 if (!tabContainer) return;
                 const activeTab = tabContainer.querySelector<HTMLElement>(".tab-item--active");

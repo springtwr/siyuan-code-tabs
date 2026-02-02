@@ -78,6 +78,11 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.0.3
+
+- Fixed undo not working after inserting spaces with Tab in the editor panel
+- Fixed CSS variable injection polluting the html element
+
 ### v2.0.2
 
 - Fixed mobile IME popping up when switching tabs or opening the editor panel

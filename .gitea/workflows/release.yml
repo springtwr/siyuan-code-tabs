@@ -52,6 +52,26 @@ jobs:
       - name: Build for production
         run: pnpm build
 
+      - name: Generate release notes
+        id: release-notes
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          NOTES_FILE="release_notes.md"
+          awk -v tag="v${TAG}" '
+            $0 ~ "^### "tag"$" { hit=1; print; next }
+            hit && $0 ~ "^### v" { exit }
+            hit { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "## v${TAG}" > "$NOTES_FILE"
+            echo "" >> "$NOTES_FILE"
+            echo "- 未找到对应版本的更新日志" >> "$NOTES_FILE"
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat "$NOTES_FILE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Release
         uses: akkuman/gitea-release-action@v1
         with:
@@ -59,5 +79,4 @@ jobs:
           files: "package.zip"
           token: ${{ secrets.GITEA_TOKEN }}
           prerelease: false
-          body: |
-            ## Release ${{ github.ref_name }}
+          body: ${{ steps.release-notes.outputs.notes }}

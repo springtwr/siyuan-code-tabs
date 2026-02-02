@@ -52,6 +52,23 @@ jobs:
       - name: Build for production
         run: pnpm build
 
+      - name: Generate release notes
+        id: release-notes
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          NOTES_FILE="release_notes.md"
+          awk -v tag="v${TAG}" '
+            $0 ~ "^### "tag"$" { hit=1; print; next }
+            hit && $0 ~ "^### v" { exit }
+            hit { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "## v${TAG}" > "$NOTES_FILE"
+            echo "" >> "$NOTES_FILE"
+            echo "- 未找到对应版本的更新日志" >> "$NOTES_FILE"
+          fi
+
       - name: Release
         uses: ncipollo/release-action@v1
         with:
@@ -60,4 +77,5 @@ jobs:
           artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
-          generateReleaseNotes: true
+          generateReleaseNotes: false
+          bodyFile: "release_notes.md"

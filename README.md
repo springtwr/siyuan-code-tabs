@@ -78,6 +78,13 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.0.2
+
+- Fixed mobile IME popping up when switching tabs or opening the editor panel
+- Fixed mobile language suggestions not responding to taps
+- Fixed commands showing "undefine" in the terminal
+- Added icons to the block menu
+
 ### v2.0.1
 
 - Fixed an issue where block menu actions could select all tabs instead of only the selected range
@@ -87,85 +94,4 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 - Major upgrade: no longer uses code blocks as an intermediate format
 - Added an editor panel to add or remove tabs directly
 
-### v1.1.2
-
-- Fixed an issue where submenus in the block menu would disappear
-
-### v1.1.1
-
-- Fixed a text error in the plugin's shortcut settings
-
-### v1.1.0
-
-- Added “Tabs → standard code blocks” split (block/document/global entries)
-- Added “Merge selected code blocks” into tab-syntax code blocks
-- Added “More [code-tabs]” submenu to organize block menu actions
-
-### v1.0.0
-
-- Refactored theme style collection and application; theme switching no longer requires at least one open document
-- Added line number display and styling; code tabs now show line numbers when enabled in code blocks
-- Adapted code block scrollbars for some themes
-- Partial style adjustments and optimizations
-
-### v0.8.0
-
-- Synchronized `Code block ligature` and `Code block wraps` settings
-- Added `markdown-render` type tab; switch between `markdown` / `markdown-render` to control markdown rendering
-- Partial style adjustments and optimizations
-
-### v0.7.0
-
-- **Major update: Syntax format change** - Changed from old `tab:::title:::active` and `lang:::language` syntax to new `::: title | language | active`
-- Compatibility with old syntax; converting back to code blocks updates old syntax to the new format
-- Added theme adaptation file for third-party themes
-- Implemented bidirectional batch conversion between code blocks and code tabs
-- Changed source storage to Base64 encoding
-- Updated dependencies; code highlighting now uses SiYuan’s built-in hljs
-- Added settings entry; moved global conversion from block menu to settings panel
-- Optimized theme change detection; fixed DOM refresh issues
-- Fixed inconsistent width between tabs and code blocks
-- Fixed angle bracket loss issue
-
-### v0.6.2
-
-- Fix missing line breaks when toggling back to code blocks
-- Adjust spacing between tags and code in some themes
-
-### v0.6.1
-
-- Adjust the minimum width of the tag
-
-### v0.6.0
-
-- Copy button can now copy markdown
-- Swipe left/right to view tabs on mobile
-- Fixed copy button not working when using docker
-- Optimized tab styles
-
-### v0.5.0
-
-- Optimized display and adapted more themes
-- Fixed docker display anomalies caused by CORS
-- Fixed padding being too small
-
-### v0.4.2
-
-- Support for docker
-
-### v0.4.1
-
-- Checks if “Allow execution of scripts within HTML blocks” is enabled on load
-
-### v0.4.0
-
-- Fixed angle bracket escaping
-- Limited tab title length and added horizontal scrollbar for many tabs
-- Adjusted font size for plaintext and markdown code blocks
-
-### v0.3.0
-
-- Optimized CSS display
-- Adapted code-tabs to support more themes
-- Added default active tab on document open
-- Fixed a few bugs
+For the full history, see [CHANGELOG.md](CHANGELOG.md).

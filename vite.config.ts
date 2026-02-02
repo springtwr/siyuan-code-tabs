@@ -70,7 +70,7 @@ export default defineConfig({
     build: {
         // 输出路径
         outDir: distDir,
-        emptyOutDir: isWatch,
+        emptyOutDir: true,
 
         // 构建后是否生成 source map 文件
         sourcemap: isWatch,

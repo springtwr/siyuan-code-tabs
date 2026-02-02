@@ -56,7 +56,13 @@ async function persistTabsData(
     onReload?.();
 }
 
-async function copyTextToClipboard(text: string, i18n: IObject) {
+/**
+ * 复制文本到剪贴板，优先使用原生 API，失败时回退到 execCommand。
+ * @param text 文本内容
+ * @param i18n i18n 资源
+ * @returns Promise<void>
+ */
+async function copyTextToClipboard(text: string, i18n: IObject): Promise<void> {
     const content = text ?? "";
     const tryNative = async () => {
         if (!navigator?.clipboard?.writeText) return false;
@@ -68,9 +74,33 @@ async function copyTextToClipboard(text: string, i18n: IObject) {
             return false;
         }
     };
+    const tryExecCommand = () => {
+        try {
+            const textarea = document.createElement("textarea");
+            textarea.value = content;
+            textarea.setAttribute("readonly", "true");
+            textarea.style.position = "fixed";
+            textarea.style.top = "-1000px";
+            textarea.style.left = "-1000px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+            const ok = document.execCommand?.("copy") === true;
+            document.body.removeChild(textarea);
+            return ok;
+        } catch (error) {
+            logger.warn("调用 execCommand('copy') 失败", { error });
+            return false;
+        }
+    };
 
     const nativeOk = await tryNative();
     if (nativeOk) {
+        pushMsg(t(i18n, "msg.copyToClipboard"), 2000).then();
+        return;
+    }
+    const legacyOk = tryExecCommand();
+    if (legacyOk) {
         pushMsg(t(i18n, "msg.copyToClipboard"), 2000).then();
         return;
     }

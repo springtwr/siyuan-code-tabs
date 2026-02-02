@@ -1,8 +1,8 @@
 import { Plugin, Setting } from "siyuan";
+import "./index.scss";
 import { pushErrMsg, pushMsg } from "@/api";
 import logger from "@/utils/logger";
 import {
-    CODE_TABS_STYLE,
     ICON_MAIN,
     LEGACY_CHECK_VERSION_KEY,
     LEGACY_COUNT_KEY,
@@ -40,7 +40,6 @@ export default class CodeTabs extends Plugin {
     private commandManager!: CommandManager;
     private protyleLifecycleManager!: ProtyleLifecycleManager;
     private uiEntryManager!: UiEntryManager;
-    private injectedStyleEl?: HTMLStyleElement;
 
     /**
      * onload 阶段：注册事件与基础模块。
@@ -53,8 +52,6 @@ export default class CodeTabs extends Plugin {
         this.editorRefreshManager = new EditorRefreshManager();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
-
-        this.ensureInjectedStyle();
 
         this.initTabModules();
         this.initManagers();
@@ -99,7 +96,6 @@ export default class CodeTabs extends Plugin {
         TabManager.cleanup();
         StyleProbe.cleanup();
         this.debugLogManager?.cleanup();
-        this.removeInjectedStyle();
         if (window.pluginCodeTabs) {
             delete window.pluginCodeTabs;
         }
@@ -286,29 +282,5 @@ export default class CodeTabs extends Plugin {
 
     private registerCommands(): void {
         this.commandManager.registerCommands();
-    }
-
-    /**
-     * 注入插件样式标签，避免重复注入。
-     * @returns void
-     */
-    private ensureInjectedStyle(): void {
-        const existingStyle = document.getElementById("code-tabs-style");
-        this.injectedStyleEl =
-            existingStyle instanceof HTMLStyleElement
-                ? existingStyle
-                : document.createElement("style");
-        this.injectedStyleEl.id = "code-tabs-style";
-        this.injectedStyleEl.innerHTML = CODE_TABS_STYLE;
-        if (!this.injectedStyleEl.parentElement) {
-            document.head.appendChild(this.injectedStyleEl);
-        }
-    }
-
-    private removeInjectedStyle(): void {
-        if (this.injectedStyleEl) {
-            this.injectedStyleEl.remove();
-            this.injectedStyleEl = undefined;
-        }
     }
 }

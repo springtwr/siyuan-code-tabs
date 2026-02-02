@@ -1,6 +1,7 @@
 import { Setting } from "siyuan";
 
 import {
+    PLUGIN_STYLE_ID,
     TAB_WIDTH_DEFAULT,
     TAB_WIDTH_MAX,
     TAB_WIDTH_MIN,
@@ -227,13 +228,28 @@ export class SettingsPanel {
     }
 
     private applyActiveTabColors(): void {
-        const root = document.documentElement;
+        const activeColorStyleStart = "/* code-tabs-active-color:start */";
+        const activeColorStyleEnd = "/* code-tabs-active-color:end */";
         const activeColor = this.getActiveColorValue();
-        if (activeColor) {
-            root.style.setProperty("--code-tabs-active-color", activeColor);
-        } else {
-            root.style.removeProperty("--code-tabs-active-color");
+        const styleEl = this.getPluginStyleElement();
+        if (!styleEl) return;
+        const base = styleEl.innerHTML;
+        const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const blockRegex = new RegExp(
+            `${escapeRegex(activeColorStyleStart)}[\\s\\S]*?${escapeRegex(activeColorStyleEnd)}`,
+            "g"
+        );
+        const cleaned = base.replace(blockRegex, "").trim();
+        if (!activeColor) {
+            styleEl.innerHTML = cleaned;
+            return;
         }
+        const block = [
+            activeColorStyleStart,
+            `:root{--code-tabs-active-color:${activeColor};}`,
+            activeColorStyleEnd,
+        ].join("\n");
+        styleEl.innerHTML = `${cleaned}\n${block}`.trim();
     }
 
     private clampTabWidth(value: unknown): number {
@@ -271,12 +287,39 @@ export class SettingsPanel {
 
     private applyTabWidthSetting(): void {
         const setting = this.getTabWidthSetting();
-        const root = document.documentElement;
-        if (setting.mode === "auto") {
-            root.style.setProperty("--code-tabs-max-width", "none");
-        } else {
-            root.style.setProperty("--code-tabs-max-width", `${setting.maxChars}ch`);
+        const tabWidthStyleStart = "/* code-tabs-max-width:start */";
+        const tabWidthStyleEnd = "/* code-tabs-max-width:end */";
+        const styleEl = this.getPluginStyleElement();
+        if (!styleEl) return;
+        const base = styleEl.innerHTML;
+        const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const blockRegex = new RegExp(
+            `${escapeRegex(tabWidthStyleStart)}[\\s\\S]*?${escapeRegex(tabWidthStyleEnd)}`,
+            "g"
+        );
+        const cleaned = base.replace(blockRegex, "").trim();
+        const widthValue = setting.mode === "auto" ? "none" : `${setting.maxChars}ch`;
+        const block = [
+            tabWidthStyleStart,
+            `:root{--code-tabs-max-width:${widthValue};}`,
+            tabWidthStyleEnd,
+        ].join("\n");
+        styleEl.innerHTML = `${cleaned}\n${block}`.trim();
+    }
+
+    private getPluginStyleElement(): HTMLStyleElement | null {
+        const styleNodes = Array.from(
+            document.head.querySelectorAll<HTMLStyleElement>(`style#${PLUGIN_STYLE_ID}`)
+        );
+        if (styleNodes.length === 0) return null;
+        if (styleNodes.length === 1) return styleNodes[0];
+        const primary = styleNodes.reduce((prev, current) =>
+            (current.textContent?.length ?? 0) > (prev.textContent?.length ?? 0) ? current : prev
+        );
+        for (const node of styleNodes) {
+            if (node !== primary) node.remove();
         }
+        return primary;
     }
 
     private isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Setting } from "siyuan";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
-import { TAB_WIDTH_DEFAULT, TAB_WIDTH_SETTING_KEY } from "@/constants";
+import { PLUGIN_STYLE_ID, TAB_WIDTH_DEFAULT, TAB_WIDTH_SETTING_KEY } from "@/constants";
 
 const createPanel = (data: Record<string, unknown>) =>
     new SettingsPanel({
@@ -15,7 +15,11 @@ const createPanel = (data: Record<string, unknown>) =>
 
 describe("SettingsPanel", () => {
     beforeEach(() => {
-        document.documentElement.style.cssText = "";
+        const existing = document.getElementById(PLUGIN_STYLE_ID);
+        if (existing) existing.remove();
+        const styleEl = document.createElement("style");
+        styleEl.id = PLUGIN_STYLE_ID;
+        document.head.appendChild(styleEl);
     });
 
     it("ensureSettings 填充默认配置", () => {
@@ -31,9 +35,8 @@ describe("SettingsPanel", () => {
         const panel = createPanel(data);
         panel.ensureSettings();
         panel.applySettings();
-        expect(document.documentElement.style.getPropertyValue("--code-tabs-max-width")).toBe(
-            `${TAB_WIDTH_DEFAULT}ch`
-        );
+        const styleEl = document.getElementById(PLUGIN_STYLE_ID) as HTMLStyleElement | null;
+        expect(styleEl?.innerHTML).toContain(`--code-tabs-max-width:${TAB_WIDTH_DEFAULT}ch`);
     });
 
     it("applySettings 支持 auto 模式", () => {
@@ -42,9 +45,8 @@ describe("SettingsPanel", () => {
         };
         const panel = createPanel(data);
         panel.applySettings();
-        expect(document.documentElement.style.getPropertyValue("--code-tabs-max-width")).toBe(
-            "none"
-        );
+        const styleEl = document.getElementById(PLUGIN_STYLE_ID) as HTMLStyleElement | null;
+        expect(styleEl?.innerHTML).toContain("--code-tabs-max-width:none");
     });
 
     it("init 注册设置项", () => {

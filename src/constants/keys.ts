@@ -15,6 +15,7 @@ export const LEGACY_CHECK_VERSION_KEY = "codeTabsLegacyCheckVersion";
 export const LEGACY_EXISTS_KEY = "codeTabsLegacyExists";
 export const LEGACY_COUNT_KEY = "codeTabsLegacyCount";
 export const PLUGIN_VERSION = __PLUGIN_VERSION__;
+export const PLUGIN_STYLE_ID = "pluginsStylecode-tabs";
 
 const ECHARTS_SCRIPTS = [
     {

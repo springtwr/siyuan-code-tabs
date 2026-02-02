@@ -397,12 +397,24 @@ export class TabEditor {
             const insert = " ".repeat(spaces);
             const start = inputCode.selectionStart ?? 0;
             const end = inputCode.selectionEnd ?? 0;
-            const value = inputCode.value;
-            inputCode.value = `${value.slice(0, start)}${insert}${value.slice(end)}`;
-            const nextPos = start + insert.length;
-            inputCode.selectionStart = nextPos;
-            inputCode.selectionEnd = nextPos;
-            updateCurrentTab();
+            inputCode.focus();
+            inputCode.setSelectionRange(start, end);
+            const canExec =
+                typeof document.queryCommandSupported === "function" &&
+                document.queryCommandSupported("insertText");
+            if (canExec && document.execCommand("insertText", false, insert)) {
+                return;
+            }
+            if (typeof inputCode.setRangeText === "function") {
+                inputCode.setRangeText(insert, start, end, "end");
+            } else {
+                const value = inputCode.value;
+                inputCode.value = `${value.slice(0, start)}${insert}${value.slice(end)}`;
+                const nextPos = start + insert.length;
+                inputCode.selectionStart = nextPos;
+                inputCode.selectionEnd = nextPos;
+            }
+            inputCode.dispatchEvent(new Event("input", { bubbles: true }));
         });
 
         /**

@@ -1,7 +1,8 @@
 import { pushErrMsg } from "@/api";
 import { t } from "@/utils/i18n";
+import logger from "@/utils/logger";
 import { CODE_TABS_ICONS } from "@/constants";
-import { Dialog, type IObject, confirm } from "siyuan";
+import { Dialog, type IObject, confirm, getBackend } from "siyuan";
 import { TabDataService } from "./TabDataService";
 import type { TabsData } from "./types";
 import { isLanguageSupported, normalizeLanguageInput } from "./language";
@@ -44,7 +45,10 @@ export function buildEditorDialogContent(i18n: IObject): string {
             <label class="code-tabs__editor-label">${t(i18n, "editor.tabTitle")}</label>
             <input class="b3-text-field code-tabs__editor-input" data-field="title" />
             <label class="code-tabs__editor-label">${t(i18n, "editor.tabLang")}</label>
-            <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
+            <div class="code-tabs__editor-lang">
+                <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
+                <div class="code-tabs__editor-lang-suggest" data-role="lang-suggest"></div>
+            </div>
             <label class="code-tabs__editor-label">${t(i18n, "editor.tabCode")}</label>
             <textarea class="b3-text-field code-tabs__editor-textarea" data-field="code"></textarea>
         </div>
@@ -97,6 +101,7 @@ export class TabEditor {
         const inputTitle = root.querySelector<HTMLInputElement>('[data-field="title"]');
         const inputLang = root.querySelector<HTMLInputElement>('[data-field="lang"]');
         const inputCode = root.querySelector<HTMLTextAreaElement>('[data-field="code"]');
+        const langSuggest = root.querySelector<HTMLElement>('[data-role="lang-suggest"]');
         if (!listEl || !inputTitle || !inputLang || !inputCode) {
             dialog.destroy();
             return;
@@ -148,20 +153,23 @@ export class TabEditor {
             });
         };
 
-        /**
-         * 构建语言联想列表（基于 hljs）。
-         * @returns void
-         */
-        const ensureLanguageSuggestions = () => {
-            const hljs = window.hljs as unknown as { listLanguages?: () => string[] };
-            if (!hljs?.listLanguages) return;
-            const datalistId = "code-tabs-lang-suggestions";
-            let datalist = root.querySelector<HTMLDataListElement>(`#${datalistId}`);
-            if (!datalist) {
-                datalist = document.createElement("datalist");
-                datalist.id = datalistId;
-                root.appendChild(datalist);
+        const isMobileEnv = (() => {
+            try {
+                const backend = getBackend?.();
+                logger.debug(`当前后端：${backend}`);
+                return backend === "android" || backend === "ios" || backend === "harmony";
+            } catch {
+                return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
             }
+        })();
+
+        /**
+         * 获取语言候选列表，合并 hljs 与别名。
+         * @returns 语言列表
+         */
+        const getLanguageOptions = (): string[] => {
+            const hljs = window.hljs as unknown as { listLanguages?: () => string[] };
+            if (!hljs?.listLanguages) return ["plaintext", "markdown-render"];
             const languages = new Set<string>(hljs.listLanguages());
             languages.add("plaintext");
             languages.add("markdown-render");
@@ -173,14 +181,115 @@ export class TabEditor {
                     info?.aliases?.forEach((alias) => languages.add(alias));
                 });
             }
-            const sorted = Array.from(languages).sort();
-            datalist.innerHTML = "";
-            sorted.forEach((lang) => {
-                const option = document.createElement("option");
-                option.value = lang;
-                datalist?.appendChild(option);
+            return Array.from(languages).sort();
+        };
+
+        /**
+         * 初始化语言联想（全平台自定义列表）。
+         * @returns void
+         */
+        const initLanguageSuggest = () => {
+            if (!langSuggest) return;
+            logger.debug("初始化语言联想（自定义列表）", { isMobileEnv });
+            inputLang.removeAttribute("list");
+            const allOptions = getLanguageOptions();
+            let isSelectingSuggest = false;
+            const hideSuggest = () => {
+                logger.debug("隐藏语言联想列表", {
+                    isSelectingSuggest,
+                    hasOptions: langSuggest.children.length,
+                });
+                langSuggest.classList.remove("code-tabs__editor-lang-suggest--open");
+                langSuggest.innerHTML = "";
+            };
+            const renderSuggest = () => {
+                const query = inputLang.value.trim().toLowerCase();
+                logger.debug("渲染语言联想列表", {
+                    query,
+                    total: allOptions.length,
+                });
+                if (!query) {
+                    hideSuggest();
+                    return;
+                }
+                const matched = allOptions.filter((lang) => lang.includes(query)).slice(0, 60);
+                if (matched.length === 0) {
+                    hideSuggest();
+                    return;
+                }
+                langSuggest.innerHTML = "";
+                matched.forEach((lang) => {
+                    const option = document.createElement("div");
+                    option.className = "code-tabs__editor-lang-option";
+                    option.dataset.value = lang;
+                    option.textContent = lang;
+                    option.setAttribute("role", "button");
+                    option.setAttribute("tabindex", "0");
+                    langSuggest.appendChild(option);
+                });
+                langSuggest.classList.add("code-tabs__editor-lang-suggest--open");
+                logger.debug("语言联想列表已更新", { matched: matched.length });
+            };
+            const applyPick = (target: HTMLElement) => {
+                const option = target.closest<HTMLElement>(".code-tabs__editor-lang-option");
+                if (!option) {
+                    logger.debug("点击候选项未命中", { tag: target.tagName });
+                    return false;
+                }
+                const value = option.dataset.value ?? option.textContent ?? "";
+                logger.debug("选中语言候选项", { value });
+                inputLang.value = value;
+                inputLang.dispatchEvent(new Event("input", { bubbles: true }));
+                inputLang.dispatchEvent(new Event("change", { bubbles: true }));
+                updateCurrentTab();
+                hideSuggest();
+                requestAnimationFrame(() => inputLang.focus());
+                return true;
+            };
+            const handlePick = (event: Event) => {
+                const target = event.target as HTMLElement;
+                logger.debug("候选列表事件触发", { type: event.type });
+                const picked = applyPick(target);
+                if (!picked) return;
+                event.preventDefault();
+                event.stopPropagation();
+                isSelectingSuggest = true;
+                setTimeout(() => {
+                    isSelectingSuggest = false;
+                }, 0);
+            };
+            langSuggest.addEventListener(
+                "touchstart",
+                (event) => {
+                    handlePick(event);
+                },
+                { passive: false }
+            );
+            langSuggest.addEventListener("touchend", handlePick);
+            langSuggest.addEventListener("pointerdown", handlePick);
+            langSuggest.addEventListener("mousedown", handlePick);
+            langSuggest.addEventListener("click", handlePick);
+            inputLang.addEventListener("input", renderSuggest);
+            inputLang.addEventListener("focus", renderSuggest);
+            inputLang.addEventListener("blur", () => {
+                logger.debug("语言输入框 blur", { isSelectingSuggest });
+                if (isSelectingSuggest) return;
+                setTimeout(() => {
+                    if (!isSelectingSuggest) hideSuggest();
+                }, 120);
             });
-            inputLang.setAttribute("list", datalistId);
+            root.addEventListener("touchstart", (event) => {
+                const target = event.target as HTMLElement;
+                if (target === inputLang || langSuggest.contains(target)) return;
+                logger.debug("触发外部触摸关闭联想列表");
+                hideSuggest();
+            });
+            root.addEventListener("mousedown", (event) => {
+                const target = event.target as HTMLElement;
+                if (target === inputLang || langSuggest.contains(target)) return;
+                logger.debug("触发外部点击关闭联想列表");
+                hideSuggest();
+            });
         };
 
         /**
@@ -583,7 +692,7 @@ export class TabEditor {
         });
 
         renderList();
-        ensureLanguageSuggestions();
+        initLanguageSuggest();
         syncFields();
         inputTitle.focus();
     }

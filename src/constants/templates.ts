@@ -143,6 +143,47 @@ div[data-type="NodeHTMLBlock"][${CODE_TABS_DATA_ATTR}] > .protyle-icons {
     width: 100%;
 }
 
+.code-tabs__editor-lang {
+    position: relative;
+}
+
+.code-tabs__editor-lang-suggest {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 200px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+    border-radius: 6px;
+    background: var(--b3-theme-background, #fff);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.code-tabs__editor-lang-suggest--open {
+    display: flex;
+}
+
+.code-tabs__editor-lang-option {
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--b3-theme-on-background, #333);
+    user-select: none;
+}
+
+.code-tabs__editor-lang-option:hover {
+    background: var(--b3-theme-surface-lighter, #f2f2f2);
+}
+
 .code-tabs__editor-input[data-field="lang"][list] {
     -webkit-appearance: none;
     appearance: textfield;

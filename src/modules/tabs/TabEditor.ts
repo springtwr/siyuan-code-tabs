@@ -122,6 +122,8 @@ export class TabEditor {
             inputCode.value = tab.code;
         };
 
+        const dropIndicator = document.createElement("div");
+        dropIndicator.className = "code-tabs__editor-drop-indicator";
         const renderList = () => {
             listEl.innerHTML = "";
             state.data.tabs.forEach((tab, index) => {
@@ -158,6 +160,7 @@ export class TabEditor {
                 item.appendChild(handle);
                 listEl.appendChild(item);
             });
+            listEl.appendChild(dropIndicator);
         };
 
         const isMobileEnv = isMobileBackend();
@@ -634,22 +637,59 @@ export class TabEditor {
             }
         };
 
+        let indicatorRaf = 0;
+        let pendingIndicator:
+            | { item: HTMLElement; position: "before" | "after" }
+            | null = null;
+        let lastIndicatorTop: number | null = null;
+        let lastDropIndex: number | null = null;
+        let lastDropPosition: "before" | "after" | null = null;
+        const resetLastDrop = () => {
+            lastDropIndex = null;
+            lastDropPosition = null;
+        };
+
         const clearDropIndicator = () => {
-            listEl
-                .querySelectorAll<HTMLElement>(
-                    ".code-tabs__editor-item--drop-before, .code-tabs__editor-item--drop-after"
-                )
-                .forEach((item) =>
-                    item.classList.remove(
-                        "code-tabs__editor-item--drop-before",
-                        "code-tabs__editor-item--drop-after"
-                    )
-                );
+            dropIndicator.classList.remove("code-tabs__editor-drop-indicator--show");
+            lastIndicatorTop = null;
+            pendingIndicator = null;
+            if (indicatorRaf) {
+                cancelAnimationFrame(indicatorRaf);
+                indicatorRaf = 0;
+            }
         };
 
         const resolveDropPosition = (event: { clientY: number }, item: HTMLElement) => {
             const rect = item.getBoundingClientRect();
             return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+        };
+
+        const showDropIndicator = (item: HTMLElement, position: "before" | "after") => {
+            pendingIndicator = { item, position };
+            if (indicatorRaf) return;
+            indicatorRaf = requestAnimationFrame(() => {
+                indicatorRaf = 0;
+                if (!pendingIndicator) return;
+                const { item: pendingItem, position: pendingPosition } = pendingIndicator;
+                pendingIndicator = null;
+                const listRect = listEl.getBoundingClientRect();
+                const itemRect = pendingItem.getBoundingClientRect();
+                const gap = 6;
+                const lineHeight = 3;
+                const offset = gap / 2;
+                const base =
+                    pendingPosition === "before"
+                        ? itemRect.top - listRect.top - offset
+                        : itemRect.bottom - listRect.top + offset;
+                const top = Math.max(0, base + listEl.scrollTop - lineHeight / 2);
+                if (lastIndicatorTop !== null && Math.abs(lastIndicatorTop - top) < 1) {
+                    dropIndicator.classList.add("code-tabs__editor-drop-indicator--show");
+                    return;
+                }
+                lastIndicatorTop = top;
+                dropIndicator.style.top = `${top}px`;
+                dropIndicator.classList.add("code-tabs__editor-drop-indicator--show");
+            });
         };
 
         const resolveDropIndex = (
@@ -687,6 +727,8 @@ export class TabEditor {
         };
 
         let dragIndex: number | null = null;
+        let isDragEnding = false;
+        let didDrop = false;
 
         listEl.addEventListener("dragstart", (event) => {
             const target = event.target as HTMLElement;
@@ -695,6 +737,8 @@ export class TabEditor {
             const item = handle.closest<HTMLElement>(".code-tabs__editor-item");
             if (!item) return;
             dragIndex = Number(item.dataset.index ?? 0);
+            isDragEnding = false;
+            didDrop = false;
             event.dataTransfer?.setData("text/plain", String(dragIndex));
             event.dataTransfer?.setDragImage(item, 0, 0);
             if (event.dataTransfer) {
@@ -702,53 +746,95 @@ export class TabEditor {
             }
         });
 
+        const resolveDragItem = (event: DragEvent) => {
+            const target = document.elementFromPoint(event.clientX, event.clientY);
+            return target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
+        };
+
+        const resolveEdgeDrop = (clientY: number) => {
+            const items = Array.from(
+                listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+            );
+            if (items.length === 0) return null;
+            const listRect = listEl.getBoundingClientRect();
+            const edgeThreshold = 6;
+            if (clientY <= listRect.top + edgeThreshold) {
+                return { item: items[0], position: "before" as const };
+            }
+            if (clientY >= listRect.bottom - edgeThreshold) {
+                return { item: items[items.length - 1], position: "after" as const };
+            }
+            return null;
+        };
+
         listEl.addEventListener("dragover", (event) => {
             if (dragIndex === null) return;
-            const target = event.target as HTMLElement;
-            const item = target.closest<HTMLElement>(".code-tabs__editor-item");
+            if (isDragEnding) return;
+            const item = resolveDragItem(event) ?? resolveEdgeDrop(event.clientY)?.item ?? null;
             if (!item) return;
             event.preventDefault();
-            clearDropIndicator();
-            const position = resolveDropPosition(event, item);
-            item.classList.add(
-                position === "before"
-                    ? "code-tabs__editor-item--drop-before"
-                    : "code-tabs__editor-item--drop-after"
-            );
+            const edge = resolveEdgeDrop(event.clientY);
+            const position = edge?.item === item ? edge.position : resolveDropPosition(event, item);
+            const rawIndex = Number(item.dataset.index ?? 0);
+            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
+            if (dropIndex === dragIndex) {
+                resetLastDrop();
+                clearDropIndicator();
+                return;
+            }
+            lastDropIndex = dropIndex;
+            lastDropPosition = position;
+            showDropIndicator(item, position);
             if (event.dataTransfer) {
                 event.dataTransfer.dropEffect = "move";
             }
         });
 
         listEl.addEventListener("dragleave", (event) => {
-            const target = event.target as HTMLElement;
-            const item = target.closest<HTMLElement>(".code-tabs__editor-item");
-            if (item) {
-                item.classList.remove("code-tabs__editor-item--drop");
-            }
+            const related = event.relatedTarget as HTMLElement | null;
+            if (related && listEl.contains(related)) return;
         });
 
         listEl.addEventListener("drop", (event) => {
             if (dragIndex === null) return;
-            const target = event.target as HTMLElement;
-            const item = target.closest<HTMLElement>(".code-tabs__editor-item");
-            if (!item) return;
-            event.preventDefault();
-            const rawIndex = Number(item.dataset.index ?? 0);
-            const position = resolveDropPosition(event, item);
-            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
-            clearDropIndicator();
-            if (dropIndex === dragIndex) {
+            isDragEnding = true;
+            didDrop = true;
+            const item = resolveDragItem(event) ?? resolveEdgeDrop(event.clientY)?.item ?? null;
+            if (!item) {
+                if (lastDropIndex !== null && lastDropPosition) {
+                    if (lastDropIndex !== dragIndex) {
+                        applyReorder(dragIndex, lastDropIndex);
+                    }
+                }
                 dragIndex = null;
+                resetLastDrop();
+                clearDropIndicator();
                 return;
             }
-            applyReorder(dragIndex, dropIndex);
+            event.preventDefault();
+            const edge = resolveEdgeDrop(event.clientY);
+            const rawIndex = Number(item.dataset.index ?? 0);
+            const position = edge?.item === item ? edge.position : resolveDropPosition(event, item);
+            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
+            if (dropIndex !== dragIndex) {
+                applyReorder(dragIndex, dropIndex);
+            }
             dragIndex = null;
+            resetLastDrop();
+            clearDropIndicator();
         });
 
         listEl.addEventListener("dragend", () => {
+            isDragEnding = true;
+            if (!didDrop && dragIndex !== null) {
+                if (lastDropIndex !== null && lastDropIndex !== dragIndex) {
+                    applyReorder(dragIndex, lastDropIndex);
+                }
+            }
             clearDropIndicator();
             dragIndex = null;
+            resetLastDrop();
+            didDrop = false;
         });
 
         let pointerDragIndex: number | null = null;
@@ -781,20 +867,20 @@ export class TabEditor {
             if (pointerDragIndex === null || pointerId !== event.pointerId) return;
             const item = resolvePointerItem(event);
             if (!item) {
-                clearDropIndicator();
-                pointerDropIndex = null;
-                pointerDropPosition = null;
                 return;
             }
             const dropIndex = Number(item.dataset.index ?? 0);
             pointerDropIndex = dropIndex;
             pointerDropPosition = resolveDropPosition(event, item);
-            clearDropIndicator();
-            item.classList.add(
-                pointerDropPosition === "before"
-                    ? "code-tabs__editor-item--drop-before"
-                    : "code-tabs__editor-item--drop-after"
-            );
+            const nextIndex = resolveDropIndex(pointerDragIndex, dropIndex, pointerDropPosition);
+            if (nextIndex === pointerDragIndex) {
+                resetLastDrop();
+                clearDropIndicator();
+                return;
+            }
+            lastDropIndex = nextIndex;
+            lastDropPosition = pointerDropPosition;
+            showDropIndicator(item, pointerDropPosition);
             event.preventDefault();
         });
 
@@ -805,12 +891,19 @@ export class TabEditor {
             clearDropIndicator();
             if (dropIndex !== null && dropPosition) {
                 const nextIndex = resolveDropIndex(pointerDragIndex, dropIndex, dropPosition);
-                applyReorder(pointerDragIndex, nextIndex);
+                if (nextIndex !== pointerDragIndex) {
+                    applyReorder(pointerDragIndex, nextIndex);
+                }
+            } else if (lastDropIndex !== null && lastDropPosition) {
+                if (lastDropIndex !== pointerDragIndex) {
+                    applyReorder(pointerDragIndex, lastDropIndex);
+                }
             }
             pointerDragIndex = null;
             pointerDropIndex = null;
             pointerDropPosition = null;
             pointerId = null;
+            resetLastDrop();
             const target = event.target as HTMLElement | null;
             target?.releasePointerCapture?.(event.pointerId);
         };

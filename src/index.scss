@@ -200,6 +200,7 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         flex: 1;
         min-height: 0;
         padding-bottom: 6px;
+        position: relative;
     }
 
     &__editor-item {
@@ -272,23 +273,24 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
             color: var(--b3-theme-on-primary, #1a1a1a);
         }
 
-        &--drop-before::before,
-        &--drop-after::after {
-            content: "";
-            position: absolute;
-            left: 6px;
-            right: 6px;
-            height: 2px;
-            background: var(--b3-theme-primary, #5b8def);
-            border-radius: 2px;
-        }
+    }
 
-        &--drop-before::before {
-            top: -1px;
-        }
+    &__editor-drop-indicator {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--b3-theme-primary, #5b8def);
+        box-shadow: 0 0 6px rgba(91, 141, 239, 0.45);
+        pointer-events: none;
+        opacity: 0;
+        transform: scaleX(0.9);
+        transition: opacity 0.12s ease, transform 0.12s ease;
 
-        &--drop-after::after {
-            bottom: -1px;
+        &--show {
+            opacity: 1;
+            transform: scaleX(1);
         }
     }
 

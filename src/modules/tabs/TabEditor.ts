@@ -109,6 +109,7 @@ export class TabEditor {
             dialog.destroy();
             return;
         }
+        let suppressLangSuggestOnFocus = false;
 
         const syncFields = () => {
             const tab = state.data.tabs[state.currentIndex];
@@ -295,7 +296,13 @@ export class TabEditor {
                 setActive(index);
             });
             inputLang.addEventListener("input", renderSuggest);
-            inputLang.addEventListener("focus", renderSuggest);
+            inputLang.addEventListener("focus", () => {
+                if (suppressLangSuggestOnFocus) {
+                    suppressLangSuggestOnFocus = false;
+                    return;
+                }
+                renderSuggest();
+            });
             inputLang.addEventListener("keydown", (event) => {
                 const isOpen = langSuggest.classList.contains(
                     "code-tabs__editor-lang-suggest--open"
@@ -453,12 +460,18 @@ export class TabEditor {
         });
 
         inputTitle.addEventListener("input", updateCurrentTab);
+        inputTitle.addEventListener("keydown", (event) => {
+            if (event.key === "Tab" && !event.shiftKey) {
+                suppressLangSuggestOnFocus = true;
+            }
+        });
         inputLang.addEventListener("input", updateCurrentTab);
         inputCode.addEventListener("input", updateCurrentTab);
         inputCode.addEventListener("keydown", (event) => {
             if (event.key !== "Tab") return;
             if (event.shiftKey) {
                 event.preventDefault();
+                suppressLangSuggestOnFocus = true;
                 inputLang.focus();
                 return;
             }

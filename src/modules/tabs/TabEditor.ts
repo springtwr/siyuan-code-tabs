@@ -105,11 +105,14 @@ export class TabEditor {
         const inputLang = root.querySelector<HTMLInputElement>('[data-field="lang"]');
         const inputCode = root.querySelector<HTMLTextAreaElement>('[data-field="code"]');
         const langSuggest = root.querySelector<HTMLElement>('[data-role="lang-suggest"]');
+        const addButton = root.querySelector<HTMLButtonElement>('[data-action="add"]');
+        const deleteButton = root.querySelector<HTMLButtonElement>('[data-action="delete"]');
         if (!listEl || !inputTitle || !inputLang || !inputCode) {
             dialog.destroy();
             return;
         }
         let suppressLangSuggestOnFocus = false;
+        let keepActionFocus = false;
 
         const syncFields = () => {
             const tab = state.data.tabs[state.currentIndex];
@@ -442,13 +445,29 @@ export class TabEditor {
          * @param saveCurrent 是否保存当前 tab 的输入
          * @returns void
          */
-        const selectIndex = (index: number, saveCurrent: boolean) => {
+        const selectIndex = (
+            index: number,
+            saveCurrent: boolean,
+            focusTarget: "title" | "list" | "none" = "title"
+        ) => {
             if (saveCurrent) {
                 updateCurrentTab();
             }
             state.currentIndex = Math.min(Math.max(index, 0), state.data.tabs.length - 1);
             renderList();
             syncFields();
+            requestAnimationFrame(() => {
+                if (focusTarget === "title") {
+                    inputTitle.focus();
+                    return;
+                }
+                if (focusTarget === "list") {
+                    const targetItem = listEl.querySelector<HTMLElement>(
+                        `.code-tabs__editor-item[data-index="${state.currentIndex}"]`
+                    );
+                    targetItem?.focus();
+                }
+            });
         };
 
         listEl.addEventListener("click", (event) => {
@@ -458,6 +477,96 @@ export class TabEditor {
             const index = Number(item.dataset.index ?? 0);
             selectIndex(index, true);
         });
+        listEl.addEventListener("keydown", (event) => {
+            if (
+                event.key !== "Tab" &&
+                event.key !== "ArrowDown" &&
+                event.key !== "ArrowUp" &&
+                event.key !== "Enter"
+            ) {
+                return;
+            }
+            const target = event.target as HTMLElement;
+            const item = target.closest<HTMLElement>(".code-tabs__editor-item");
+            if (!item) return;
+            const items = Array.from(
+                listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+            );
+            const index = items.indexOf(item);
+            if (index === -1) return;
+            if (event.key === "Enter") {
+                event.preventDefault();
+                inputTitle.focus();
+                return;
+            }
+            event.preventDefault();
+            if (event.shiftKey) {
+                if (index > 0) {
+                    selectIndex(index - 1, true, "list");
+                    return;
+                }
+                item.focus();
+                event.stopPropagation();
+                return;
+            }
+            if (event.key === "ArrowUp") {
+                if (index > 0) {
+                    selectIndex(index - 1, true, "list");
+                }
+                return;
+            }
+            if (event.key === "ArrowDown") {
+                if (index < items.length - 1) {
+                    selectIndex(index + 1, true, "list");
+                }
+                return;
+            }
+            const nextIndex = index + 1;
+            if (nextIndex < items.length) {
+                selectIndex(nextIndex, true, "list");
+                return;
+            }
+            addButton?.focus();
+        });
+        root.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.key !== "Tab" || !event.shiftKey) return;
+                const active = document.activeElement as HTMLElement | null;
+                const item = active?.closest<HTMLElement>(".code-tabs__editor-item");
+                if (!item || !listEl.contains(item)) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const items = Array.from(
+                    listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+                );
+                const index = items.indexOf(item);
+                if (index > 0) {
+                    selectIndex(index - 1, true, "list");
+                    return;
+                }
+                item.focus();
+            },
+            true
+        );
+        addButton?.addEventListener("keydown", (event) => {
+            if (event.key !== "Tab" || !event.shiftKey) return;
+            event.preventDefault();
+            const items = listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item");
+            const target = items[items.length - 1];
+            if (target) {
+                target.focus();
+                return;
+            }
+            inputTitle.focus();
+        });
+        const handleActionKeydown = (event: KeyboardEvent) => {
+            if (event.key === "Enter" || event.key === " ") {
+                keepActionFocus = true;
+            }
+        };
+        addButton?.addEventListener("keydown", handleActionKeydown);
+        deleteButton?.addEventListener("keydown", handleActionKeydown);
 
         inputTitle.addEventListener("input", updateCurrentTab);
         inputTitle.addEventListener("keydown", (event) => {
@@ -715,10 +824,13 @@ export class TabEditor {
                 }
                 return;
             }
-            const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
+            const actionButton = target.closest<HTMLButtonElement>("[data-action]");
+            const action = actionButton?.dataset.action;
             if (!action) return;
             switch (action) {
                 case "add": {
+                    const shouldKeepFocus = keepActionFocus;
+                    keepActionFocus = false;
                     updateCurrentTab();
                     const nextIndex = state.data.tabs.length + 1;
                     state.data.tabs.push({
@@ -726,10 +838,17 @@ export class TabEditor {
                         lang: "plaintext",
                         code: "在这里输入代码",
                     });
-                    selectIndex(state.data.tabs.length - 1, false);
+                    selectIndex(state.data.tabs.length - 1, false, shouldKeepFocus ? "none" : "title");
+                    if (shouldKeepFocus) {
+                        requestAnimationFrame(() => {
+                            actionButton?.focus();
+                        });
+                    }
                     break;
                 }
                 case "delete": {
+                    const shouldKeepFocus = keepActionFocus;
+                    keepActionFocus = false;
                     if (state.data.tabs.length <= 1) {
                         pushErrMsg(t(options.i18n, "editor.deleteLast")).then();
                         return;
@@ -738,7 +857,16 @@ export class TabEditor {
                     const removeIndex = state.currentIndex;
                     state.data.tabs.splice(removeIndex, 1);
                     updateActiveIndexAfterDelete(removeIndex);
-                    selectIndex(Math.min(removeIndex, state.data.tabs.length - 1), false);
+                    selectIndex(
+                        Math.min(removeIndex, state.data.tabs.length - 1),
+                        false,
+                        shouldKeepFocus ? "none" : "title"
+                    );
+                    if (shouldKeepFocus) {
+                        requestAnimationFrame(() => {
+                            actionButton?.focus();
+                        });
+                    }
                     break;
                 }
                 case "save": {
@@ -791,7 +919,14 @@ export class TabEditor {
         initLanguageSuggest();
         syncFields();
         if (!isMobileEnv) {
-            inputTitle.focus();
+            const focusTitle = () => {
+                if (dialog.element.contains(document.activeElement)) return;
+                inputTitle.focus();
+            };
+            requestAnimationFrame(() => {
+                focusTitle();
+                setTimeout(focusTitle, 0);
+            });
         }
     }
 }

@@ -552,9 +552,16 @@ export class TabEditor {
         addButton?.addEventListener("keydown", (event) => {
             if (event.key !== "Tab" || !event.shiftKey) return;
             event.preventDefault();
-            const items = listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item");
+            const items = Array.from(
+                listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item")
+            );
             const target = items[items.length - 1];
             if (target) {
+                const index = items.indexOf(target);
+                if (index >= 0) {
+                    selectIndex(index, true, "list");
+                    return;
+                }
                 target.focus();
                 return;
             }

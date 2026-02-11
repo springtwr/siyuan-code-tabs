@@ -220,11 +220,6 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         min-height: 28px;
         position: relative;
 
-        &:focus-visible {
-            outline: 2px solid var(--b3-theme-primary, #5b8def);
-            outline-offset: 1px;
-        }
-
         &-text {
             flex: 1;
             min-width: 0;

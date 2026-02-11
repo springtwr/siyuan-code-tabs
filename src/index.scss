@@ -179,7 +179,7 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         color: var(--b3-theme-on-background, #333);
         user-select: none;
 
-        &:hover {
+        &--active {
             background: var(--b3-theme-surface-lighter, #f2f2f2);
         }
     }

@@ -190,6 +190,24 @@ export class TabEditor {
             inputLang.removeAttribute("list");
             const allOptions = getLanguageOptions();
             let isSelectingSuggest = false;
+            let activeIndex = -1;
+            const getOptions = () =>
+                Array.from(
+                    langSuggest.querySelectorAll<HTMLElement>(".code-tabs__editor-lang-option")
+                );
+            const setActive = (nextIndex: number) => {
+                const options = getOptions();
+                if (options.length === 0) return;
+                const total = options.length;
+                const safeIndex = ((nextIndex % total) + total) % total;
+                options.forEach((option) =>
+                    option.classList.remove("code-tabs__editor-lang-option--active")
+                );
+                const active = options[safeIndex];
+                active.classList.add("code-tabs__editor-lang-option--active");
+                active.scrollIntoView({ block: "nearest" });
+                activeIndex = safeIndex;
+            };
             const hideSuggest = () => {
                 logger.debug("隐藏语言联想列表", {
                     isSelectingSuggest,
@@ -197,6 +215,7 @@ export class TabEditor {
                 });
                 langSuggest.classList.remove("code-tabs__editor-lang-suggest--open");
                 langSuggest.innerHTML = "";
+                activeIndex = -1;
             };
             const renderSuggest = () => {
                 const query = inputLang.value.trim().toLowerCase();
@@ -224,6 +243,7 @@ export class TabEditor {
                     langSuggest.appendChild(option);
                 });
                 langSuggest.classList.add("code-tabs__editor-lang-suggest--open");
+                setActive(0);
                 logger.debug("语言联想列表已更新", { matched: matched.length });
             };
             const applyPick = (target: HTMLElement) => {
@@ -265,8 +285,58 @@ export class TabEditor {
             langSuggest.addEventListener("pointerdown", handlePick);
             langSuggest.addEventListener("mousedown", handlePick);
             langSuggest.addEventListener("click", handlePick);
+            langSuggest.addEventListener("mousemove", (event) => {
+                const target = event.target as HTMLElement;
+                const option = target.closest<HTMLElement>(".code-tabs__editor-lang-option");
+                if (!option) return;
+                const options = getOptions();
+                const index = options.indexOf(option);
+                if (index === -1 || index === activeIndex) return;
+                setActive(index);
+            });
             inputLang.addEventListener("input", renderSuggest);
             inputLang.addEventListener("focus", renderSuggest);
+            inputLang.addEventListener("keydown", (event) => {
+                const isOpen = langSuggest.classList.contains(
+                    "code-tabs__editor-lang-suggest--open"
+                );
+                if (!isOpen && event.key === "ArrowDown") {
+                    renderSuggest();
+                }
+                if (!langSuggest.classList.contains("code-tabs__editor-lang-suggest--open")) {
+                    return;
+                }
+                if (event.key === "Tab") {
+                    event.preventDefault();
+                    setActive(event.shiftKey ? activeIndex - 1 : activeIndex + 1);
+                    return;
+                }
+                if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActive(activeIndex + 1);
+                    return;
+                }
+                if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActive(activeIndex - 1);
+                    return;
+                }
+                if (event.key === "Enter") {
+                    const options = getOptions();
+                    const target = options[activeIndex];
+                    if (target) {
+                        event.preventDefault();
+                        applyPick(target);
+                    }
+                    return;
+                }
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    hideSuggest();
+                    event.stopPropagation();
+                    return;
+                }
+            });
             inputLang.addEventListener("blur", () => {
                 logger.debug("语言输入框 blur", { isSelectingSuggest });
                 if (isSelectingSuggest) return;

@@ -457,6 +457,11 @@ export class TabEditor {
         inputCode.addEventListener("input", updateCurrentTab);
         inputCode.addEventListener("keydown", (event) => {
             if (event.key !== "Tab") return;
+            if (event.shiftKey) {
+                event.preventDefault();
+                inputLang.focus();
+                return;
+            }
             event.preventDefault();
             const editorConfig = ((
                 window as Window & {

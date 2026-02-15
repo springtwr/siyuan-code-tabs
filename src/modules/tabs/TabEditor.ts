@@ -485,7 +485,9 @@ export class TabEditor {
                 event.key !== "Tab" &&
                 event.key !== "ArrowDown" &&
                 event.key !== "ArrowUp" &&
-                event.key !== "Enter"
+                event.key !== "Enter" &&
+                event.key !== " " &&
+                event.key !== "Spacebar"
             ) {
                 return;
             }
@@ -497,6 +499,18 @@ export class TabEditor {
             );
             const index = items.indexOf(item);
             if (index === -1) return;
+            if (event.key === " " || event.key === "Spacebar") {
+                event.preventDefault();
+                state.data.active = index;
+                renderList();
+                requestAnimationFrame(() => {
+                    const targetItem = listEl.querySelector<HTMLElement>(
+                        `.code-tabs__editor-item[data-index="${index}"]`
+                    );
+                    targetItem?.focus();
+                });
+                return;
+            }
             if (event.key === "Enter") {
                 event.preventDefault();
                 inputTitle.focus();

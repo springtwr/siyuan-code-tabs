@@ -78,6 +78,10 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.1.0
+
+- Added "New tabs" menu item for mobile
+
 ### v2.0.4
 
 - Improved keyboard interactions in the editor panel: support `Space` to set default tab in list, and refined focus flow for Tab/Arrow/Enter

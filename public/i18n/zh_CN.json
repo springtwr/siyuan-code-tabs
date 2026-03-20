@@ -1,4 +1,5 @@
 {
+  "menu.main.newTabs": "新建标签页",
   "menu.more.tabsToCodeBlocks": "块：拆分标签页为代码块",
   "menu.more.mergeCodeBlocks": "块：合并选中代码块",
   "menu.more.tabsToCodeBlocksInDocument": "文档：拆分标签页为代码块",

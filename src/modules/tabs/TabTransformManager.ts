@@ -491,6 +491,28 @@ export class TabTransformManager {
     }
 
     /**
+     * 将目标块转换为标签页
+     * @param targetId 目标块 ID
+     * @returns Promise<void>
+     */
+    async newTabs(targetId: string): Promise<void> {
+        if (!targetId) {
+            pushErrMsg(t(this.i18n, "msg.noTargetBlock"));
+            return;
+        }
+
+        if (!window.hljs) {
+            await TabRenderer.ensureLibraryLoaded("hljs");
+        }
+        const data = TabDataService.createDefaultData();
+        const htmlBlock = await TabRenderer.createProtyleHtml(data);
+        await updateBlock("markdown", htmlBlock, targetId);
+        await TabDataService.writeToBlock(targetId, data);
+        return;
+        
+    }
+
+    /**
      * 合并多个代码块为标签页（支持 tab 语法展开）。
      * @param blockList 代码块列表
      * @returns Promise<void>

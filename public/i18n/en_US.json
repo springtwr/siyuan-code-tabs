@@ -1,4 +1,5 @@
 {
+  "menu.main.newTabs": "New tabs",
   "menu.more.tabsToCodeBlocks": "Block: Split tabs into code blocks",
   "menu.more.tabsToCodeBlocksInDocument": "Document: Split tabs into code blocks",
   "menu.more.mergeCodeBlocks": "Block: merge selected code blocks",

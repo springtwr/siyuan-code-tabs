@@ -9,8 +9,10 @@ vi.mock("@/utils/dom", () => ({
 }));
 
 const isDevMode = vi.fn(() => true);
+const isMobileBackend = vi.fn(() => false);
 vi.mock("@/utils/env", () => ({
     isDevMode: () => isDevMode(),
+    isMobileBackend: () => isMobileBackend(),
 }));
 
 const toggleEditorSetting = vi.fn();
@@ -26,6 +28,7 @@ describe("CommandManager", () => {
     beforeEach(() => {
         getSelectedElements.mockReset();
         isDevMode.mockReturnValue(true);
+        isMobileBackend.mockReturnValue(false);
         toggleEditorSetting.mockReset();
     });
 

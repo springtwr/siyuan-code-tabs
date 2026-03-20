@@ -5,7 +5,7 @@ import { DevToggleManager } from "@/modules/developer/DevToggleManager";
 import type { TabTransformManager } from "@/modules/tabs/TabTransformManager";
 import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
-import { isDevMode } from "@/utils/env";
+import { isDevMode, isMobileBackend } from "@/utils/env";
 
 /**
  * 命令与块菜单的注册与构建入口。
@@ -105,6 +105,22 @@ export class CommandManager {
      * @returns void
      */
     private buildBlockMenu(detail: BlockIconEventDetail): void {
+        if (isMobileBackend()) {  
+            detail.menu.addItem({
+                icon: "iconCodeTabsMain",
+                label: t(this.i18n, "menu.main.newTabs"),
+                click: async () => {
+                    const targetId = detail.blockElements[0]?.dataset?.nodeId ?? "";
+                    const targetType = detail.blockElements[0]?.dataset?.type ?? "";
+                    if (targetType !== "NodeParagraph") {
+                        return;
+                    }
+                    await this.tabTransformManager.newTabs(targetId);
+                    this.onReload();
+                },
+            });
+            detail.menu.addItem({ type: "separator" });
+        }
         detail.menu.addItem({
             icon: "iconCodeTabsMain",
             label: t(this.i18n, "menu.more.mergeCodeBlocks"),

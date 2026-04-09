@@ -1,3 +1,4 @@
+import { VIRTUAL_NODE_ID } from "@/constants/keys";
 import { ThemeStyle } from "@/modules/theme/types";
 import logger from "@/utils/logger";
 
@@ -74,7 +75,7 @@ export const StyleProbe = (() => {
         const block = document.createElement("div");
         block.className = "code-block";
         block.dataset.type = "NodeCodeBlock";
-        block.dataset.nodeId = "virtual";
+        block.dataset.nodeId = VIRTUAL_NODE_ID;
 
         const action = document.createElement("div");
         action.className = "protyle-action";

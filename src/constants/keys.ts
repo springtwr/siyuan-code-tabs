@@ -16,6 +16,7 @@ export const LEGACY_EXISTS_KEY = "codeTabsLegacyExists";
 export const LEGACY_COUNT_KEY = "codeTabsLegacyCount";
 export const PLUGIN_VERSION = __PLUGIN_VERSION__;
 export const PLUGIN_STYLE_ID = "pluginsStylecode-tabs";
+export const VIRTUAL_NODE_ID = "19700101000000-codetab";
 
 const ECHARTS_SCRIPTS = [
     {

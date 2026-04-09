@@ -104,6 +104,15 @@ export const StyleProbe = (() => {
     }
 
     /**
+     * 清理虚拟 DOM，释放引用。
+     */
+    function cleanupVirtualProtyle(): void {
+        if (!cached) return;
+        cached.root.remove();
+        cached = null;
+    }
+
+    /**
      * 采样并返回当前主题样式快照。
      * @returns 样式快照
      */
@@ -116,6 +125,9 @@ export const StyleProbe = (() => {
             body: extract(hljs, SYNC_PROPS.body),
             content: extract(content, SYNC_PROPS.content),
         };
+
+        // 探测完成后立即清理虚拟节点
+        cleanupVirtualProtyle();
 
         return snapshot;
     }
@@ -173,9 +185,7 @@ export const StyleProbe = (() => {
          * @returns void
          */
         cleanup(): void {
-            if (!cached) return;
-            cached.root.remove();
-            cached = null;
+            cleanupVirtualProtyle();
             lastStyle = null;
         },
     };

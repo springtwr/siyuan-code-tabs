@@ -78,6 +78,10 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.1.2
+
+- Fixed invalid ID argument error on plugin first startup
+
 ### v2.1.1
 
 - Fixed node error when calling attribute API

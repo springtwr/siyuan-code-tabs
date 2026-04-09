@@ -509,7 +509,6 @@ export class TabTransformManager {
         await updateBlock("markdown", htmlBlock, targetId);
         await TabDataService.writeToBlock(targetId, data);
         return;
-        
     }
 
     /**

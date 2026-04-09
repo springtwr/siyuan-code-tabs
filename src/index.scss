@@ -272,7 +272,6 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
             background: var(--b3-theme-primary-lighter, #e8f0fe);
             color: var(--b3-theme-on-primary, #1a1a1a);
         }
-
     }
 
     &__editor-drop-indicator {
@@ -286,7 +285,9 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         pointer-events: none;
         opacity: 0;
         transform: scaleX(0.9);
-        transition: opacity 0.12s ease, transform 0.12s ease;
+        transition:
+            opacity 0.12s ease,
+            transform 0.12s ease;
 
         &--show {
             opacity: 1;

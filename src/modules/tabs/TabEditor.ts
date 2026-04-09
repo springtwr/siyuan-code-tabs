@@ -652,9 +652,7 @@ export class TabEditor {
         };
 
         let indicatorRaf = 0;
-        let pendingIndicator:
-            | { item: HTMLElement; position: "before" | "after" }
-            | null = null;
+        let pendingIndicator: { item: HTMLElement; position: "before" | "after" } | null = null;
         let lastIndicatorTop: number | null = null;
         let lastDropIndex: number | null = null;
         let lastDropPosition: "before" | "after" | null = null;
@@ -952,7 +950,11 @@ export class TabEditor {
                         lang: "plaintext",
                         code: "在这里输入代码",
                     });
-                    selectIndex(state.data.tabs.length - 1, false, shouldKeepFocus ? "none" : "title");
+                    selectIndex(
+                        state.data.tabs.length - 1,
+                        false,
+                        shouldKeepFocus ? "none" : "title"
+                    );
                     if (shouldKeepFocus) {
                         requestAnimationFrame(() => {
                             actionButton?.focus();

@@ -105,7 +105,7 @@ export class CommandManager {
      * @returns void
      */
     private buildBlockMenu(detail: BlockIconEventDetail): void {
-        if (isMobileBackend()) {  
+        if (isMobileBackend()) {
             detail.menu.addItem({
                 icon: "iconCodeTabsMain",
                 label: t(this.i18n, "menu.main.newTabs"),

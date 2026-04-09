@@ -78,6 +78,10 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.1.1
+
+- Fixed node error when calling attribute API
+
 ### v2.1.0
 
 - Added "New tabs" menu item for mobile

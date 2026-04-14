@@ -125,7 +125,7 @@ export class DragDropManager {
         this.lastDropIndex = this.dragIndex;
         this.lastDropPosition = "after";
 
-        handle.setPointerCapture?.(event.pointerId);
+        if (handle.setPointerCapture) handle.setPointerCapture(event.pointerId);
         this.clearDropIndicator();
         item.classList.add("code-tabs__editor-item--drop-after");
         event.preventDefault();

@@ -1,12 +1,14 @@
 import { Dialog, type IObject, confirm } from "siyuan";
 
 import { pushErrMsg } from "@/api";
-import { CODE_TABS_ICONS } from "@/constants";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
-import logger from "@/utils/logger";
 
 import { TabDataService } from "./TabDataService";
+import { TabListRenderer } from "./TabListRenderer";
+import { DragDropManager } from "./DragDropManager";
+import { LanguageSuggest } from "./LanguageSuggest";
+import { KeyboardNavigator } from "./KeyboardNavigator";
 import type { TabsData } from "./types";
 import { isLanguageSupported, normalizeLanguageInput } from "./language";
 
@@ -22,11 +24,6 @@ type EditorState = {
     currentIndex: number;
 };
 
-/**
- * 构建编辑面板的 HTML 内容。
- * @param i18n i18n 资源
- * @returns HTML 字符串
- */
 export function buildEditorDialogContent(i18n: IObject): string {
     return `
 <div class="code-tabs__editor">
@@ -70,16 +67,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
 `.trim();
 }
 
-/**
- * 标签页编辑弹窗，包含标题/语言/代码编辑与排序。
- * 副作用：创建 Dialog、绑定多种交互事件。
- */
 export class TabEditor {
-    /**
-     * 打开编辑面板并绑定交互。
-     * @param options 打开参数
-     * @returns void
-     */
     static open(options: EditorOptions): void {
         const state: EditorState = {
             data: TabDataService.clone(options.data),
@@ -100,6 +88,7 @@ export class TabEditor {
 
         const root = dialog.element;
         root.classList.add("code-tabs__editor-dialog");
+
         const listEl = root.querySelector<HTMLElement>('[data-role="tab-list"]');
         const inputTitle = root.querySelector<HTMLInputElement>('[data-field="title"]');
         const inputLang = root.querySelector<HTMLInputElement>('[data-field="lang"]');
@@ -107,12 +96,55 @@ export class TabEditor {
         const langSuggest = root.querySelector<HTMLElement>('[data-role="lang-suggest"]');
         const addButton = root.querySelector<HTMLButtonElement>('[data-action="add"]');
         const deleteButton = root.querySelector<HTMLButtonElement>('[data-action="delete"]');
+
         if (!listEl || !inputTitle || !inputLang || !inputCode) {
             dialog.destroy();
             return;
         }
-        let suppressLangSuggestOnFocus = false;
-        let keepActionFocus = false;
+
+        const dropIndicator = document.createElement("div");
+        dropIndicator.className = "code-tabs__editor-drop-indicator";
+
+        const listRenderer = new TabListRenderer(listEl, dropIndicator, options.i18n);
+
+        const dragDropManager = new DragDropManager(listEl, dropIndicator, (fromIndex, toIndex) => {
+            updateCurrentTab();
+            const [moved] = state.data.tabs.splice(fromIndex, 1);
+            state.data.tabs.splice(toIndex, 0, moved);
+
+            if (state.data.active === fromIndex) {
+                state.data.active = toIndex;
+            } else if (fromIndex < state.data.active && toIndex >= state.data.active) {
+                state.data.active -= 1;
+            } else if (fromIndex > state.data.active && toIndex <= state.data.active) {
+                state.data.active += 1;
+            }
+
+            selectIndex(toIndex, false);
+        });
+
+        const languageSuggest = langSuggest
+            ? new LanguageSuggest(inputLang, langSuggest, root, () => {
+                  updateCurrentTab();
+              })
+            : null;
+
+        const keyboardNavigator = new KeyboardNavigator(
+            listEl,
+            inputTitle,
+            inputLang,
+            inputCode,
+            addButton,
+            deleteButton,
+            (index, saveCurrent, focusTarget) => selectIndex(index, saveCurrent, focusTarget),
+            (index) => {
+                  state.data.active = index;
+                  listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
+              },
+            () => {
+                  languageSuggest?.suppressOnFocus();
+              }
+        );
 
         const syncFields = () => {
             const tab = state.data.tabs[state.currentIndex];
@@ -122,272 +154,15 @@ export class TabEditor {
             inputCode.value = tab.code;
         };
 
-        const dropIndicator = document.createElement("div");
-        dropIndicator.className = "code-tabs__editor-drop-indicator";
-        const renderList = () => {
-            listEl.innerHTML = "";
-            state.data.tabs.forEach((tab, index) => {
-                const item = document.createElement("button");
-                item.type = "button";
-                item.className = "code-tabs__editor-item";
-                if (index === state.currentIndex) {
-                    item.classList.add("code-tabs__editor-item--active");
-                }
-                if (state.data.active === index) {
-                    item.classList.add("code-tabs__editor-item--default");
-                }
-                item.dataset.index = String(index);
-                const defaultBtn = document.createElement("button");
-                defaultBtn.type = "button";
-                defaultBtn.className = "code-tabs__editor-item-default";
-                if (state.data.active === index) {
-                    defaultBtn.classList.add("code-tabs__editor-item-default--active");
-                }
-                defaultBtn.dataset.action = "set-default";
-                defaultBtn.dataset.index = String(index);
-                defaultBtn.title = t(options.i18n, "editor.setDefault");
-                defaultBtn.innerHTML = `<svg width="12" height="12" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconStar"></use></svg>`;
-                const text = document.createElement("span");
-                text.className = "code-tabs__editor-item-text";
-                text.textContent = tab.title;
-                const handle = document.createElement("span");
-                handle.className = "code-tabs__editor-item-handle";
-                handle.title = t(options.i18n, "editor.dragTip");
-                handle.setAttribute("draggable", "true");
-                handle.innerHTML = `<svg width="12" height="12" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconDrag"></use></svg>`;
-                item.appendChild(defaultBtn);
-                item.appendChild(text);
-                item.appendChild(handle);
-                listEl.appendChild(item);
-            });
-            listEl.appendChild(dropIndicator);
-        };
-
-        const isMobileEnv = isMobileBackend();
-        logger.debug(`当前后端：${isMobileEnv ? "mobile" : "desktop"}`);
-
-        /**
-         * 获取语言候选列表，合并 hljs 与别名。
-         * @returns 语言列表
-         */
-        const getLanguageOptions = (): string[] => {
-            const hljs = window.hljs as unknown as { listLanguages?: () => string[] };
-            if (!hljs?.listLanguages) return ["plaintext", "markdown-render"];
-            const languages = new Set<string>(hljs.listLanguages());
-            languages.add("plaintext");
-            languages.add("markdown-render");
-            if (window.hljs?.getLanguage) {
-                Array.from(languages).forEach((lang) => {
-                    const info = window.hljs?.getLanguage?.(lang) as
-                        | { aliases?: string[] }
-                        | undefined;
-                    info?.aliases?.forEach((alias) => languages.add(alias));
-                });
-            }
-            return Array.from(languages).sort();
-        };
-
-        /**
-         * 初始化语言联想（全平台自定义列表）。
-         * @returns void
-         */
-        const initLanguageSuggest = () => {
-            if (!langSuggest) return;
-            logger.debug("初始化语言联想（自定义列表）", { isMobileEnv });
-            inputLang.removeAttribute("list");
-            const allOptions = getLanguageOptions();
-            let isSelectingSuggest = false;
-            let activeIndex = -1;
-            const getOptions = () =>
-                Array.from(
-                    langSuggest.querySelectorAll<HTMLElement>(".code-tabs__editor-lang-option")
-                );
-            const setActive = (nextIndex: number) => {
-                const options = getOptions();
-                if (options.length === 0) return;
-                const total = options.length;
-                const safeIndex = ((nextIndex % total) + total) % total;
-                options.forEach((option) =>
-                    option.classList.remove("code-tabs__editor-lang-option--active")
-                );
-                const active = options[safeIndex];
-                active.classList.add("code-tabs__editor-lang-option--active");
-                active.scrollIntoView({ block: "nearest" });
-                activeIndex = safeIndex;
-            };
-            const hideSuggest = () => {
-                logger.debug("隐藏语言联想列表", {
-                    isSelectingSuggest,
-                    hasOptions: langSuggest.children.length,
-                });
-                langSuggest.classList.remove("code-tabs__editor-lang-suggest--open");
-                langSuggest.innerHTML = "";
-                activeIndex = -1;
-            };
-            const renderSuggest = () => {
-                const query = inputLang.value.trim().toLowerCase();
-                logger.debug("渲染语言联想列表", {
-                    query,
-                    total: allOptions.length,
-                });
-                if (!query) {
-                    hideSuggest();
-                    return;
-                }
-                const matched = allOptions.filter((lang) => lang.includes(query)).slice(0, 60);
-                if (matched.length === 0) {
-                    hideSuggest();
-                    return;
-                }
-                langSuggest.innerHTML = "";
-                matched.forEach((lang) => {
-                    const option = document.createElement("div");
-                    option.className = "code-tabs__editor-lang-option";
-                    option.dataset.value = lang;
-                    option.textContent = lang;
-                    option.setAttribute("role", "button");
-                    option.setAttribute("tabindex", "0");
-                    langSuggest.appendChild(option);
-                });
-                langSuggest.classList.add("code-tabs__editor-lang-suggest--open");
-                setActive(0);
-                logger.debug("语言联想列表已更新", { matched: matched.length });
-            };
-            const applyPick = (target: HTMLElement) => {
-                const option = target.closest<HTMLElement>(".code-tabs__editor-lang-option");
-                if (!option) {
-                    logger.debug("点击候选项未命中", { tag: target.tagName });
-                    return false;
-                }
-                const value = option.dataset.value ?? option.textContent ?? "";
-                logger.debug("选中语言候选项", { value });
-                inputLang.value = value;
-                inputLang.dispatchEvent(new Event("input", { bubbles: true }));
-                inputLang.dispatchEvent(new Event("change", { bubbles: true }));
-                updateCurrentTab();
-                hideSuggest();
-                requestAnimationFrame(() => inputLang.focus());
-                return true;
-            };
-            const handlePick = (event: Event) => {
-                const target = event.target as HTMLElement;
-                logger.debug("候选列表事件触发", { type: event.type });
-                const picked = applyPick(target);
-                if (!picked) return;
-                event.preventDefault();
-                event.stopPropagation();
-                isSelectingSuggest = true;
-                setTimeout(() => {
-                    isSelectingSuggest = false;
-                }, 0);
-            };
-            langSuggest.addEventListener(
-                "touchstart",
-                (event) => {
-                    handlePick(event);
-                },
-                { passive: false }
-            );
-            langSuggest.addEventListener("touchend", handlePick);
-            langSuggest.addEventListener("pointerdown", handlePick);
-            langSuggest.addEventListener("mousedown", handlePick);
-            langSuggest.addEventListener("click", handlePick);
-            langSuggest.addEventListener("mousemove", (event) => {
-                const target = event.target as HTMLElement;
-                const option = target.closest<HTMLElement>(".code-tabs__editor-lang-option");
-                if (!option) return;
-                const options = getOptions();
-                const index = options.indexOf(option);
-                if (index === -1 || index === activeIndex) return;
-                setActive(index);
-            });
-            inputLang.addEventListener("input", renderSuggest);
-            inputLang.addEventListener("focus", () => {
-                if (suppressLangSuggestOnFocus) {
-                    suppressLangSuggestOnFocus = false;
-                    return;
-                }
-                renderSuggest();
-            });
-            inputLang.addEventListener("keydown", (event) => {
-                const isOpen = langSuggest.classList.contains(
-                    "code-tabs__editor-lang-suggest--open"
-                );
-                if (!isOpen && event.key === "ArrowDown") {
-                    renderSuggest();
-                }
-                if (!langSuggest.classList.contains("code-tabs__editor-lang-suggest--open")) {
-                    return;
-                }
-                if (event.key === "Tab") {
-                    event.preventDefault();
-                    setActive(event.shiftKey ? activeIndex - 1 : activeIndex + 1);
-                    return;
-                }
-                if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setActive(activeIndex + 1);
-                    return;
-                }
-                if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setActive(activeIndex - 1);
-                    return;
-                }
-                if (event.key === "Enter") {
-                    const options = getOptions();
-                    const target = options[activeIndex];
-                    if (target) {
-                        event.preventDefault();
-                        applyPick(target);
-                    }
-                    return;
-                }
-                if (event.key === "Escape") {
-                    event.preventDefault();
-                    hideSuggest();
-                    event.stopPropagation();
-                    return;
-                }
-            });
-            inputLang.addEventListener("blur", () => {
-                logger.debug("语言输入框 blur", { isSelectingSuggest });
-                if (isSelectingSuggest) return;
-                setTimeout(() => {
-                    if (!isSelectingSuggest) hideSuggest();
-                }, 120);
-            });
-            root.addEventListener("touchstart", (event) => {
-                const target = event.target as HTMLElement;
-                if (target === inputLang || langSuggest.contains(target)) return;
-                logger.debug("触发外部触摸关闭联想列表");
-                hideSuggest();
-            });
-            root.addEventListener("mousedown", (event) => {
-                const target = event.target as HTMLElement;
-                if (target === inputLang || langSuggest.contains(target)) return;
-                logger.debug("触发外部点击关闭联想列表");
-                hideSuggest();
-            });
-        };
-
-        /**
-         * 将输入框状态写回当前 tab。
-         * @returns void
-         */
         const updateCurrentTab = () => {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
             tab.title = inputTitle.value.trim();
             tab.lang = normalizeLanguageInput(inputLang.value);
             tab.code = inputCode.value;
-            renderList();
+            listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
         };
 
-        /**
-         * 生成草稿快照，用于未保存提示。
-         * @returns 草稿快照字符串
-         */
         const getDraftSnapshot = () => {
             const draft = TabDataService.clone(state.data);
             const tab = draft.tabs[state.currentIndex];
@@ -402,6 +177,7 @@ export class TabEditor {
         const rawDestroy = dialog.destroy.bind(dialog);
         let isConfirmingClose = false;
         let forceClose = false;
+
         dialog.destroy = (destroyOptions?: IObject) => {
             if (forceClose || getDraftSnapshot() === initialSnapshot) {
                 rawDestroy(destroyOptions);
@@ -427,11 +203,6 @@ export class TabEditor {
             );
         };
 
-        /**
-         * 关闭弹窗入口，强制关闭用于保存成功后。
-         * @param force 是否强制关闭
-         * @returns void
-         */
         const close = (force = false) => {
             if (force) {
                 forceClose = true;
@@ -442,12 +213,6 @@ export class TabEditor {
             dialog.destroy();
         };
 
-        /**
-         * 切换编辑中的 tab，并根据需要保存当前修改。
-         * @param index 目标索引
-         * @param saveCurrent 是否保存当前 tab 的输入
-         * @returns void
-         */
         const selectIndex = (
             index: number,
             saveCurrent: boolean,
@@ -457,7 +222,7 @@ export class TabEditor {
                 updateCurrentTab();
             }
             state.currentIndex = Math.min(Math.max(index, 0), state.data.tabs.length - 1);
-            renderList();
+            listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
             syncFields();
             requestAnimationFrame(() => {
                 if (focusTarget === "title") {
@@ -473,6 +238,10 @@ export class TabEditor {
             });
         };
 
+        inputTitle.addEventListener("input", updateCurrentTab);
+        inputLang.addEventListener("input", updateCurrentTab);
+        inputCode.addEventListener("input", updateCurrentTab);
+
         listEl.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;
             const item = target.closest<HTMLElement>(".code-tabs__editor-item");
@@ -480,469 +249,18 @@ export class TabEditor {
             const index = Number(item.dataset.index ?? 0);
             selectIndex(index, true);
         });
-        listEl.addEventListener("keydown", (event) => {
-            if (
-                event.key !== "Tab" &&
-                event.key !== "ArrowDown" &&
-                event.key !== "ArrowUp" &&
-                event.key !== "Enter" &&
-                event.key !== " " &&
-                event.key !== "Spacebar"
-            ) {
-                return;
-            }
-            const target = event.target as HTMLElement;
-            const item = target.closest<HTMLElement>(".code-tabs__editor-item");
-            if (!item) return;
-            const items = Array.from(
-                listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
-            );
-            const index = items.indexOf(item);
-            if (index === -1) return;
-            if (event.key === " " || event.key === "Spacebar") {
-                event.preventDefault();
-                state.data.active = index;
-                renderList();
-                requestAnimationFrame(() => {
-                    const targetItem = listEl.querySelector<HTMLElement>(
-                        `.code-tabs__editor-item[data-index="${index}"]`
-                    );
-                    targetItem?.focus();
-                });
-                return;
-            }
-            if (event.key === "Enter") {
-                event.preventDefault();
-                inputTitle.focus();
-                return;
-            }
-            event.preventDefault();
-            if (event.shiftKey) {
-                if (index > 0) {
-                    selectIndex(index - 1, true, "list");
-                    return;
-                }
-                item.focus();
-                event.stopPropagation();
-                return;
-            }
-            if (event.key === "ArrowUp") {
-                if (index > 0) {
-                    selectIndex(index - 1, true, "list");
-                }
-                return;
-            }
-            if (event.key === "ArrowDown") {
-                if (index < items.length - 1) {
-                    selectIndex(index + 1, true, "list");
-                }
-                return;
-            }
-            const nextIndex = index + 1;
-            if (nextIndex < items.length) {
-                selectIndex(nextIndex, true, "list");
-                return;
-            }
-            addButton?.focus();
-        });
-        root.addEventListener(
-            "keydown",
-            (event) => {
-                if (event.key !== "Tab" || !event.shiftKey) return;
-                const active = document.activeElement as HTMLElement | null;
-                const item = active?.closest<HTMLElement>(".code-tabs__editor-item");
-                if (!item || !listEl.contains(item)) return;
-                event.preventDefault();
-                event.stopPropagation();
-                const items = Array.from(
-                    listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
-                );
-                const index = items.indexOf(item);
-                if (index > 0) {
-                    selectIndex(index - 1, true, "list");
-                    return;
-                }
-                item.focus();
-            },
-            true
-        );
-        addButton?.addEventListener("keydown", (event) => {
-            if (event.key !== "Tab" || !event.shiftKey) return;
-            event.preventDefault();
-            const items = Array.from(
-                listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item")
-            );
-            const target = items[items.length - 1];
-            if (target) {
-                const index = items.indexOf(target);
-                if (index >= 0) {
-                    selectIndex(index, true, "list");
-                    return;
-                }
-                target.focus();
-                return;
-            }
-            inputTitle.focus();
-        });
-        const handleActionKeydown = (event: KeyboardEvent) => {
-            if (event.key === "Enter" || event.key === " ") {
-                keepActionFocus = true;
-            }
-        };
-        addButton?.addEventListener("keydown", handleActionKeydown);
-        deleteButton?.addEventListener("keydown", handleActionKeydown);
-
-        inputTitle.addEventListener("input", updateCurrentTab);
-        inputTitle.addEventListener("keydown", (event) => {
-            if (event.key === "Tab" && !event.shiftKey) {
-                suppressLangSuggestOnFocus = true;
-            }
-        });
-        inputLang.addEventListener("input", updateCurrentTab);
-        inputCode.addEventListener("input", updateCurrentTab);
-        inputCode.addEventListener("keydown", (event) => {
-            if (event.key !== "Tab") return;
-            if (event.shiftKey) {
-                event.preventDefault();
-                suppressLangSuggestOnFocus = true;
-                inputLang.focus();
-                return;
-            }
-            event.preventDefault();
-            const editorConfig = ((
-                window as Window & {
-                    siyuan?: { config?: { editor?: { codeTabSpaces?: number } } };
-                }
-            ).siyuan?.config?.editor ?? {}) as { codeTabSpaces?: number };
-            const spaces = Math.max(1, Math.min(8, Number(editorConfig.codeTabSpaces ?? 4)));
-            const insert = " ".repeat(spaces);
-            const start = inputCode.selectionStart ?? 0;
-            const end = inputCode.selectionEnd ?? 0;
-            inputCode.focus();
-            inputCode.setSelectionRange(start, end);
-            const canExec =
-                typeof document.queryCommandSupported === "function" &&
-                document.queryCommandSupported("insertText");
-            if (canExec && document.execCommand("insertText", false, insert)) {
-                return;
-            }
-            if (typeof inputCode.setRangeText === "function") {
-                inputCode.setRangeText(insert, start, end, "end");
-            } else {
-                const value = inputCode.value;
-                inputCode.value = `${value.slice(0, start)}${insert}${value.slice(end)}`;
-                const nextPos = start + insert.length;
-                inputCode.selectionStart = nextPos;
-                inputCode.selectionEnd = nextPos;
-            }
-            inputCode.dispatchEvent(new Event("input", { bubbles: true }));
-        });
-
-        /**
-         * 删除 tab 后修正 active 索引，避免越界。
-         * @param deleteIndex 被删除索引
-         * @returns void
-         */
-        const updateActiveIndexAfterDelete = (deleteIndex: number) => {
-            if (state.data.active === deleteIndex) {
-                state.data.active = Math.max(deleteIndex - 1, 0);
-            } else if (state.data.active > deleteIndex) {
-                state.data.active = state.data.active - 1;
-            }
-        };
-
-        let indicatorRaf = 0;
-        let pendingIndicator: { item: HTMLElement; position: "before" | "after" } | null = null;
-        let lastIndicatorTop: number | null = null;
-        let lastDropIndex: number | null = null;
-        let lastDropPosition: "before" | "after" | null = null;
-        const resetLastDrop = () => {
-            lastDropIndex = null;
-            lastDropPosition = null;
-        };
-
-        const clearDropIndicator = () => {
-            dropIndicator.classList.remove("code-tabs__editor-drop-indicator--show");
-            lastIndicatorTop = null;
-            pendingIndicator = null;
-            if (indicatorRaf) {
-                cancelAnimationFrame(indicatorRaf);
-                indicatorRaf = 0;
-            }
-        };
-
-        const resolveDropPosition = (event: { clientY: number }, item: HTMLElement) => {
-            const rect = item.getBoundingClientRect();
-            return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
-        };
-
-        const showDropIndicator = (item: HTMLElement, position: "before" | "after") => {
-            pendingIndicator = { item, position };
-            if (indicatorRaf) return;
-            indicatorRaf = requestAnimationFrame(() => {
-                indicatorRaf = 0;
-                if (!pendingIndicator) return;
-                const { item: pendingItem, position: pendingPosition } = pendingIndicator;
-                pendingIndicator = null;
-                const listRect = listEl.getBoundingClientRect();
-                const itemRect = pendingItem.getBoundingClientRect();
-                const gap = 6;
-                const lineHeight = 3;
-                const offset = gap / 2;
-                const base =
-                    pendingPosition === "before"
-                        ? itemRect.top - listRect.top - offset
-                        : itemRect.bottom - listRect.top + offset;
-                const top = Math.max(0, base + listEl.scrollTop - lineHeight / 2);
-                if (lastIndicatorTop !== null && Math.abs(lastIndicatorTop - top) < 1) {
-                    dropIndicator.classList.add("code-tabs__editor-drop-indicator--show");
-                    return;
-                }
-                lastIndicatorTop = top;
-                dropIndicator.style.top = `${top}px`;
-                dropIndicator.classList.add("code-tabs__editor-drop-indicator--show");
-            });
-        };
-
-        const resolveDropIndex = (
-            fromIndex: number,
-            targetIndex: number,
-            position: "before" | "after"
-        ) => {
-            let nextIndex = position === "after" ? targetIndex + 1 : targetIndex;
-            if (fromIndex < nextIndex) {
-                nextIndex -= 1;
-            }
-            const maxIndex = Math.max(state.data.tabs.length - 1, 0);
-            return Math.min(Math.max(nextIndex, 0), maxIndex);
-        };
-
-        /**
-         * 拖拽排序逻辑，维护 active 索引一致性。
-         * @param fromIndex 起始索引
-         * @param toIndex 目标索引
-         * @returns void
-         */
-        const applyReorder = (fromIndex: number, toIndex: number) => {
-            if (fromIndex === toIndex) return;
-            updateCurrentTab();
-            const [moved] = state.data.tabs.splice(fromIndex, 1);
-            state.data.tabs.splice(toIndex, 0, moved);
-            if (state.data.active === fromIndex) {
-                state.data.active = toIndex;
-            } else if (fromIndex < state.data.active && toIndex >= state.data.active) {
-                state.data.active -= 1;
-            } else if (fromIndex > state.data.active && toIndex <= state.data.active) {
-                state.data.active += 1;
-            }
-            selectIndex(toIndex, false);
-        };
-
-        let dragIndex: number | null = null;
-        let isDragEnding = false;
-        let didDrop = false;
-
-        listEl.addEventListener("dragstart", (event) => {
-            const target = event.target as HTMLElement;
-            const handle = target.closest<HTMLElement>(".code-tabs__editor-item-handle");
-            if (!handle) return;
-            const item = handle.closest<HTMLElement>(".code-tabs__editor-item");
-            if (!item) return;
-            dragIndex = Number(item.dataset.index ?? 0);
-            isDragEnding = false;
-            didDrop = false;
-            event.dataTransfer?.setData("text/plain", String(dragIndex));
-            event.dataTransfer?.setDragImage(item, 0, 0);
-            if (event.dataTransfer) {
-                event.dataTransfer.effectAllowed = "move";
-            }
-        });
-
-        const resolveDragItem = (event: DragEvent) => {
-            const target = document.elementFromPoint(event.clientX, event.clientY);
-            return target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
-        };
-
-        const resolveEdgeDrop = (clientY: number) => {
-            const items = Array.from(
-                listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
-            );
-            if (items.length === 0) return null;
-            const listRect = listEl.getBoundingClientRect();
-            const edgeThreshold = 6;
-            if (clientY <= listRect.top + edgeThreshold) {
-                return { item: items[0], position: "before" as const };
-            }
-            if (clientY >= listRect.bottom - edgeThreshold) {
-                return { item: items[items.length - 1], position: "after" as const };
-            }
-            return null;
-        };
-
-        listEl.addEventListener("dragover", (event) => {
-            if (dragIndex === null) return;
-            if (isDragEnding) return;
-            const item = resolveDragItem(event) ?? resolveEdgeDrop(event.clientY)?.item ?? null;
-            if (!item) return;
-            event.preventDefault();
-            const edge = resolveEdgeDrop(event.clientY);
-            const position = edge?.item === item ? edge.position : resolveDropPosition(event, item);
-            const rawIndex = Number(item.dataset.index ?? 0);
-            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
-            if (dropIndex === dragIndex) {
-                resetLastDrop();
-                clearDropIndicator();
-                return;
-            }
-            lastDropIndex = dropIndex;
-            lastDropPosition = position;
-            showDropIndicator(item, position);
-            if (event.dataTransfer) {
-                event.dataTransfer.dropEffect = "move";
-            }
-        });
-
-        listEl.addEventListener("dragleave", (event) => {
-            const related = event.relatedTarget as HTMLElement | null;
-            if (related && listEl.contains(related)) return;
-        });
-
-        listEl.addEventListener("drop", (event) => {
-            if (dragIndex === null) return;
-            isDragEnding = true;
-            didDrop = true;
-            const item = resolveDragItem(event) ?? resolveEdgeDrop(event.clientY)?.item ?? null;
-            if (!item) {
-                if (lastDropIndex !== null && lastDropPosition) {
-                    if (lastDropIndex !== dragIndex) {
-                        applyReorder(dragIndex, lastDropIndex);
-                    }
-                }
-                dragIndex = null;
-                resetLastDrop();
-                clearDropIndicator();
-                return;
-            }
-            event.preventDefault();
-            const edge = resolveEdgeDrop(event.clientY);
-            const rawIndex = Number(item.dataset.index ?? 0);
-            const position = edge?.item === item ? edge.position : resolveDropPosition(event, item);
-            const dropIndex = resolveDropIndex(dragIndex, rawIndex, position);
-            if (dropIndex !== dragIndex) {
-                applyReorder(dragIndex, dropIndex);
-            }
-            dragIndex = null;
-            resetLastDrop();
-            clearDropIndicator();
-        });
-
-        listEl.addEventListener("dragend", () => {
-            isDragEnding = true;
-            if (!didDrop && dragIndex !== null) {
-                if (lastDropIndex !== null && lastDropIndex !== dragIndex) {
-                    applyReorder(dragIndex, lastDropIndex);
-                }
-            }
-            clearDropIndicator();
-            dragIndex = null;
-            resetLastDrop();
-            didDrop = false;
-        });
-
-        let pointerDragIndex: number | null = null;
-        let pointerDropIndex: number | null = null;
-        let pointerDropPosition: "before" | "after" | null = null;
-        let pointerId: number | null = null;
-        const resolvePointerItem = (event: PointerEvent) => {
-            const target = document.elementFromPoint(event.clientX, event.clientY);
-            return target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
-        };
-
-        listEl.addEventListener("pointerdown", (event) => {
-            if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-            const target = event.target as HTMLElement;
-            const handle = target.closest<HTMLElement>(".code-tabs__editor-item-handle");
-            if (!handle) return;
-            const item = handle.closest<HTMLElement>(".code-tabs__editor-item");
-            if (!item) return;
-            pointerDragIndex = Number(item.dataset.index ?? 0);
-            pointerDropIndex = pointerDragIndex;
-            pointerDropPosition = "after";
-            pointerId = event.pointerId;
-            handle.setPointerCapture?.(event.pointerId);
-            clearDropIndicator();
-            item.classList.add("code-tabs__editor-item--drop-after");
-            event.preventDefault();
-        });
-
-        listEl.addEventListener("pointermove", (event) => {
-            if (pointerDragIndex === null || pointerId !== event.pointerId) return;
-            const item = resolvePointerItem(event);
-            if (!item) {
-                return;
-            }
-            const dropIndex = Number(item.dataset.index ?? 0);
-            pointerDropIndex = dropIndex;
-            pointerDropPosition = resolveDropPosition(event, item);
-            const nextIndex = resolveDropIndex(pointerDragIndex, dropIndex, pointerDropPosition);
-            if (nextIndex === pointerDragIndex) {
-                resetLastDrop();
-                clearDropIndicator();
-                return;
-            }
-            lastDropIndex = nextIndex;
-            lastDropPosition = pointerDropPosition;
-            showDropIndicator(item, pointerDropPosition);
-            event.preventDefault();
-        });
-
-        const finishPointerDrag = (event: PointerEvent) => {
-            if (pointerDragIndex === null || pointerId !== event.pointerId) return;
-            const dropIndex = pointerDropIndex;
-            const dropPosition = pointerDropPosition;
-            clearDropIndicator();
-            if (dropIndex !== null && dropPosition) {
-                const nextIndex = resolveDropIndex(pointerDragIndex, dropIndex, dropPosition);
-                if (nextIndex !== pointerDragIndex) {
-                    applyReorder(pointerDragIndex, nextIndex);
-                }
-            } else if (lastDropIndex !== null && lastDropPosition) {
-                if (lastDropIndex !== pointerDragIndex) {
-                    applyReorder(pointerDragIndex, lastDropIndex);
-                }
-            }
-            pointerDragIndex = null;
-            pointerDropIndex = null;
-            pointerDropPosition = null;
-            pointerId = null;
-            resetLastDrop();
-            const target = event.target as HTMLElement | null;
-            target?.releasePointerCapture?.(event.pointerId);
-        };
-
-        listEl.addEventListener("pointerup", finishPointerDrag);
-        listEl.addEventListener("pointercancel", finishPointerDrag);
 
         root.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;
-            const defaultBtn = target.closest<HTMLElement>("[data-action='set-default']");
-            if (defaultBtn) {
-                event.preventDefault();
-                event.stopPropagation();
-                const index = Number(defaultBtn.dataset.index ?? -1);
-                if (!Number.isNaN(index) && index >= 0) {
-                    state.data.active = index;
-                    renderList();
-                }
-                return;
-            }
             const actionButton = target.closest<HTMLButtonElement>("[data-action]");
             const action = actionButton?.dataset.action;
             if (!action) return;
+
+            const shouldKeepFocus = keyboardNavigator.getKeepActionFocus();
+            keyboardNavigator.resetKeepActionFocus();
+
             switch (action) {
                 case "add": {
-                    const shouldKeepFocus = keepActionFocus;
-                    keepActionFocus = false;
                     updateCurrentTab();
                     const nextIndex = state.data.tabs.length + 1;
                     state.data.tabs.push({
@@ -963,8 +281,6 @@ export class TabEditor {
                     break;
                 }
                 case "delete": {
-                    const shouldKeepFocus = keepActionFocus;
-                    keepActionFocus = false;
                     if (state.data.tabs.length <= 1) {
                         pushErrMsg(t(options.i18n, "editor.deleteLast")).then();
                         return;
@@ -972,7 +288,13 @@ export class TabEditor {
                     updateCurrentTab();
                     const removeIndex = state.currentIndex;
                     state.data.tabs.splice(removeIndex, 1);
-                    updateActiveIndexAfterDelete(removeIndex);
+
+                    if (state.data.active === removeIndex) {
+                        state.data.active = Math.max(removeIndex - 1, 0);
+                    } else if (state.data.active > removeIndex) {
+                        state.data.active = state.data.active - 1;
+                    }
+
                     selectIndex(
                         Math.min(removeIndex, state.data.tabs.length - 1),
                         false,
@@ -1026,14 +348,13 @@ export class TabEditor {
                     close();
                     break;
                 }
-                default:
-                    break;
             }
         });
 
-        renderList();
-        initLanguageSuggest();
+        listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
         syncFields();
+
+        const isMobileEnv = isMobileBackend();
         if (!isMobileEnv) {
             const focusTitle = () => {
                 if (dialog.element.contains(document.activeElement)) return;
@@ -1044,5 +365,12 @@ export class TabEditor {
                 setTimeout(focusTitle, 0);
             });
         }
+
+        const cleanup = () => {
+            dragDropManager.destroy();
+            languageSuggest?.destroy();
+        };
+
+        dialog.element.addEventListener("destroy", cleanup, { once: true });
     }
 }

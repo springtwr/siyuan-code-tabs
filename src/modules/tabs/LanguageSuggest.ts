@@ -50,7 +50,9 @@ export class LanguageSuggest {
     }
 
     private bindEvents(): void {
-        this.suggestEl.addEventListener("touchstart", this.handlePick.bind(this), { passive: false });
+        this.suggestEl.addEventListener("touchstart", this.handlePick.bind(this), {
+            passive: false,
+        });
         this.suggestEl.addEventListener("touchend", this.handlePick.bind(this));
         this.suggestEl.addEventListener("pointerdown", this.handlePick.bind(this));
         this.suggestEl.addEventListener("mousedown", this.handlePick.bind(this));
@@ -200,7 +202,9 @@ export class LanguageSuggest {
     }
 
     private getOptions(): HTMLElement[] {
-        return Array.from(this.suggestEl.querySelectorAll<HTMLElement>(".code-tabs__editor-lang-option"));
+        return Array.from(
+            this.suggestEl.querySelectorAll<HTMLElement>(".code-tabs__editor-lang-option")
+        );
     }
 
     private setActive(nextIndex: number): void {

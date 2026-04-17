@@ -138,12 +138,12 @@ export class TabEditor {
             deleteButton,
             (index, saveCurrent, focusTarget) => selectIndex(index, saveCurrent, focusTarget),
             (index) => {
-                  state.data.active = index;
-                  listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
-              },
+                state.data.active = index;
+                listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
+            },
             () => {
-                  languageSuggest?.suppressOnFocus();
-              }
+                languageSuggest?.suppressOnFocus();
+            }
         );
 
         const syncFields = () => {

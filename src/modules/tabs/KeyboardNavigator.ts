@@ -6,7 +6,11 @@ export class KeyboardNavigator {
     private addButton: HTMLButtonElement | null;
     private deleteButton: HTMLButtonElement | null;
 
-    private onSelectIndex: (index: number, saveCurrent: boolean, focusTarget: "title" | "list" | "none") => void;
+    private onSelectIndex: (
+        index: number,
+        saveCurrent: boolean,
+        focusTarget: "title" | "list" | "none"
+    ) => void;
     private onSetDefault: (index: number) => void;
     private onSuppressLangSuggest: () => void;
 
@@ -19,7 +23,11 @@ export class KeyboardNavigator {
         inputCode: HTMLTextAreaElement,
         addButton: HTMLButtonElement | null,
         deleteButton: HTMLButtonElement | null,
-        onSelectIndex: (index: number, saveCurrent: boolean, focusTarget: "title" | "list" | "none") => void,
+        onSelectIndex: (
+            index: number,
+            saveCurrent: boolean,
+            focusTarget: "title" | "list" | "none"
+        ) => void,
         onSetDefault: (index: number) => void,
         onSuppressLangSuggest: () => void
     ) {
@@ -44,11 +52,7 @@ export class KeyboardNavigator {
         this.addButton?.addEventListener("keydown", this.handleAddButtonKeydown.bind(this));
         this.deleteButton?.addEventListener("keydown", this.handleActionButtonKeydown.bind(this));
 
-        this.listEl.addEventListener(
-            "keydown",
-            this.handleGlobalShiftTab.bind(this),
-            true
-        );
+        this.listEl.addEventListener("keydown", this.handleGlobalShiftTab.bind(this), true);
     }
 
     private handleListKeydown(event: KeyboardEvent): void {
@@ -67,7 +71,9 @@ export class KeyboardNavigator {
         const item = target.closest<HTMLElement>(".code-tabs__editor-item");
         if (!item) return;
 
-        const items = Array.from(this.listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item"));
+        const items = Array.from(
+            this.listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+        );
         const index = items.indexOf(item);
         if (index === -1) return;
 
@@ -144,7 +150,9 @@ export class KeyboardNavigator {
         if (event.key !== "Tab" || !event.shiftKey) return;
 
         event.preventDefault();
-        const items = Array.from(this.listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item"));
+        const items = Array.from(
+            this.listEl.querySelectorAll<HTMLButtonElement>(".code-tabs__editor-item")
+        );
         const target = items[items.length - 1];
         if (target) {
             const index = items.indexOf(target);
@@ -174,7 +182,9 @@ export class KeyboardNavigator {
         event.preventDefault();
         event.stopPropagation();
 
-        const items = Array.from(this.listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item"));
+        const items = Array.from(
+            this.listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+        );
         const index = items.indexOf(item);
         if (index > 0) {
             this.onSelectIndex(index - 1, true, "list");

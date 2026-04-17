@@ -54,15 +54,15 @@
 
 ### 模块职责说明
 
-| 模块 | 职责 | 文件位置 |
-|------|------|----------|
-| **Tabs** | 标签页核心逻辑 | `src/modules/tabs/` |
-| **Theme** | 主题样式管理 | `src/modules/theme/` |
-| **Settings** | 设置面板 | `src/modules/settings/` |
-| **Command** | 命令注册 | `src/modules/command/` |
-| **Protyle** | 编辑器生命周期 | `src/modules/protyle/` |
-| **Editor** | 编辑器刷新 | `src/modules/editor/` |
-| **LineNumber** | 行号管理 | `src/modules/line-number/` |
+| 模块           | 职责           | 文件位置                   |
+| -------------- | -------------- | -------------------------- |
+| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`        |
+| **Theme**      | 主题样式管理   | `src/modules/theme/`       |
+| **Settings**   | 设置面板       | `src/modules/settings/`    |
+| **Command**    | 命令注册       | `src/modules/command/`     |
+| **Protyle**    | 编辑器生命周期 | `src/modules/protyle/`     |
+| **Editor**     | 编辑器刷新     | `src/modules/editor/`      |
+| **LineNumber** | 行号管理       | `src/modules/line-number/` |
 
 ---
 
@@ -74,22 +74,22 @@
 // src/modules/tabs/types.ts
 
 export type CodeTab = {
-    title: string;        // 标签标题
-    language: string;     // 代码语言
-    code: string;         // 代码内容
-    isActive: boolean;    // 是否为活动标签
+  title: string; // 标签标题
+  language: string; // 代码语言
+  code: string; // 代码内容
+  isActive: boolean; // 是否为活动标签
 };
 
 export type TabDataItem = {
-    title: string;        // 标签标题
-    lang: string;         // 代码语言
-    code: string;         // 代码内容
+  title: string; // 标签标题
+  lang: string; // 代码语言
+  code: string; // 代码内容
 };
 
 export type TabsData = {
-    version: number;      // 数据版本号
-    active: number;       // 默认活动标签索引
-    tabs: TabDataItem[];  // 标签数组
+  version: number; // 数据版本号
+  active: number; // 默认活动标签索引
+  tabs: TabDataItem[]; // 标签数组
 };
 ```
 
@@ -99,40 +99,40 @@ export type TabsData = {
 // src/modules/theme/types.ts
 
 export type ThemeStyle = {
-    // 字体相关
-    fontFamily: string;
-    fontSize: string;
-    lineHeight: string;
-    color: string;
-    
-    // 边框与阴影
-    border: string;
-    borderLeft: string;
-    borderRadius: string;
-    boxShadow: string;
-    
-    // 内外边距
-    blockPadding: string;
-    blockMargin: string;
-    
-    // 背景色
-    blockBg: string;
-    protyleActionBg: string;
-    hljsBg: string;
-    
-    // 代码高亮
-    hljsPadding: string;
-    hljsMargin: string;
-    hljsBorderTop: string;
-    hljsOverflowY: string;
-    hljsMaxHeight: string;
-    
-    // 编辑区域
-    editablePadding: string;
-    
-    // 头部区域
-    protyleActionPosition: string;
-    protyleActionBorderBottom: string;
+  // 字体相关
+  fontFamily: string;
+  fontSize: string;
+  lineHeight: string;
+  color: string;
+
+  // 边框与阴影
+  border: string;
+  borderLeft: string;
+  borderRadius: string;
+  boxShadow: string;
+
+  // 内外边距
+  blockPadding: string;
+  blockMargin: string;
+
+  // 背景色
+  blockBg: string;
+  protyleActionBg: string;
+  hljsBg: string;
+
+  // 代码高亮
+  hljsPadding: string;
+  hljsMargin: string;
+  hljsBorderTop: string;
+  hljsOverflowY: string;
+  hljsMaxHeight: string;
+
+  // 编辑区域
+  editablePadding: string;
+
+  // 头部区域
+  protyleActionPosition: string;
+  protyleActionBorderBottom: string;
 };
 ```
 
@@ -146,10 +146,10 @@ export type ThemeStyle = {
 
 **核心方法**：
 
-| 方法 | 功能 | 参数 |
-|------|------|------|
+| 方法                  | 功能               | 参数               |
+| --------------------- | ------------------ | ------------------ |
 | `initGlobalFunctions` | 初始化全局交互函数 | `i18n`, `onReload` |
-| `cleanup` | 清理资源 | - |
+| `cleanup`             | 清理资源           | -                  |
 
 **全局函数暴露**（挂载到 `window.pluginCodeTabs`）：
 
@@ -175,19 +175,20 @@ const pluginCodeTabs = {
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `createProtyleHtml` | 生成完整的tabs HTML块 |
-| `ensureLibraryLoaded` | 确保第三方库已加载 |
-| `renderMarkdown` | Markdown内容二次渲染 |
-| `renderMath` | KaTeX公式渲染 |
-| `renderMermaid` | Mermaid图表渲染 |
-| `renderCode` | 代码高亮渲染 |
-| `renderAbc` | ABC五线谱渲染 |
-| `renderPlantUML` | PlantUML渲染 |
-| `renderGraphviz` | Graphviz渲染 |
+| 方法                  | 功能                  |
+| --------------------- | --------------------- |
+| `createProtyleHtml`   | 生成完整的tabs HTML块 |
+| `ensureLibraryLoaded` | 确保第三方库已加载    |
+| `renderMarkdown`      | Markdown内容二次渲染  |
+| `renderMath`          | KaTeX公式渲染         |
+| `renderMermaid`       | Mermaid图表渲染       |
+| `renderCode`          | 代码高亮渲染          |
+| `renderAbc`           | ABC五线谱渲染         |
+| `renderPlantUML`      | PlantUML渲染          |
+| `renderGraphviz`      | Graphviz渲染          |
 
 **支持的第三方库**：
+
 - `hljs` - 代码高亮
 - `katex` - 数学公式
 - `mermaid` - 流程图
@@ -205,22 +206,23 @@ const pluginCodeTabs = {
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `encode` | 编码TabsData为Base64字符串 |
-| `decode` | 解码Base64字符串为TabsData |
-| `validate` | 校验数据结构 |
-| `normalize` | 规范化数据 |
-| `clone` | 深拷贝数据 |
-| `createDefaultData` | 创建默认数据 |
-| `fromCodeTabs` | 从CodeTab数组创建数据 |
-| `readFromElement` | 从DOM元素读取 |
-| `readFromAttrs` | 从属性读取 |
-| `readFromBlock` | 从块读取 |
-| `writeToBlock` | 写入块属性 |
-| `upgradeFromLegacy` | 从旧版语法升级 |
+| 方法                | 功能                       |
+| ------------------- | -------------------------- |
+| `encode`            | 编码TabsData为Base64字符串 |
+| `decode`            | 解码Base64字符串为TabsData |
+| `validate`          | 校验数据结构               |
+| `normalize`         | 规范化数据                 |
+| `clone`             | 深拷贝数据                 |
+| `createDefaultData` | 创建默认数据               |
+| `fromCodeTabs`      | 从CodeTab数组创建数据      |
+| `readFromElement`   | 从DOM元素读取              |
+| `readFromAttrs`     | 从属性读取                 |
+| `readFromBlock`     | 从块读取                   |
+| `writeToBlock`      | 写入块属性                 |
+| `upgradeFromLegacy` | 从旧版语法升级             |
 
 **数据存储格式**：
+
 - 使用Base64编码存储在块属性 `custom-code-tabs-data` 中
 - 数据结构包含版本号，支持向后兼容
 
@@ -234,20 +236,21 @@ const pluginCodeTabs = {
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `codeToTabsBatch` | 批量将代码块转为标签页 |
-| `codeToTabsInDocument` | 当前文档代码块转标签页 |
-| `tabsToCodeBlocksBatch` | 批量将标签页拆分为代码块 |
-| `tabsToCodeBlocksInDocument` | 当前文档标签页拆分 |
-| `allTabsToCodeBlocks` | 全局拆分所有标签页 |
-| `mergeCodeBlocksToTabSyntax` | 合并多个代码块 |
-| `newTabs` | 创建新的标签页块 |
-| `countLegacyTabs` | 统计旧版标签页数量 |
-| `upgradeLegacyTabs` | 升级旧版标签页 |
-| `cancelCurrentTask` | 取消当前批量任务 |
+| 方法                         | 功能                     |
+| ---------------------------- | ------------------------ |
+| `codeToTabsBatch`            | 批量将代码块转为标签页   |
+| `codeToTabsInDocument`       | 当前文档代码块转标签页   |
+| `tabsToCodeBlocksBatch`      | 批量将标签页拆分为代码块 |
+| `tabsToCodeBlocksInDocument` | 当前文档标签页拆分       |
+| `allTabsToCodeBlocks`        | 全局拆分所有标签页       |
+| `mergeCodeBlocksToTabSyntax` | 合并多个代码块           |
+| `newTabs`                    | 创建新的标签页块         |
+| `countLegacyTabs`            | 统计旧版标签页数量       |
+| `upgradeLegacyTabs`          | 升级旧版标签页           |
+| `cancelCurrentTask`          | 取消当前批量任务         |
 
 **转换流程**：
+
 1. 收集待处理块
 2. 解析/验证数据
 3. 执行转换
@@ -262,6 +265,7 @@ const pluginCodeTabs = {
 **职责**：提供标签页的可视化编辑界面。
 
 **功能特性**：
+
 - 添加/删除标签页
 - 编辑标题、语言、代码内容
 - 设置默认标签页
@@ -278,13 +282,14 @@ const pluginCodeTabs = {
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `putStyleFile` | 生成样式文件 |
-| `invalidateStyleProbe` | 清理样式缓存 |
-| `updateAllTabsStyle` | 刷新现有tabs样式 |
+| 方法                   | 功能             |
+| ---------------------- | ---------------- |
+| `putStyleFile`         | 生成样式文件     |
+| `invalidateStyleProbe` | 清理样式缓存     |
+| `updateAllTabsStyle`   | 刷新现有tabs样式 |
 
 **生成的样式文件**：
+
 - `code-style.css` - 代码高亮样式
 - `background.css` - 背景与布局样式
 - `github-markdown.css` - Markdown渲染样式
@@ -299,26 +304,26 @@ const pluginCodeTabs = {
 
 **监听的变更类型**：
 
-| 变更类型 | 触发更新 |
-|----------|----------|
-| `theme-mode` | background + codeStyle + markdown |
-| `theme-light` | background + codeStyle |
-| `theme-dark` | background + codeStyle |
-| `theme-link` | background (强制重采样) |
-| `code-style-link` | codeStyle |
-| `html-attrs` | background |
+| 变更类型          | 触发更新                          |
+| ----------------- | --------------------------------- |
+| `theme-mode`      | background + codeStyle + markdown |
+| `theme-light`     | background + codeStyle            |
+| `theme-dark`      | background + codeStyle            |
+| `theme-link`      | background (强制重采样)           |
+| `code-style-link` | codeStyle                         |
+| `html-attrs`      | background                        |
 
 **配置变更映射**：
 
-| 配置键 | 触发更新 |
-|--------|----------|
-| `fontSize` | background + lineNumbers (强制重采样) |
-| `codeLigatures` | background |
-| `codeLineWrap` | background + lineNumbers |
-| `codeSyntaxHighlightLineNum` | lineNumbers |
-| `mode` | background + codeStyle + markdown |
-| `themeLight` / `themeDark` | background + codeStyle |
-| `codeBlockThemeLight` / `codeBlockThemeDark` | codeStyle |
+| 配置键                                       | 触发更新                              |
+| -------------------------------------------- | ------------------------------------- |
+| `fontSize`                                   | background + lineNumbers (强制重采样) |
+| `codeLigatures`                              | background                            |
+| `codeLineWrap`                               | background + lineNumbers              |
+| `codeSyntaxHighlightLineNum`                 | lineNumbers                           |
+| `mode`                                       | background + codeStyle + markdown     |
+| `themeLight` / `themeDark`                   | background + codeStyle                |
+| `codeBlockThemeLight` / `codeBlockThemeDark` | codeStyle                             |
 
 **位置**：`src/modules/theme/ThemeObserver.ts`
 
@@ -330,12 +335,13 @@ const pluginCodeTabs = {
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
+| 方法           | 功能               |
+| -------------- | ------------------ |
 | `loadAndApply` | 加载配置并应用样式 |
-| `saveConfig` | 保存配置到文件 |
+| `saveConfig`   | 保存配置到文件     |
 
 **配置存储**：
+
 - 文件路径：`data/plugins/code-tabs/custom/config.json`
 - 包含配置版本号，支持版本升级
 - 自动清理废弃的配置键
@@ -352,26 +358,26 @@ const pluginCodeTabs = {
 async onload() {
     // 1. 注册事件
     this.registerBlockIconEvent();
-    
+
     // 2. 注册图标
     this.registerIcons();
-    
+
     // 3. 初始化模块
     this.debugLogManager = new DebugLogManager();
     this.editorRefreshManager = new EditorRefreshManager();
-    
+
     // 4. 初始化Tabs模块
     this.initTabModules();
-    
+
     // 5. 初始化管理器
     this.initManagers();
-    
+
     // 6. 注册斜杠菜单
     this.uiEntryManager.registerSlashMenu();
-    
+
     // 7. 初始化设置
     this.initSettings();
-    
+
     // 8. 注册命令
     this.registerCommands();
 }
@@ -383,22 +389,22 @@ async onload() {
 async onLayoutReady() {
     // 1. 初始化顶部按钮
     this.uiEntryManager.initTopBar();
-    
+
     // 2. 同步思源配置
     syncSiyuanConfig(this.data);
-    
+
     // 3. 加载配置并应用主题
     await this.loadConfigAndApplyTheme();
-    
+
     // 4. 检查旧版标签页并提示升级
     await this.checkLegacyTabsPrompt();
-    
+
     // 5. 启动主题监听
     this.themeObserver.start();
-    
+
     // 6. 注册Protyle事件
     this.registerProtyleEvents();
-    
+
     // 7. 扫描行号
     LineNumberManager.scanAll();
 }
@@ -417,7 +423,7 @@ onunload() {
     TabManager.cleanup();
     StyleProbe.cleanup();
     this.debugLogManager?.cleanup();
-    
+
     // 删除全局对象
     if (window.pluginCodeTabs) {
         delete window.pluginCodeTabs;
@@ -431,20 +437,21 @@ onunload() {
 
 `src/api/` 目录包含思源API的封装，每个文件对应一类API：
 
-| 文件 | API分类 |
-|------|---------|
-| `request.ts` | 基础请求方法 |
-| `block.ts` | 块操作API |
-| `file.ts` | 文件操作API |
-| `attr.ts` | 属性操作API |
-| `sql.ts` | SQL查询API |
-| `notebook.ts` | 笔记本API |
-| `notification.ts` | 通知API |
-| `template.ts` | 模板API |
-| `system.ts` | 系统API |
-| `network.ts` | 网络API |
+| 文件              | API分类      |
+| ----------------- | ------------ |
+| `request.ts`      | 基础请求方法 |
+| `block.ts`        | 块操作API    |
+| `file.ts`         | 文件操作API  |
+| `attr.ts`         | 属性操作API  |
+| `sql.ts`          | SQL查询API   |
+| `notebook.ts`     | 笔记本API    |
+| `notification.ts` | 通知API      |
+| `template.ts`     | 模板API      |
+| `system.ts`       | 系统API      |
+| `network.ts`      | 网络API      |
 
 **设计原则**：
+
 - 严格一函数对应一个API
 - 只做请求与类型约束
 - 不掺杂业务逻辑
@@ -455,15 +462,15 @@ onunload() {
 
 `src/utils/` 目录包含通用工具函数：
 
-| 文件 | 功能 |
-|------|------|
-| `common.ts` | 通用工具函数（防抖、延迟等） |
-| `dom.ts` | DOM操作工具 |
-| `encoding.ts` | Base64编码解码 |
-| `env.ts` | 环境检测（移动端判断等） |
-| `i18n.ts` | 国际化工具 |
-| `logger.ts` | 日志工具 |
-| `network.ts` | 网络请求工具 |
+| 文件          | 功能                         |
+| ------------- | ---------------------------- |
+| `common.ts`   | 通用工具函数（防抖、延迟等） |
+| `dom.ts`      | DOM操作工具                  |
+| `encoding.ts` | Base64编码解码               |
+| `env.ts`      | 环境检测（移动端判断等）     |
+| `i18n.ts`     | 国际化工具                   |
+| `logger.ts`   | 日志工具                     |
+| `network.ts`  | 网络请求工具                 |
 
 ---
 
@@ -471,12 +478,12 @@ onunload() {
 
 `src/constants/` 目录包含项目常量：
 
-| 文件 | 内容 |
-|------|------|
-| `keys.ts` | 属性键名、标识常量 |
-| `paths.ts` | 文件路径常量 |
-| `templates.ts` | HTML模板与SVG图标 |
-| `index.ts` | 常量汇总导出 |
+| 文件           | 内容               |
+| -------------- | ------------------ |
+| `keys.ts`      | 属性键名、标识常量 |
+| `paths.ts`     | 文件路径常量       |
+| `templates.ts` | HTML模板与SVG图标  |
+| `index.ts`     | 常量汇总导出       |
 
 ---
 
@@ -488,10 +495,10 @@ Tabs数据通过块属性存储：
 
 ```typescript
 // 新版数据格式
-CODE_TABS_DATA_ATTR = "custom-code-tabs-data"
+CODE_TABS_DATA_ATTR = "custom-code-tabs-data";
 
 // 旧版数据格式（已废弃）
-CUSTOM_ATTR = "custom"
+CUSTOM_ATTR = "custom";
 ```
 
 ### 数据编码流程
@@ -543,13 +550,13 @@ themes:
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `scanAll` | 扫描所有tabs并添加行号 |
-| `refreshAll` | 刷新所有行号 |
-| `refreshActive` | 刷新活动标签行号 |
-| `cleanup` | 清理所有行号 |
-| `isEnabled` | 检查是否启用行号 |
+| 方法            | 功能                   |
+| --------------- | ---------------------- |
+| `scanAll`       | 扫描所有tabs并添加行号 |
+| `refreshAll`    | 刷新所有行号           |
+| `refreshActive` | 刷新活动标签行号       |
+| `cleanup`       | 清理所有行号           |
+| `isEnabled`     | 检查是否启用行号       |
 
 **位置**：`src/modules/line-number/LineNumberManager.ts`
 
@@ -578,7 +585,7 @@ pnpm make-link
 通过设置开启debug日志：
 
 ```javascript
-localStorage.setItem("code-tabs.debug", "true")
+localStorage.setItem("code-tabs.debug", "true");
 ```
 
 日志文件路径：`data/plugins/code-tabs/debug.log`
@@ -676,14 +683,14 @@ pnpm format
 
 ## 版本历史
 
-| 版本 | 主要变更 |
-|------|----------|
-| v2.1.2 | 修复插件首次启动时的无效ID参数错误 |
-| v2.1.1 | 修复调用属性API时的节点错误 |
-| v2.1.0 | 添加移动端"新建标签"菜单项 |
-| v2.0.4 | 改进编辑器面板键盘交互、拖拽稳定性 |
-| v2.0.3 | 修复Tab插入空格后撤销不工作、CSS变量污染 |
-| v2.0.2 | 修复移动端IME问题、语言建议点击无响应 |
+| 版本   | 主要变更                                             |
+| ------ | ---------------------------------------------------- |
+| v2.1.2 | 修复插件首次启动时的无效ID参数错误                   |
+| v2.1.1 | 修复调用属性API时的节点错误                          |
+| v2.1.0 | 添加移动端"新建标签"菜单项                           |
+| v2.0.4 | 改进编辑器面板键盘交互、拖拽稳定性                   |
+| v2.0.3 | 修复Tab插入空格后撤销不工作、CSS变量污染             |
+| v2.0.2 | 修复移动端IME问题、语言建议点击无响应                |
 | v2.0.0 | 重大升级：不再使用代码块作为中间格式，添加编辑器面板 |
 
 ---

@@ -9,6 +9,7 @@ import { TabListRenderer } from "./TabListRenderer";
 import { DragDropManager } from "./DragDropManager";
 import { LanguageSuggest } from "./LanguageSuggest";
 import { KeyboardNavigator } from "./KeyboardNavigator";
+import { CodeEditorManager } from "./CodeEditorManager";
 import type { TabsData } from "./types";
 import { isLanguageSupported, normalizeLanguageInput } from "./language";
 
@@ -50,7 +51,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
                 <div class="code-tabs__editor-lang-suggest" data-role="lang-suggest"></div>
             </div>
             <label class="code-tabs__editor-label">${t(i18n, "editor.tabCode")}</label>
-            <textarea class="b3-text-field code-tabs__editor-textarea" data-field="code"></textarea>
+            <div class="b3-text-field code-tabs__editor-code" data-field="code"></div>
         </div>
     </div>
     <div class="b3-dialog__action">
@@ -80,7 +81,8 @@ export class TabEditor {
         const dialog = new Dialog({
             title: t(options.i18n, "editor.title"),
             content: buildEditorDialogContent(options.i18n),
-            width: "720px",
+            width: "90vh",
+            height: "70vh",
         });
 
         const buildSnapshot = (data: TabsData) => JSON.stringify(TabDataService.normalize(data));
@@ -92,12 +94,12 @@ export class TabEditor {
         const listEl = root.querySelector<HTMLElement>('[data-role="tab-list"]');
         const inputTitle = root.querySelector<HTMLInputElement>('[data-field="title"]');
         const inputLang = root.querySelector<HTMLInputElement>('[data-field="lang"]');
-        const inputCode = root.querySelector<HTMLTextAreaElement>('[data-field="code"]');
+        const codeContainer = root.querySelector<HTMLElement>('[data-field="code"]');
         const langSuggest = root.querySelector<HTMLElement>('[data-role="lang-suggest"]');
         const addButton = root.querySelector<HTMLButtonElement>('[data-action="add"]');
         const deleteButton = root.querySelector<HTMLButtonElement>('[data-action="delete"]');
 
-        if (!listEl || !inputTitle || !inputLang || !inputCode) {
+        if (!listEl || !inputTitle || !inputLang || !codeContainer) {
             dialog.destroy();
             return;
         }
@@ -129,11 +131,17 @@ export class TabEditor {
               })
             : null;
 
+        const codeEditorManager = new CodeEditorManager(codeContainer, () => {
+            updateCurrentTab();
+        });
+        const initialLang = state.data.tabs[state.currentIndex]?.lang || "plaintext";
+        codeEditorManager.init({ language: initialLang });
+
         const keyboardNavigator = new KeyboardNavigator(
             listEl,
             inputTitle,
             inputLang,
-            inputCode,
+            codeContainer,
             addButton,
             deleteButton,
             (index, saveCurrent, focusTarget) => selectIndex(index, saveCurrent, focusTarget),
@@ -143,7 +151,8 @@ export class TabEditor {
             },
             () => {
                 languageSuggest?.suppressOnFocus();
-            }
+            },
+            () => codeEditorManager.isCursorAtStart()
         );
 
         const syncFields = () => {
@@ -151,15 +160,20 @@ export class TabEditor {
             if (!tab) return;
             inputTitle.value = tab.title;
             inputLang.value = tab.lang;
-            inputCode.value = tab.code;
+            codeEditorManager.updateLanguage(tab.lang);
+            codeEditorManager.updateCode(tab.code);
         };
 
         const updateCurrentTab = () => {
             const tab = state.data.tabs[state.currentIndex];
             if (!tab) return;
             tab.title = inputTitle.value.trim();
-            tab.lang = normalizeLanguageInput(inputLang.value);
-            tab.code = inputCode.value;
+            const newLang = normalizeLanguageInput(inputLang.value);
+            if (tab.lang !== newLang) {
+                tab.lang = newLang;
+                codeEditorManager.updateLanguage(newLang);
+            }
+            tab.code = codeEditorManager.getCode();
             listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
         };
 
@@ -169,7 +183,7 @@ export class TabEditor {
             if (tab) {
                 tab.title = inputTitle.value.trim();
                 tab.lang = normalizeLanguageInput(inputLang.value);
-                tab.code = inputCode.value;
+                tab.code = codeEditorManager.getCode();
             }
             return buildSnapshot(draft);
         };
@@ -227,6 +241,8 @@ export class TabEditor {
             requestAnimationFrame(() => {
                 if (focusTarget === "title") {
                     inputTitle.focus();
+                    const length = inputTitle.value.length;
+                    inputTitle.setSelectionRange(length, length);
                     return;
                 }
                 if (focusTarget === "list") {
@@ -240,7 +256,6 @@ export class TabEditor {
 
         inputTitle.addEventListener("input", updateCurrentTab);
         inputLang.addEventListener("input", updateCurrentTab);
-        inputCode.addEventListener("input", updateCurrentTab);
 
         listEl.addEventListener("click", (event) => {
             const target = event.target as HTMLElement;
@@ -260,6 +275,11 @@ export class TabEditor {
             keyboardNavigator.resetKeepActionFocus();
 
             switch (action) {
+                case "set-default": {
+                    state.data.active = Number(actionButton.dataset.index ?? 0);
+                    listRenderer.render(state.data.tabs, state.currentIndex, state.data.active);
+                    break;
+                }
                 case "add": {
                     updateCurrentTab();
                     const nextIndex = state.data.tabs.length + 1;
@@ -369,6 +389,7 @@ export class TabEditor {
         const cleanup = () => {
             dragDropManager.destroy();
             languageSuggest?.destroy();
+            codeEditorManager.destroy();
         };
 
         dialog.element.addEventListener("destroy", cleanup, { once: true });

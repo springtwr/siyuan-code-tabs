@@ -2,7 +2,7 @@ export class KeyboardNavigator {
     private listEl: HTMLElement;
     private inputTitle: HTMLInputElement;
     private inputLang: HTMLInputElement;
-    private inputCode: HTMLTextAreaElement;
+    private inputCode: HTMLElement;
     private addButton: HTMLButtonElement | null;
     private deleteButton: HTMLButtonElement | null;
 
@@ -13,6 +13,7 @@ export class KeyboardNavigator {
     ) => void;
     private onSetDefault: (index: number) => void;
     private onSuppressLangSuggest: () => void;
+    private isCursorAtStart: () => boolean;
 
     private keepActionFocus = false;
 
@@ -20,7 +21,7 @@ export class KeyboardNavigator {
         listEl: HTMLElement,
         inputTitle: HTMLInputElement,
         inputLang: HTMLInputElement,
-        inputCode: HTMLTextAreaElement,
+        inputCode: HTMLElement,
         addButton: HTMLButtonElement | null,
         deleteButton: HTMLButtonElement | null,
         onSelectIndex: (
@@ -29,7 +30,8 @@ export class KeyboardNavigator {
             focusTarget: "title" | "list" | "none"
         ) => void,
         onSetDefault: (index: number) => void,
-        onSuppressLangSuggest: () => void
+        onSuppressLangSuggest: () => void,
+        isCursorAtStart: () => boolean
     ) {
         this.listEl = listEl;
         this.inputTitle = inputTitle;
@@ -40,6 +42,7 @@ export class KeyboardNavigator {
         this.onSelectIndex = onSelectIndex;
         this.onSetDefault = onSetDefault;
         this.onSuppressLangSuggest = onSuppressLangSuggest;
+        this.isCursorAtStart = isCursorAtStart;
         this.bindEvents();
     }
 
@@ -47,7 +50,7 @@ export class KeyboardNavigator {
         this.listEl.addEventListener("keydown", this.handleListKeydown.bind(this));
 
         this.inputTitle.addEventListener("keydown", this.handleTitleKeydown.bind(this));
-        this.inputCode.addEventListener("keydown", this.handleCodeKeydown.bind(this));
+        this.inputCode.addEventListener("keydown", this.handleCodeKeydown.bind(this), true);
 
         this.addButton?.addEventListener("keydown", this.handleAddButtonKeydown.bind(this));
         this.deleteButton?.addEventListener("keydown", this.handleActionButtonKeydown.bind(this));
@@ -133,17 +136,16 @@ export class KeyboardNavigator {
     }
 
     private handleCodeKeydown(event: KeyboardEvent): void {
-        if (event.key !== "Tab") return;
+        if (event.key !== "Tab" || !event.shiftKey) return;
 
-        if (event.shiftKey) {
-            event.preventDefault();
-            this.onSuppressLangSuggest();
-            this.inputLang.focus();
-            return;
+        if (this.inputCode.contains(event.target as Node)) {
+            if (this.isCursorAtStart()) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.onSuppressLangSuggest();
+                this.inputLang.focus();
+            }
         }
-
-        event.preventDefault();
-        this.insertSpaces();
     }
 
     private handleAddButtonKeydown(event: KeyboardEvent): void {
@@ -191,42 +193,6 @@ export class KeyboardNavigator {
             return;
         }
         item.focus();
-    }
-
-    private insertSpaces(): void {
-        const editorConfig = ((
-            window as Window & {
-                siyuan?: { config?: { editor?: { codeTabSpaces?: number } } };
-            }
-        ).siyuan?.config?.editor ?? {}) as { codeTabSpaces?: number };
-
-        const spaces = Math.max(1, Math.min(8, Number(editorConfig.codeTabSpaces ?? 4)));
-        const insert = " ".repeat(spaces);
-        const start = this.inputCode.selectionStart ?? 0;
-        const end = this.inputCode.selectionEnd ?? 0;
-
-        this.inputCode.focus();
-        this.inputCode.setSelectionRange(start, end);
-
-        const canExec =
-            typeof document.queryCommandSupported === "function" &&
-            document.queryCommandSupported("insertText");
-
-        if (canExec && document.execCommand("insertText", false, insert)) {
-            return;
-        }
-
-        if (typeof this.inputCode.setRangeText === "function") {
-            this.inputCode.setRangeText(insert, start, end, "end");
-        } else {
-            const value = this.inputCode.value;
-            this.inputCode.value = `${value.slice(0, start)}${insert}${value.slice(end)}`;
-            const nextPos = start + insert.length;
-            this.inputCode.selectionStart = nextPos;
-            this.inputCode.selectionEnd = nextPos;
-        }
-
-        this.inputCode.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
     getKeepActionFocus(): boolean {

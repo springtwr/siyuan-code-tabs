@@ -93,18 +93,18 @@ export default defineConfig({
                 ...(isWatch
                     ? [
                           {
-                              //监听静态资源文件
                               name: "watch-external",
-                              async buildStart() {
-                                  const files = await fg([
+                              buildStart(this: { addWatchFile: (file: string) => void }) {
+                                  fg([
                                       "public/i18n/**",
                                       "public/asset/**",
                                       "./README*.md",
                                       "./plugin.json",
-                                  ]);
-                                  for (let file of files) {
-                                      this.addWatchFile(file);
-                                  }
+                                  ]).then((files) => {
+                                      for (let file of files) {
+                                          this.addWatchFile(file);
+                                      }
+                                  });
                               },
                           },
                       ]
@@ -127,7 +127,7 @@ export default defineConfig({
                     if (assetInfo.name === "style.css") {
                         return "index.css";
                     }
-                    return assetInfo.name;
+                    return assetInfo.name || "[name][extname]";
                 },
             },
         },

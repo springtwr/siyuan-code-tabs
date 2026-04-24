@@ -63,12 +63,12 @@ export class LegacyTabParser {
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
             const firstLineBreak = part.indexOf("\n");
-            let headerLine = "";
-            let codeContent = "";
+            let headerLine: string;
+            let codeContent: string;
 
             if (firstLineBreak === -1) {
-                // 只有一行的情况
                 headerLine = part.trim();
+                codeContent = "";
             } else {
                 headerLine = part.substring(0, firstLineBreak).trim();
                 codeContent = part.substring(firstLineBreak + 1).trim();

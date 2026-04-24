@@ -368,9 +368,9 @@ export class TabTransformManager {
     }
 
     private async extractTabsData(block: TabBlock): Promise<{ id: string; data: TabsData | null }> {
-        let id = "";
-        let dataRaw = "";
-        let legacyRaw = "";
+        let id: string;
+        let dataRaw: string;
+        let legacyRaw: string;
         if ("ial" in block && typeof block.ial === "string") {
             id = block.id ?? "";
             const extracted = this.extractTabsDataFromIal(block.ial);
@@ -383,8 +383,10 @@ export class TabTransformManager {
             legacyRaw = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
             if (!dataRaw && id) {
                 const attrs = await getBlockAttrs(id);
-                dataRaw = attrs?.[CODE_TABS_DATA_ATTR] ?? dataRaw;
-                legacyRaw = attrs?.[CUSTOM_ATTR] ?? legacyRaw;
+                const attrDataRaw = attrs?.[CODE_TABS_DATA_ATTR];
+                const attrLegacyRaw = attrs?.[CUSTOM_ATTR];
+                if (attrDataRaw !== undefined) dataRaw = attrDataRaw;
+                if (attrLegacyRaw !== undefined) legacyRaw = attrLegacyRaw;
             }
         }
 
@@ -684,16 +686,20 @@ export class TabTransformManager {
                 invalid.push({ nodeId: "unknown", reason: "缺少 nodeId" });
                 continue;
             }
-            let dataRaw = "";
-            let legacyRaw = "";
+            let dataRaw: string;
+            let legacyRaw: string;
             if (typeof block.ial === "string") {
                 const extracted = this.extractTabsDataFromIal(block.ial);
                 dataRaw = extracted.dataRaw;
                 legacyRaw = extracted.legacyRaw;
             } else {
                 const attrs = await getBlockAttrs(id);
-                dataRaw = attrs?.[CODE_TABS_DATA_ATTR] ?? "";
-                legacyRaw = attrs?.[CUSTOM_ATTR] ?? "";
+                const attrDataRaw = attrs?.[CODE_TABS_DATA_ATTR];
+                const attrLegacyRaw = attrs?.[CUSTOM_ATTR];
+                if (attrDataRaw !== undefined) dataRaw = attrDataRaw;
+                else dataRaw = "";
+                if (attrLegacyRaw !== undefined) legacyRaw = attrLegacyRaw;
+                else legacyRaw = "";
             }
 
             // 已有新格式数据则跳过升级

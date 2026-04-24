@@ -50,7 +50,7 @@ export class TabRenderer {
             content.dataset.tabId = String(i);
             content.dataset.render = "true";
             content.dataset.lang = language;
-            let hlText = code;
+            let hlText: string;
             if (language === "markdown-render") {
                 // markdown-render 使用 Lute 渲染并进行二次渲染（图表/公式等）
                 content.dataset.raw = encodeSource(code);

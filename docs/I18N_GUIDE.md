@@ -12,14 +12,14 @@
 
 ```json
 {
-    "common": {
-        "ok": "确定",
-        "cancel": "取消"
-    },
-    "editor": {
-        "title": "编辑标签页",
-        "add": "添加",
-        "delete": "删除"
-    }
+  "common": {
+    "ok": "确定",
+    "cancel": "取消"
+  },
+  "editor": {
+    "title": "编辑标签页",
+    "add": "添加",
+    "delete": "删除"
+  }
 }
 ```

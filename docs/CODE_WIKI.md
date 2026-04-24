@@ -26,10 +26,10 @@ graph TB
     style theme fill:#ecfdf5,stroke:#10b981,stroke-width:1px
     style 配置与命令 fill:#e0e7ff,stroke:#6366f1,stroke-width:1px
     style 生命周期 fill:#fce7f3,stroke:#ec4899,stroke-width:1px
-    
+
     subgraph CodeTabs Plugin
         index[index.ts<br/>插件入口/生命周期]
-        
+
         subgraph Modules
             subgraph tabs
                 TabManager([TabManager<br/>交互与全局函数])
@@ -38,25 +38,25 @@ graph TB
                 TabTransform([TabTransformManager<br/>批量转换])
                 TabEditor([TabEditor<br/>编辑弹窗])
             end
-            
+
             subgraph theme
                 ThemeManager([ThemeManager<br/>样式生成])
                 ThemeObserver([ThemeObserver<br/>主题监听])
                 StyleProbe([StyleProbe<br/>样式采集])
             end
-            
+
             subgraph 配置与命令
                 SettingsPanel([SettingsPanel<br/>设置面板])
                 CommandManager([CommandManager<br/>命令注册])
             end
-            
+
             subgraph 生命周期
                 Lifecycle([Lifecycle<br/>Protyle事件])
                 Refresh([Refresh<br/>编辑器刷新])
                 LineNumberMgr([LineNumberMgr<br/>行号管理])
             end
         end
-        
+
         subgraph 基础层
             api[(api/<br/>思源API封装)]
             utils[(utils/<br/>通用工具)]
@@ -64,7 +64,7 @@ graph TB
             constants[(constants/<br/>常量定义)]
         end
     end
-    
+
     index -->|初始化| Modules
     Modules -->|调用| api
     Modules -->|使用| utils
@@ -74,14 +74,14 @@ graph TB
 
 ### 模块职责说明
 
-| 模块           | 职责           | 文件位置                      |
-| -------------- | -------------- | ----------------------------- |
-| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`           |
-| **Theme**      | 主题样式管理   | `src/modules/theme/`          |
-| **Settings**   | 设置面板       | `src/modules/settings/`       |
-| **Command**    | 命令注册       | `src/modules/command/`        |
-| **Lifecycle**  | 编辑器生命周期 | `src/modules/lifecycle/`      |
-| **LineNumber** | 行号管理       | `src/modules/line-number/`    |
+| 模块           | 职责           | 文件位置                   |
+| -------------- | -------------- | -------------------------- |
+| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`        |
+| **Theme**      | 主题样式管理   | `src/modules/theme/`       |
+| **Settings**   | 设置面板       | `src/modules/settings/`    |
+| **Command**    | 命令注册       | `src/modules/command/`     |
+| **Lifecycle**  | 编辑器生命周期 | `src/modules/lifecycle/`   |
+| **LineNumber** | 行号管理       | `src/modules/line-number/` |
 
 ### Tabs 模块子目录结构
 

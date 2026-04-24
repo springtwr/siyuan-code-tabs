@@ -1,4 +1,4 @@
-import { CodeJar } from 'codejar';
+import { CodeJar } from "codejar";
 
 type HighlightCallback = (code: string, lang: string) => string;
 
@@ -39,7 +39,13 @@ export class CodeEditorManager implements CodeEditorInterface {
     }
 
     private createHighlightFn(): HighlightCallback {
-        const hljs = (window as Window & { hljs?: { highlight: (code: string, lang: { language: string }) => { value: string } } }).hljs;
+        const hljs = (
+            window as Window & {
+                hljs?: {
+                    highlight: (code: string, lang: { language: string }) => { value: string };
+                };
+            }
+        ).hljs;
 
         if (hljs) {
             return (code: string, lang: string): string => {
@@ -58,10 +64,7 @@ export class CodeEditorManager implements CodeEditorInterface {
     }
 
     private escapeHtml(code: string): string {
-        return code
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+        return code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     public init(options: CodeEditorOptions = {}): void {

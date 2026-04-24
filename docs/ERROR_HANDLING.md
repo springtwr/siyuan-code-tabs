@@ -13,14 +13,14 @@
 
 ```typescript
 try {
-    const data = await TabDataService.readFromBlock(nodeId);
-    if (!data) {
-        pushErrMsg(t(i18n, "error.noData"));
-        return;
-    }
-    processData(data);
+  const data = await TabDataService.readFromBlock(nodeId);
+  if (!data) {
+    pushErrMsg(t(i18n, "error.noData"));
+    return;
+  }
+  processData(data);
 } catch (error) {
-    logger.error("Failed to read tab data", { nodeId, error });
-    pushErrMsg(t(i18n, "error.loadFailed"));
+  logger.error("Failed to read tab data", { nodeId, error });
+  pushErrMsg(t(i18n, "error.loadFailed"));
 }
 ```

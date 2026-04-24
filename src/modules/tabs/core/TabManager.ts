@@ -230,10 +230,8 @@ export class TabManager {
             if (!tabsEl) return;
             observeTabs(tabsEl);
 
-            const overflowHandler = new TabOverflowHandler(
-                tabContainer,
-                i18n,
-                (event) => openMoreMenu(event, tabContainer)
+            const overflowHandler = new TabOverflowHandler(tabContainer, i18n, (event) =>
+                openMoreMenu(event, tabContainer)
             );
             overflowHandler.updateOverflow();
         };

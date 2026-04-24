@@ -14,10 +14,7 @@ interface ImportMeta {
 declare const __PLUGIN_VERSION__: string;
 
 declare module "yaml-plugin" {
-    function vitePluginYamlI18n(options: {
-        inDir: string;
-        outDir: string;
-    }): unknown;
+    function vitePluginYamlI18n(options: { inDir: string; outDir: string }): unknown;
     export default vitePluginYamlI18n;
 }
 

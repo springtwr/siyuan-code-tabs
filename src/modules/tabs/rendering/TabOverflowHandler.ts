@@ -86,7 +86,7 @@ export class TabOverflowHandler {
             shouldSink,
             moreWidth,
             visibleCount,
-            widths
+            widths,
         };
     }
 
@@ -136,7 +136,13 @@ export class TabOverflowHandler {
             return;
         }
 
-        const adjustedCount = this.adjustLastVisibleTab(allTabs, visibleCount, widths, moreWidth, moreGap);
+        const adjustedCount = this.adjustLastVisibleTab(
+            allTabs,
+            visibleCount,
+            widths,
+            moreWidth,
+            moreGap
+        );
         this.hideOverflowTabs(allTabs, adjustedCount);
         this.showMoreButton(allTabs, adjustedCount);
         this.bindMoreMenuEvent();

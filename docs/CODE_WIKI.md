@@ -18,51 +18,94 @@
 
 ### 整体架构图
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      CodeTabs Plugin                            │
-│  ┌─────────────┐                                               │
-│  │   index.ts  │  ← 插件入口，生命周期管理                       │
-│  └──────┬──────┘                                               │
-│         │                                                       │
-│  ┌──────▼──────┬─────────────────────────────────────────────┐  │
-│  │   Modules   │                                             │  │
-│  │             │                                             │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │  tabs/      │  │  theme/     │  │  settings/      │   │  │
-│  │  │ - TabManager│  │ - Theme     │  │ - SettingsPanel │   │  │
-│  │  │ - TabRender │  │   Manager   │  └─────────────────┘   │  │
-│  │  │ - TabDataSvc│  │ - ThemeObs  │  ┌─────────────────┐   │  │
-│  │  │ - TabTrans  │  │ - StyleProbe│  │  command/       │   │  │
-│  │  │ - TabEditor │  └─────────────┘  │ - CommandManager│   │  │
-│  │  └─────────────┘                   └─────────────────┘   │  │
-│  │                                                           │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │  protyle/   │  │  editor/    │  │  line-number/   │   │  │
-│  │  │ - Lifecycle │  │ - Refresh   │  │ - LineNumberMgr │   │  │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│         │                                                       │
-│  ┌──────▼──────┐                                               │
-│  │    api/     │  ← 思源API封装                                │
-│  │    utils/   │  ← 通用工具函数                               │
-│  │    types/   │  ← 类型定义                                   │
-│  │ constants/  │  ← 常量定义                                   │
-│  └─────────────┘                                               │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    style index fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style Modules fill:#f0f9ff,stroke:#0ea5e9,stroke-width:2px
+    style tabs fill:#fef3c7,stroke:#f59e0b,stroke-width:1px
+    style theme fill:#ecfdf5,stroke:#10b981,stroke-width:1px
+    style 配置与命令 fill:#e0e7ff,stroke:#6366f1,stroke-width:1px
+    style 生命周期 fill:#fce7f3,stroke:#ec4899,stroke-width:1px
+    
+    subgraph CodeTabs Plugin
+        index[index.ts<br/>插件入口/生命周期]
+        
+        subgraph Modules
+            subgraph tabs
+                TabManager([TabManager<br/>交互与全局函数])
+                TabRenderer([TabRenderer<br/>HTML渲染])
+                TabDataService([TabDataService<br/>数据读写/校验])
+                TabTransform([TabTransformManager<br/>批量转换])
+                TabEditor([TabEditor<br/>编辑弹窗])
+            end
+            
+            subgraph theme
+                ThemeManager([ThemeManager<br/>样式生成])
+                ThemeObserver([ThemeObserver<br/>主题监听])
+                StyleProbe([StyleProbe<br/>样式采集])
+            end
+            
+            subgraph 配置与命令
+                SettingsPanel([SettingsPanel<br/>设置面板])
+                CommandManager([CommandManager<br/>命令注册])
+            end
+            
+            subgraph 生命周期
+                Lifecycle([Lifecycle<br/>Protyle事件])
+                Refresh([Refresh<br/>编辑器刷新])
+                LineNumberMgr([LineNumberMgr<br/>行号管理])
+            end
+        end
+        
+        subgraph 基础层
+            api[(api/<br/>思源API封装)]
+            utils[(utils/<br/>通用工具)]
+            types[(types/<br/>类型定义)]
+            constants[(constants/<br/>常量定义)]
+        end
+    end
+    
+    index -->|初始化| Modules
+    Modules -->|调用| api
+    Modules -->|使用| utils
+    Modules -->|依赖| types
+    Modules -->|引用| constants
 ```
 
 ### 模块职责说明
 
-| 模块           | 职责           | 文件位置                   |
-| -------------- | -------------- | -------------------------- |
-| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`        |
-| **Theme**      | 主题样式管理   | `src/modules/theme/`       |
-| **Settings**   | 设置面板       | `src/modules/settings/`    |
-| **Command**    | 命令注册       | `src/modules/command/`     |
-| **Protyle**    | 编辑器生命周期 | `src/modules/protyle/`     |
-| **Editor**     | 编辑器刷新     | `src/modules/editor/`      |
-| **LineNumber** | 行号管理       | `src/modules/line-number/` |
+| 模块           | 职责           | 文件位置                      |
+| -------------- | -------------- | ----------------------------- |
+| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`           |
+| **Theme**      | 主题样式管理   | `src/modules/theme/`          |
+| **Settings**   | 设置面板       | `src/modules/settings/`       |
+| **Command**    | 命令注册       | `src/modules/command/`        |
+| **Lifecycle**  | 编辑器生命周期 | `src/modules/lifecycle/`      |
+| **LineNumber** | 行号管理       | `src/modules/line-number/`    |
+
+### Tabs 模块子目录结构
+
+```
+src/modules/tabs/
+├── core/          # 核心管理器
+│   ├── TabManager.ts
+│   ├── TabDataService.ts
+│   └── TabTransformManager.ts
+├── editor/        # 编辑器组件
+│   ├── TabEditor.ts
+│   ├── CodeEditorManager.ts
+│   ├── DragDropManager.ts
+│   ├── KeyboardNavigator.ts
+│   ├── LanguageSuggest.ts
+│   └── TabListRenderer.ts
+├── rendering/     # 渲染层
+│   ├── TabRenderer.ts
+│   └── TabOverflowHandler.ts
+├── utils/         # 工具函数
+│   ├── LegacyTabParser.ts
+│   └── language.ts
+└── types.ts       # 类型定义
+```
 
 ---
 
@@ -562,49 +605,6 @@ themes:
 
 ---
 
-## 开发与调试
-
-### 启动命令
-
-```bash
-# 开发模式（监听文件变化）
-pnpm dev
-
-# 生产构建
-pnpm build
-
-# 构建并安装到思源
-pnpm make-install
-
-# 创建开发链接
-pnpm make-link
-```
-
-### 调试日志
-
-通过设置开启debug日志：
-
-```javascript
-localStorage.setItem("code-tabs.debug", "true");
-```
-
-日志文件路径：`data/plugins/code-tabs/debug.log`
-
-### 测试
-
-```bash
-# 运行所有测试
-pnpm test
-
-# 监听模式
-pnpm test:watch
-
-# 代码检查（tsc + lint + test）
-pnpm check
-```
-
----
-
 ## 依赖关系图
 
 ```
@@ -641,42 +641,6 @@ index.ts (入口)
     │
     └── ProtyleLifecycleManager (生命周期)
             └── EditorRefreshManager (编辑器刷新)
-```
-
----
-
-## 代码规范
-
-### 命名规范
-
-- 目录：`kebab-case`（如 `line-number`）
-- 文件：
-  - 导出类/单例：`PascalCase.ts`（如 `TabManager.ts`）
-  - 导出函数集合：`camelCase.ts`（如 `dom.ts`）
-- 变量/函数：`camelCase`
-- 常量：`UPPER_SNAKE_CASE`
-- 类型/接口：`PascalCase`
-
-### 注释规范
-
-- 使用JSDoc格式
-- 说明"为什么/边界/副作用/风险"
-- 避免重复代码逻辑描述
-- 跨模块调用必须注释说明
-
-### ESLint + Prettier
-
-项目使用 `eslint` 和 `prettier` 进行代码规范检查：
-
-```bash
-# 检查
-pnpm lint
-
-# 自动修复
-pnpm lint:fix
-
-# 格式化
-pnpm format
 ```
 
 ---

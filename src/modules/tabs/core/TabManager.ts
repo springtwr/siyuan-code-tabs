@@ -8,11 +8,12 @@ import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 
-import { StyleProbe } from "../theme/StyleProbe";
+import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { TabDataService } from "./TabDataService";
-import { TabEditor } from "./TabEditor";
-import { TabRenderer } from "./TabRenderer";
-import type { TabsData } from "./types";
+import { TabEditor } from "../editor/TabEditor";
+import { TabOverflowHandler } from "../rendering/TabOverflowHandler";
+import { TabRenderer } from "../rendering/TabRenderer";
+import type { TabsData } from "../types";
 
 /**
  * 优先从 DOM 读取，再回退到属性；必要时升级旧数据。
@@ -195,13 +196,6 @@ export class TabManager {
             LineNumberManager.refreshActive(tabContainer);
         };
 
-        const createMoreTab = () => {
-            const moreItem = document.createElement("div");
-            moreItem.className = "tab-item tab-item--more";
-            moreItem.textContent = t(i18n, "label.moreTabs");
-            return moreItem;
-        };
-
         const openMoreMenu = (evt: MouseEvent, tabContainer: HTMLElement) => {
             evt.preventDefault();
             evt.stopPropagation();
@@ -231,118 +225,17 @@ export class TabManager {
             menu.open({ x: evt.clientX, y: evt.clientY });
         };
 
-        // 计算可见 tab 并决定是否显示 “更多” 溢出入口
         const refreshOverflowForContainer = (tabContainer: HTMLElement) => {
             const tabsEl = tabContainer.querySelector<HTMLElement>(".tabs");
             if (!tabsEl) return;
             observeTabs(tabsEl);
-            const allTabs = Array.from(
-                tabsEl.querySelectorAll<HTMLElement>(".tab-item[data-tab-id]")
+
+            const overflowHandler = new TabOverflowHandler(
+                tabContainer,
+                i18n,
+                (event) => openMoreMenu(event, tabContainer)
             );
-            const moreGap = 6;
-            if (allTabs.length === 0) {
-                tabContainer.classList.remove("tabs-container--has-more");
-                tabContainer.classList.remove("tabs-container--icon-sink");
-                tabsEl.style.removeProperty("--code-tabs-more-width");
-                return;
-            }
-            const existingMore = tabsEl.querySelector<HTMLElement>(".tab-item--more");
-            if (existingMore) existingMore.remove();
-            allTabs.forEach((item) => {
-                item.classList.remove("tab-item--hidden");
-                item.style.removeProperty("width");
-            });
-            tabContainer.classList.remove("tabs-container--has-more", "tabs-container--icon-sink");
-            tabsEl.style.removeProperty("--code-tabs-more-width");
-
-            const fullAvailable = tabsEl.clientWidth;
-            if (fullAvailable <= 0) {
-                return;
-            }
-
-            const widths = allTabs.map((item) => item.getBoundingClientRect().width);
-            const tabsRect = tabsEl.getBoundingClientRect();
-            const lastTab = allTabs[allTabs.length - 1];
-            const lastRect = lastTab.getBoundingClientRect();
-            const lastRight = lastRect.right - tabsRect.left;
-            const iconGroup = tabContainer.querySelector<HTMLElement>(".code-tabs--icon_group");
-            const iconRect = iconGroup?.getBoundingClientRect();
-            const iconLeft = iconRect ? iconRect.left - tabsRect.left : Number.POSITIVE_INFINITY;
-            const fontSize = Number.parseFloat(getComputedStyle(lastTab).fontSize) || 12;
-            const sinkThreshold = fontSize;
-            const shouldSink = lastRight > iconLeft + sinkThreshold;
-            const shouldShowMore = lastRight > fullAvailable;
-            if (shouldSink || shouldShowMore) {
-                tabContainer.classList.add("tabs-container--icon-sink");
-            } else {
-                tabContainer.classList.remove("tabs-container--icon-sink");
-            }
-            if (!shouldShowMore) {
-                return;
-            }
-
-            const moreItem = createMoreTab();
-            moreItem.style.visibility = "hidden";
-            moreItem.style.position = "absolute";
-            tabsEl.appendChild(moreItem);
-            const moreWidth = moreItem.getBoundingClientRect().width;
-            moreItem.remove();
-            moreItem.style.visibility = "";
-            moreItem.style.position = "";
-            tabsEl.style.setProperty("--code-tabs-more-width", `${Math.ceil(moreWidth)}px`);
-
-            const availableForMore = Math.max(0, fullAvailable - moreWidth - moreGap);
-            let used = 0;
-            let visibleCount = 0;
-            for (const width of widths) {
-                if (used + width <= availableForMore || visibleCount === 0) {
-                    used += width;
-                    visibleCount += 1;
-                } else {
-                    break;
-                }
-            }
-            if (visibleCount >= allTabs.length) {
-                tabContainer.classList.remove("tabs-container--has-more");
-                tabsEl.style.removeProperty("--code-tabs-more-width");
-                return;
-            }
-            if (visibleCount > 0) {
-                const visibleLastIndex = visibleCount - 1;
-                const visibleLast = allTabs[visibleLastIndex];
-                const visibleWidth = widths[visibleLastIndex];
-                const visibleMinWidth =
-                    Number.parseFloat(getComputedStyle(visibleLast).minWidth) || 0;
-                const availableForLast = availableForMore - (used - visibleWidth);
-                if (availableForLast <= 0 || availableForLast < visibleMinWidth) {
-                    if (visibleCount > 1) {
-                        visibleCount -= 1;
-                    }
-                } else if (visibleWidth <= moreWidth + moreGap) {
-                    if (visibleCount > 1) {
-                        visibleCount -= 1;
-                    }
-                } else if (visibleWidth > availableForLast) {
-                    visibleLast.style.width = `${Math.floor(availableForLast)}px`;
-                }
-            }
-            allTabs.slice(visibleCount).forEach((item) => item.classList.add("tab-item--hidden"));
-            tabContainer.classList.add("tabs-container--has-more");
-            if (!tabsEl.dataset.moreMenuBound) {
-                tabsEl.addEventListener("click", (event) => {
-                    const target = event.target as HTMLElement;
-                    const more = target.closest<HTMLElement>(".tab-item--more");
-                    if (!more) return;
-                    openMoreMenu(event as MouseEvent, tabContainer);
-                });
-                tabsEl.dataset.moreMenuBound = "true";
-            }
-            tabsEl.appendChild(moreItem);
-
-            const activeHidden = allTabs
-                .slice(visibleCount)
-                .some((item) => item.classList.contains("tab-item--active"));
-            moreItem.classList.toggle("tab-item--more-active", activeHidden);
+            overflowHandler.updateOverflow();
         };
 
         // 统一 ResizeObserver，避免多实例带来的性能损耗

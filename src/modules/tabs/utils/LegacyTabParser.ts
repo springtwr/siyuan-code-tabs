@@ -1,5 +1,5 @@
-import { CodeTab } from "@/modules/tabs/types";
-import { resolveLanguage } from "@/modules/tabs/language";
+import { CodeTab } from "../types";
+import { resolveLanguage } from "./language";
 
 export type ParseErrorKey =
     | "parser.headErr"

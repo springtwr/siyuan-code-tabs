@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
+import { TabRenderer } from "@/modules/tabs/rendering/TabRenderer";
 import type { TabsData } from "@/modules/tabs/types";
 
 // Mock window.Lute

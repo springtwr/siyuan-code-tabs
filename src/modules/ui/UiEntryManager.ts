@@ -2,8 +2,8 @@ import type { IObject } from "siyuan";
 
 import { pushErrMsg, updateBlock } from "@/api";
 import { ICON_MAIN } from "@/constants";
-import { TabDataService } from "@/modules/tabs/TabDataService";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
+import { TabDataService } from "@/modules/tabs/core/TabDataService";
+import { TabRenderer } from "@/modules/tabs/rendering/TabRenderer";
 import { t } from "@/utils/i18n";
 
 /**

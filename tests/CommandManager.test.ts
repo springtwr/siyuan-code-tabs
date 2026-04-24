@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandManager } from "@/modules/command/CommandManager";
-import type { TabTransformManager } from "@/modules/tabs/TabTransformManager";
+import type { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
 import type { IMenu } from "siyuan";
 
 const getSelectedElements = vi.fn();

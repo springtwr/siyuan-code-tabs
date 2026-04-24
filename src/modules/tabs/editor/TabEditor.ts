@@ -4,14 +4,14 @@ import { pushErrMsg } from "@/api";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 
-import { TabDataService } from "./TabDataService";
+import { TabDataService } from "../core/TabDataService";
 import { TabListRenderer } from "./TabListRenderer";
 import { DragDropManager } from "./DragDropManager";
 import { LanguageSuggest } from "./LanguageSuggest";
 import { KeyboardNavigator } from "./KeyboardNavigator";
 import { CodeEditorManager } from "./CodeEditorManager";
-import type { TabsData } from "./types";
-import { isLanguageSupported, normalizeLanguageInput } from "./language";
+import type { TabsData } from "../types";
+import { isLanguageSupported, normalizeLanguageInput } from "../utils/language";
 
 type EditorOptions = {
     i18n: IObject;

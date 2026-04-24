@@ -3,7 +3,7 @@ import { IObject } from "siyuan";
 import { CODE_TABS_ICONS } from "@/constants";
 import { t } from "@/utils/i18n";
 
-import type { TabDataItem } from "./types";
+import type { TabDataItem } from "../types";
 
 export class TabListRenderer {
     private listEl: HTMLElement;

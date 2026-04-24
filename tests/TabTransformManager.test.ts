@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabTransformManager } from "@/modules/tabs/TabTransformManager";
+import { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
 import { CODE_TABS_DATA_ATTR } from "@/constants";
-import { TabRenderer } from "@/modules/tabs/TabRenderer";
+import { TabRenderer } from "@/modules/tabs/rendering/TabRenderer";
 import * as api from "@/api";
-import { TabDataService } from "@/modules/tabs/TabDataService";
+import { TabDataService } from "@/modules/tabs/core/TabDataService";
 
 vi.mock("@/api", () => ({
     deleteBlock: vi.fn().mockResolvedValue(undefined),
@@ -16,7 +16,7 @@ vi.mock("@/api", () => ({
     sql: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/modules/tabs/TabRenderer", () => ({
+vi.mock("@/modules/tabs/rendering/TabRenderer", () => ({
     TabRenderer: {
         createProtyleHtml: vi.fn(() => "<div>mock</div>"),
     },

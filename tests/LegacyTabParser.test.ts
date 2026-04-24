@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LegacyTabParser } from "@/modules/tabs/LegacyTabParser";
+import { LegacyTabParser } from "@/modules/tabs/utils/LegacyTabParser";
 
 describe("LegacyTabParser 语法解析", () => {
     it("解析新语法：多标签与 active", () => {

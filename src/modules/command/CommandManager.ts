@@ -2,7 +2,7 @@ import type { IMenu, IObject } from "siyuan";
 
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { DevToggleManager } from "@/modules/developer/DevToggleManager";
-import type { TabTransformManager } from "@/modules/tabs/TabTransformManager";
+import type { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
 import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { isDevMode, isMobileBackend } from "@/utils/env";

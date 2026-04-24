@@ -2,9 +2,9 @@ import { getBlockAttrs, setBlockAttrs } from "@/api";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
-import { LegacyTabParser } from "./LegacyTabParser";
-import { normalizeLanguageInput } from "@/modules/tabs/language";
-import type { CodeTab, TabDataItem, TabsData } from "./types";
+import { LegacyTabParser } from "../utils/LegacyTabParser";
+import { normalizeLanguageInput } from "../utils/language";
+import type { CodeTab, TabDataItem, TabsData } from "../types";
 
 const CURRENT_VERSION = 2;
 /**

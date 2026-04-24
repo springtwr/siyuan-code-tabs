@@ -9,17 +9,17 @@ import {
     LEGACY_EXISTS_KEY,
     PLUGIN_VERSION,
 } from "@/constants";
-import { TabTransformManager } from "@/modules/tabs/TabTransformManager";
-import { TabManager } from "@/modules/tabs/TabManager";
+import { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
+import { TabManager } from "@/modules/tabs/core/TabManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
-import { EditorRefreshManager } from "@/modules/editor/EditorRefreshManager";
+import { EditorRefreshManager } from "@/modules/lifecycle/EditorRefreshManager";
 import { StyleProbe } from "@/modules/theme/StyleProbe";
 import { ThemeObserver } from "@/modules/theme/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
-import { ProtyleLifecycleManager } from "@/modules/protyle/ProtyleLifecycleManager";
+import { ProtyleLifecycleManager } from "@/modules/lifecycle/ProtyleLifecycleManager";
 import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";

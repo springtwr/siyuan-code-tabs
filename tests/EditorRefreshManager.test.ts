@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { EditorRefreshManager } from "@/modules/editor/EditorRefreshManager";
+import { EditorRefreshManager } from "@/modules/lifecycle/EditorRefreshManager";
 
 describe("EditorRefreshManager", () => {
     it("reloadActiveDocument 调用 activeEditor.reload", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { TabDataService } from "@/modules/tabs/TabDataService";
-import { resolveLanguage } from "@/modules/tabs/language";
+import { TabDataService } from "@/modules/tabs/core/TabDataService";
+import { resolveLanguage } from "@/modules/tabs/utils/language";
 
 describe("TabDataService", () => {
     it("encode/decode should roundtrip", () => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabManager } from "@/modules/tabs/TabManager";
+import { TabManager } from "@/modules/tabs/core/TabManager";
 import { pushErrMsg } from "@/api";
 
 vi.mock("@/api", () => ({

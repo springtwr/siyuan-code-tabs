@@ -13,9 +13,9 @@ import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constan
 import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
-import { LegacyTabParser } from "./LegacyTabParser";
-import { CodeTab, TabsData } from "./types";
-import { TabRenderer } from "./TabRenderer";
+import { LegacyTabParser } from "../utils/LegacyTabParser";
+import { CodeTab, TabsData } from "../types";
+import { TabRenderer } from "../rendering/TabRenderer";
 import { TabDataService } from "./TabDataService";
 
 export type ConversionStats = { success: number; failure: number };

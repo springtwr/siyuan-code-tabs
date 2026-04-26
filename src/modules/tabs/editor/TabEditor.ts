@@ -18,6 +18,8 @@ type EditorOptions = {
     data: TabsData;
     currentIndex: number;
     onSubmit: (data: TabsData) => void;
+    editorData: Record<string, unknown>;
+    onSaveConfig: () => Promise<void>;
 };
 
 type EditorState = {
@@ -131,11 +133,30 @@ export class TabEditor {
               })
             : null;
 
-        const codeEditorManager = new CodeEditorManager(codeContainer, () => {
-            updateCurrentTab();
-        });
+        const codeEditorManager = new CodeEditorManager(
+            codeContainer,
+            {
+                i18n: options.i18n,
+                data: options.editorData,
+                onSaveConfig: options.onSaveConfig,
+            },
+            () => {
+                updateCurrentTab();
+            }
+        );
         const initialLang = state.data.tabs[state.currentIndex]?.lang || "plaintext";
         codeEditorManager.init({ language: initialLang });
+
+        const syncFields = () => {
+            const tab = state.data.tabs[state.currentIndex];
+            if (!tab) return;
+            inputTitle.value = tab.title;
+            inputLang.value = tab.lang;
+            codeEditorManager.updateLanguage(tab.lang);
+            codeEditorManager.updateCode(tab.code);
+        };
+
+        syncFields();
 
         const keyboardNavigator = new KeyboardNavigator(
             listEl,
@@ -154,15 +175,6 @@ export class TabEditor {
             },
             () => codeEditorManager.isCursorAtStart()
         );
-
-        const syncFields = () => {
-            const tab = state.data.tabs[state.currentIndex];
-            if (!tab) return;
-            inputTitle.value = tab.title;
-            inputLang.value = tab.lang;
-            codeEditorManager.updateLanguage(tab.lang);
-            codeEditorManager.updateCode(tab.code);
-        };
 
         const updateCurrentTab = () => {
             const tab = state.data.tabs[state.currentIndex];

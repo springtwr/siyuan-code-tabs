@@ -18,6 +18,10 @@ export const PLUGIN_VERSION = __PLUGIN_VERSION__;
 export const PLUGIN_STYLE_ID = "pluginsStylecode-tabs";
 export const VIRTUAL_NODE_ID = "19700101000000-codetab";
 
+export const EDITOR_TAB_SIZE_KEY = "codeTabsEditorTabSize";
+export const EDITOR_WORD_WRAP_KEY = "codeTabsEditorWordWrap";
+export const EDITOR_LINE_NUMBERS_KEY = "codeTabsEditorLineNumbers";
+
 const ECHARTS_SCRIPTS = [
     {
         src: `${SIYUAN_PATH}/js/echarts/echarts.min.js`,

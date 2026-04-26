@@ -170,7 +170,9 @@ export class TabManager {
 
     static initGlobalFunctions(
         i18n: IObject,
-        onReload?: () => void
+        onReload?: () => void,
+        editorData?: Record<string, unknown>,
+        onSaveConfig?: () => Promise<void>
     ): {
         refreshOverflow: (root?: HTMLElement | ShadowRoot) => void;
     } {
@@ -386,6 +388,8 @@ export class TabManager {
                     onSubmit: async (next) => {
                         await persistTabsData(nodeId, next, onReload);
                     },
+                    editorData: editorData ?? {},
+                    onSaveConfig: onSaveConfig ?? (() => Promise.resolve()),
                 });
             },
             refreshEcharts: async (evt: Event) => {

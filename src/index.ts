@@ -13,13 +13,13 @@ import { TransformCore } from "@/core/TransformCore";
 import { TabsCore } from "@/core/TabsCore";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
-import { EditorRefreshManager } from "@/modules/lifecycle/EditorRefreshManager";
-import { StyleProbe } from "@/modules/theme/StyleProbe";
-import { ThemeObserver } from "@/modules/theme/ThemeObserver";
+import { EditorRefreshService } from "@/services/EditorRefreshService";
+import { StyleProbe } from "@/services/StyleProbe";
+import { ThemeObserver } from "@/services/ThemeObserver";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
-import { ProtyleLifecycleManager } from "@/modules/lifecycle/ProtyleLifecycleManager";
+import { ProtyleLifecycleService } from "@/services/ProtyleLifecycleService";
 import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
@@ -32,13 +32,13 @@ import { delay } from "@/utils/common";
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private tabTransformManager!: TransformCore;
-    private editorRefreshManager!: EditorRefreshManager;
+    private editorRefreshService!: EditorRefreshService;
     private themeObserver!: ThemeObserver;
     private settingsPanel!: SettingsPanel;
     private debugLogManager!: DebugLogManager;
     private configManager!: ConfigManager;
     private commandManager!: CommandManager;
-    private protyleLifecycleManager!: ProtyleLifecycleManager;
+    private protyleLifecycleService!: ProtyleLifecycleService;
     private uiEntryManager!: UiEntryManager;
 
     /**
@@ -49,7 +49,7 @@ export default class CodeTabs extends Plugin {
         this.registerBlockIconEvent();
         this.registerIcons();
         this.debugLogManager = new DebugLogManager();
-        this.editorRefreshManager = new EditorRefreshManager();
+        this.editorRefreshService = new EditorRefreshService();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
 
@@ -133,11 +133,11 @@ export default class CodeTabs extends Plugin {
     }
 
     private registerProtyleEvents(): void {
-        this.protyleLifecycleManager.register(this.eventBus);
+        this.protyleLifecycleService.register(this.eventBus);
     }
 
     private unregisterProtyleEvents(): void {
-        this.protyleLifecycleManager.unregister(this.eventBus);
+        this.protyleLifecycleService.unregister(this.eventBus);
     }
 
     /**
@@ -147,14 +147,14 @@ export default class CodeTabs extends Plugin {
     private initTabModules(): void {
         const pluginApi = TabsCore.initGlobalFunctions(
             this.i18n,
-            () => this.editorRefreshManager.reloadActiveDocument(),
+            () => this.editorRefreshService.reloadActiveDocument(),
             this.data,
             () => this.configManager.saveConfig()
         );
-        this.editorRefreshManager.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
+        this.editorRefreshService.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
         this.tabTransformManager = new TransformCore(this.i18n, () =>
-            this.editorRefreshManager.reloadActiveDocument()
+            this.editorRefreshService.reloadActiveDocument()
         );
     }
 
@@ -182,18 +182,18 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             tabTransformManager: this.tabTransformManager,
-            onReload: () => this.editorRefreshManager.reloadActiveDocument(),
+            onReload: () => this.editorRefreshService.reloadActiveDocument(),
             addCommand: (command) => this.addCommand(command),
         });
-        this.protyleLifecycleManager = new ProtyleLifecycleManager({
-            onRefreshOverflow: (root) => this.editorRefreshManager.refreshOverflow(root),
+        this.protyleLifecycleService = new ProtyleLifecycleService({
+            onRefreshOverflow: (root: HTMLElement | ShadowRoot | undefined) => this.editorRefreshService.refreshOverflow(root),
         });
         this.uiEntryManager = new UiEntryManager({
             i18n: this.i18n,
             addTopBar: (options) => this.addTopBar(options),
             openSetting: () => this.openSetting(),
             protyleSlash: this.protyleSlash,
-            onReload: () => this.editorRefreshManager.reloadActiveDocument(),
+            onReload: () => this.editorRefreshService.reloadActiveDocument(),
         });
         this.configManager = new ConfigManager({
             data: this.data,

@@ -5,7 +5,7 @@ import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
  */
 type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
 
-type ProtyleLifecycleManagerOptions = {
+type ProtyleLifecycleServiceOptions = {
     onRefreshOverflow?: RefreshOverflow;
 };
 
@@ -13,13 +13,13 @@ type ProtyleLifecycleManagerOptions = {
  * 监听 protyle 加载事件，触发行号扫描与溢出刷新。
  * 副作用：扫描 DOM、触发渲染刷新。
  */
-export class ProtyleLifecycleManager {
+export class ProtyleLifecycleService {
     private readonly onRefreshOverflow?: RefreshOverflow;
     private readonly onLoadedProtyle = (evt: unknown) => {
         this.handleProtyleLoaded(evt);
     };
 
-    constructor(options: ProtyleLifecycleManagerOptions = {}) {
+    constructor(options: ProtyleLifecycleServiceOptions = {}) {
         this.onRefreshOverflow = options.onRefreshOverflow;
     }
 

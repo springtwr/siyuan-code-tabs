@@ -2,7 +2,7 @@ import logger from "@/utils/logger";
 import { debounce } from "@/utils/common";
 import { t } from "@/utils/i18n";
 import { getSiyuanConfig } from "@/utils/dom";
-import { ThemeManager } from "@/modules/theme/ThemeManager";
+import { ThemeManager } from "./ThemeManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 
 /**

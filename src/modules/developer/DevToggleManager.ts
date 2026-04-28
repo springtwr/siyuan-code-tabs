@@ -1,5 +1,5 @@
 import logger from "@/utils/logger";
-import { ThemeManager } from "@/modules/theme/ThemeManager";
+import { ThemeManager } from "@/services/ThemeManager";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 

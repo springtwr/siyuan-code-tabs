@@ -1,5 +1,5 @@
 import { VIRTUAL_NODE_ID } from "@/constants/keys";
-import { ThemeStyle } from "@/modules/theme/types";
+import { ThemeStyle } from "@/types/theme";
 import logger from "@/utils/logger";
 
 /**

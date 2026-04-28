@@ -13,7 +13,7 @@ import {
     THEME_ADAPTION_ASSET_YAML,
     THEME_ADAPTION_YAML,
 } from "@/constants";
-import { ThemePatch, ThemeStyle } from "@/modules/theme/types";
+import { ThemePatch, ThemeStyle } from "@/types/theme";
 import { fetchFileFromUrl, fetchYamlFromUrl } from "@/utils/network";
 import * as yaml from "js-yaml";
 import { StyleProbe } from "./StyleProbe";

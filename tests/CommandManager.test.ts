@@ -3,13 +3,20 @@ import { CommandManager } from "@/modules/command/CommandManager";
 import type { TransformCore } from "@/core/TransformCore";
 import type { IMenu } from "siyuan";
 
-const getSelectedElements = vi.fn();
+const { getSelectedElements, isDevMode, isMobileBackend, syncSiyuanConfig } = vi.hoisted(() => {
+    return {
+        getSelectedElements: vi.fn(),
+        isDevMode: vi.fn(() => true),
+        isMobileBackend: vi.fn(() => false),
+        syncSiyuanConfig: vi.fn(),
+    };
+});
+
 vi.mock("@/utils/dom", () => ({
     getSelectedElements: (...args: unknown[]) => getSelectedElements(...args),
+    syncSiyuanConfig: (...args: unknown[]) => syncSiyuanConfig(...args),
 }));
 
-const isDevMode = vi.fn(() => true);
-const isMobileBackend = vi.fn(() => false);
 vi.mock("@/utils/env", () => ({
     isDevMode: () => isDevMode(),
     isMobileBackend: () => isMobileBackend(),
@@ -18,6 +25,18 @@ vi.mock("@/utils/env", () => ({
 const toggleEditorSetting = vi.fn();
 vi.mock("@/modules/developer/DevToggleManager", () => ({
     DevToggleManager: { toggleEditorSetting: (...args: unknown[]) => toggleEditorSetting(...args) },
+}));
+
+vi.mock("@/services/ThemeManager", () => ({
+    ThemeManager: { putStyleFile: vi.fn().mockResolvedValue({}) },
+}));
+
+vi.mock("@/services/ThemeManager", () => ({
+    ThemeManager: { putStyleFile: vi.fn().mockResolvedValue({}) },
+}));
+
+vi.mock("@/services/ThemeManager", () => ({
+    ThemeManager: { putStyleFile: vi.fn().mockResolvedValue({}) },
 }));
 
 vi.mock("@/utils/i18n", () => ({

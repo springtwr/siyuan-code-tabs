@@ -7,7 +7,7 @@ import logger from "@/utils/logger";
  */
 type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
 
-type EditorRefreshManagerOptions = {
+type EditorRefreshServiceOptions = {
     getActiveEditor?: (readOnly?: boolean) => { reload: (reset?: boolean) => void } | null;
     getRefreshOverflow?: () => RefreshOverflow | undefined;
 };
@@ -16,13 +16,13 @@ type EditorRefreshManagerOptions = {
  * 负责触发编辑器刷新与溢出重算。
  * 副作用：调用编辑器 reload / 触发 DOM 渲染刷新。
  */
-export class EditorRefreshManager {
+export class EditorRefreshService {
     private readonly getEditor: (
         readOnly?: boolean
     ) => { reload: (reset?: boolean) => void } | null;
     private getRefreshOverflow: () => RefreshOverflow | undefined;
 
-    constructor(options: EditorRefreshManagerOptions = {}) {
+    constructor(options: EditorRefreshServiceOptions = {}) {
         this.getEditor = options.getActiveEditor ?? ((readOnly) => getActiveEditor(readOnly));
         this.getRefreshOverflow =
             options.getRefreshOverflow ??

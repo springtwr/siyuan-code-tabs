@@ -4,7 +4,7 @@ import {
     buildPlanFromMutation,
     createEmptyPlan,
     describePlan,
-} from "@/modules/theme/ThemeObserver";
+} from "@/services/ThemeObserver";
 
 describe("ThemeObserver helpers", () => {
     it("createEmptyPlan 默认全 false", () => {

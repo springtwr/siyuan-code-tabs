@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ThemeManager } from "@/modules/theme/ThemeManager";
+import { ThemeManager } from "@/services/ThemeManager";
 import { BACKGROUND_CSS, CODE_STYLE_CSS } from "@/constants";
 import { putFile } from "@/api";
 import { fetchFileFromUrl, fetchYamlFromUrl } from "@/utils/network";
-import { StyleProbe } from "@/modules/theme/StyleProbe";
+import { StyleProbe } from "@/services/StyleProbe";
 
 vi.mock("@/api", () => ({
     putFile: vi.fn().mockResolvedValue(undefined),
@@ -14,7 +14,7 @@ vi.mock("@/utils/network", () => ({
     fetchYamlFromUrl: vi.fn(),
 }));
 
-vi.mock("@/modules/theme/StyleProbe", () => ({
+vi.mock("@/services/StyleProbe", () => ({
     StyleProbe: {
         getFullStyle: vi.fn(() => ({
             blockBg: "#fff",

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { EditorRefreshManager } from "@/modules/lifecycle/EditorRefreshManager";
+import { EditorRefreshService } from "@/services/EditorRefreshService";
 
-describe("EditorRefreshManager", () => {
+describe("EditorRefreshService", () => {
     it("reloadActiveDocument 调用 activeEditor.reload", () => {
         const reload = vi.fn();
-        const manager = new EditorRefreshManager({
+        const manager = new EditorRefreshService({
             getActiveEditor: () => ({ reload }),
         });
         manager.reloadActiveDocument();
@@ -13,7 +13,7 @@ describe("EditorRefreshManager", () => {
 
     it("refreshOverflow 调用回调", () => {
         const refreshOverflow = vi.fn();
-        const manager = new EditorRefreshManager({
+        const manager = new EditorRefreshService({
             getRefreshOverflow: () => refreshOverflow,
         });
         const root = document.createElement("div");

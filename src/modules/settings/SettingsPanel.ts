@@ -8,7 +8,7 @@ import {
     TAB_WIDTH_SETTING_KEY,
 } from "@/constants";
 import { t } from "@/utils/i18n";
-import type { TabWidthSetting } from "@/modules/tabs/types";
+import type { TabWidthSetting } from "@/types/tabs";
 
 /**
  * 设置面板构建与应用入口。

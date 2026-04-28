@@ -2,9 +2,9 @@ import { getBlockAttrs, setBlockAttrs } from "@/api";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
-import { LegacyTabParser } from "../utils/LegacyTabParser";
-import { normalizeLanguageInput } from "../utils/language";
-import type { CodeTab, TabDataItem, TabsData } from "../types";
+import { LegacyTabParser } from "@/utils/LegacyTabParser";
+import { normalizeLanguageInput } from "@/utils/language";
+import type { CodeTab, TabDataItem, TabsData } from "@/types/tabs";
 
 const CURRENT_VERSION = 2;
 /**
@@ -33,7 +33,7 @@ function decodeLegacyHtmlEntities(input: string): string {
  * Tabs 数据的读写、校验与迁移入口。
  * 副作用：读写块属性。
  */
-export class TabDataService {
+export class TabData {
     /**
      * 深拷贝并规范化数据，避免 UI 直接修改原对象。
      * @param data tabs 数据

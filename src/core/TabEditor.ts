@@ -4,14 +4,14 @@ import { pushErrMsg } from "@/api";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 
-import { TabDataService } from "../core/TabDataService";
-import { TabListRenderer } from "./TabListRenderer";
-import { DragDropManager } from "./DragDropManager";
-import { LanguageSuggest } from "./LanguageSuggest";
-import { KeyboardNavigator } from "./KeyboardNavigator";
-import { CodeEditorManager } from "./CodeEditorManager";
-import type { TabsData } from "../types";
-import { isLanguageSupported, normalizeLanguageInput } from "../utils/language";
+import { TabData } from "./TabData";
+import { TabListRenderer } from "./editor/TabListRenderer";
+import { DragDropManager } from "./editor/DragDropManager";
+import { LanguageSuggest } from "./editor/LanguageSuggest";
+import { KeyboardNavigator } from "./editor/KeyboardNavigator";
+import { CodeEditorManager } from "./editor/CodeEditorManager";
+import type { TabsData } from "@/types/tabs";
+import { isLanguageSupported, normalizeLanguageInput } from "@/utils/language";
 
 type EditorOptions = {
     i18n: IObject;
@@ -73,7 +73,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
 export class TabEditor {
     static open(options: EditorOptions): void {
         const state: EditorState = {
-            data: TabDataService.clone(options.data),
+            data: TabData.clone(options.data),
             currentIndex: Math.min(
                 Math.max(options.currentIndex, 0),
                 Math.max(options.data.tabs.length - 1, 0)
@@ -87,7 +87,7 @@ export class TabEditor {
             height: "70vh",
         });
 
-        const buildSnapshot = (data: TabsData) => JSON.stringify(TabDataService.normalize(data));
+        const buildSnapshot = (data: TabsData) => JSON.stringify(TabData.normalize(data));
         const initialSnapshot = buildSnapshot(state.data);
 
         const root = dialog.element;
@@ -190,7 +190,7 @@ export class TabEditor {
         };
 
         const getDraftSnapshot = () => {
-            const draft = TabDataService.clone(state.data);
+            const draft = TabData.clone(state.data);
             const tab = draft.tabs[state.currentIndex];
             if (tab) {
                 tab.title = inputTitle.value.trim();
@@ -341,7 +341,7 @@ export class TabEditor {
                 }
                 case "save": {
                     updateCurrentTab();
-                    const validation = TabDataService.validate(state.data);
+                    const validation = TabData.validate(state.data);
                     if (!validation.ok) {
                         if (validation.errors.some((err) => err.includes("title"))) {
                             pushErrMsg(t(options.i18n, "editor.emptyTitle")).then();
@@ -361,7 +361,7 @@ export class TabEditor {
                             t(options.i18n, "editor.confirmUnsupportedLangTitle"),
                             t(options.i18n, "editor.confirmUnsupportedLang").replace("{0}", lang),
                             () => {
-                                options.onSubmit(TabDataService.normalize(state.data));
+                                options.onSubmit(TabData.normalize(state.data));
                                 close(true);
                             },
                             () => {
@@ -372,7 +372,7 @@ export class TabEditor {
                         );
                         return;
                     }
-                    options.onSubmit(TabDataService.normalize(state.data));
+                    options.onSubmit(TabData.normalize(state.data));
                     close(true);
                     break;
                 }
@@ -407,3 +407,5 @@ export class TabEditor {
         dialog.element.addEventListener("destroy", cleanup, { once: true });
     }
 }
+
+

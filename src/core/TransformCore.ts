@@ -13,10 +13,10 @@ import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constan
 import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
-import { LegacyTabParser } from "../utils/LegacyTabParser";
-import { CodeTab, TabsData } from "../types";
-import { TabRenderer } from "../rendering/TabRenderer";
-import { TabDataService } from "./TabDataService";
+import { LegacyTabParser } from "@/utils/LegacyTabParser";
+import { CodeTab, TabsData } from "@/types/tabs";
+import { TabRenderer } from "./TabRenderer";
+import { TabData } from "./TabData";
 
 export type ConversionStats = { success: number; failure: number };
 
@@ -45,7 +45,7 @@ type BatchResult = {
  * tabs 与代码块之间的批量转换入口。
  * 副作用：批量更新/删除块、写入属性。
  */
-export class TabTransformManager {
+export class TransformCore {
     private readonly i18n: IObject;
     private readonly onSuccess?: () => void;
     private currentTask?: BatchTask;
@@ -85,7 +85,7 @@ export class TabTransformManager {
         total: number,
         force: boolean = false
     ): BatchTask | null {
-        if (!document.body || (!force && total < TabTransformManager.progressThreshold)) {
+        if (!document.body || (!force && total < TransformCore.progressThreshold)) {
             return null;
         }
         if (this.currentTask) {
@@ -338,10 +338,10 @@ export class TabTransformManager {
             t(this.i18n, "task.progress.codeToTabs"),
             toProcess,
             async ({ id, codeArr }) => {
-                const data = TabDataService.fromCodeTabs(codeArr);
+                const data = TabData.fromCodeTabs(codeArr);
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
-                await TabDataService.writeToBlock(id, data);
+                await TabData.writeToBlock(id, data);
             }
         );
 
@@ -391,16 +391,16 @@ export class TabTransformManager {
         }
 
         if (!dataRaw && legacyRaw) {
-            const legacy = TabDataService.decodeLegacySourceFromAttrs({
+            const legacy = TabData.decodeLegacySourceFromAttrs({
                 [CUSTOM_ATTR]: legacyRaw,
             });
             if (legacy) {
-                const upgraded = TabDataService.upgradeFromLegacy(legacy);
+                const upgraded = TabData.upgradeFromLegacy(legacy);
                 return { id, data: upgraded };
             }
         }
         if (!dataRaw) return { id, data: null };
-        return { id, data: TabDataService.decode(dataRaw) };
+        return { id, data: TabData.decode(dataRaw) };
     }
 
     private async collectTabsDataBlocks(
@@ -427,7 +427,7 @@ export class TabTransformManager {
                 logger.warn(`${context}: ${msg} (nodeId: ${id})`);
                 continue;
             }
-            const validation = TabDataService.validate(data);
+            const validation = TabData.validate(data);
             if (!validation.ok) {
                 const msg = "标签数据校验失败";
                 invalid.push({ nodeId: id, reason: msg });
@@ -506,10 +506,10 @@ export class TabTransformManager {
         if (!window.hljs) {
             await TabRenderer.ensureLibraryLoaded("hljs");
         }
-        const data = TabDataService.createDefaultData();
+        const data = TabData.createDefaultData();
         const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
-        await TabDataService.writeToBlock(targetId, data);
+        await TabData.writeToBlock(targetId, data);
         return;
     }
 
@@ -590,11 +590,11 @@ export class TabTransformManager {
             fallbackIndex += 1;
         }
 
-        const data = TabDataService.fromCodeTabs(codeArr);
+        const data = TabData.fromCodeTabs(codeArr);
         const targetId = filteredBlocks[0].id;
         const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
-        await TabDataService.writeToBlock(targetId, data);
+        await TabData.writeToBlock(targetId, data);
         const restIds = filteredBlocks.slice(1).map((item) => item.id);
         await Promise.all(restIds.map((id) => deleteBlock(id)));
         logger.info("合并代码块为标签页完成", { count: filteredBlocks.length });
@@ -711,12 +711,12 @@ export class TabTransformManager {
                 invalid.push({ nodeId: id, reason: "缺少旧版标签数据" });
                 continue;
             }
-            const legacy = TabDataService.decodeLegacySourceFromAttrs({ [CUSTOM_ATTR]: legacyRaw });
+            const legacy = TabData.decodeLegacySourceFromAttrs({ [CUSTOM_ATTR]: legacyRaw });
             if (!legacy) {
                 invalid.push({ nodeId: id, reason: "旧版标签数据解码失败" });
                 continue;
             }
-            const upgraded = TabDataService.upgradeFromLegacy(legacy);
+            const upgraded = TabData.upgradeFromLegacy(legacy);
             if (!upgraded) {
                 invalid.push({ nodeId: id, reason: "旧版标签数据解析失败" });
                 continue;
@@ -755,7 +755,7 @@ export class TabTransformManager {
                 logger.debug("升级旧版标签页", { id });
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
-                await TabDataService.writeToBlock(id, data);
+                await TabData.writeToBlock(id, data);
             },
             { forceProgress: true }
         );

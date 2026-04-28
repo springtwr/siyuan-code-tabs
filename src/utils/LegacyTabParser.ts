@@ -1,4 +1,4 @@
-import { CodeTab } from "../types";
+import { CodeTab } from "@/types/tabs";
 import { resolveLanguage } from "./language";
 
 export type ParseErrorKey =

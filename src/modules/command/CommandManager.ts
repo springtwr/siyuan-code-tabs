@@ -2,7 +2,7 @@ import type { IMenu, IObject } from "siyuan";
 
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { DevToggleManager } from "@/modules/developer/DevToggleManager";
-import type { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
+import type { TransformCore } from "@/core/TransformCore";
 import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { isDevMode, isMobileBackend } from "@/utils/env";
@@ -27,7 +27,7 @@ export type BlockIconEventDetail = {
 type CommandManagerOptions = {
     i18n: IObject;
     data: Record<string, unknown>;
-    tabTransformManager: TabTransformManager;
+    tabTransformManager: TransformCore;
     onReload: () => void;
     addCommand: AddCommandFn;
 };
@@ -38,7 +38,7 @@ type CommandManagerOptions = {
 export class CommandManager {
     private readonly i18n: IObject;
     private readonly data: Record<string, unknown>;
-    private readonly tabTransformManager: TabTransformManager;
+    private readonly tabTransformManager: TransformCore;
     private readonly onReload: () => void;
     private readonly addCommand: AddCommandFn;
 

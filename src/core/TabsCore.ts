@@ -8,12 +8,11 @@ import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 
-import { StyleProbe } from "@/modules/theme/StyleProbe";
-import { TabDataService } from "./TabDataService";
-import { TabEditor } from "../editor/TabEditor";
-import { TabOverflowHandler } from "../rendering/TabOverflowHandler";
-import { TabRenderer } from "../rendering/TabRenderer";
-import type { TabsData } from "../types";
+import { TabData } from "./TabData";
+import { TabEditor } from "./TabEditor";
+import { TabOverflowHandler } from "./TabOverflowHandler";
+import { TabRenderer } from "./TabRenderer";
+import type { TabsData } from "@/types/tabs";
 
 /**
  * 优先从 DOM 读取，再回退到属性；必要时升级旧数据。
@@ -25,16 +24,16 @@ async function resolveTabsData(
     nodeId: string,
     htmlBlock: HTMLElement | null
 ): Promise<TabsData | null> {
-    const dataFromDom = TabDataService.readFromElement(htmlBlock);
+    const dataFromDom = TabData.readFromElement(htmlBlock);
     if (dataFromDom) return dataFromDom;
     const attrs = await getBlockAttrs(nodeId);
-    const dataFromAttr = TabDataService.readFromAttrs(attrs);
+    const dataFromAttr = TabData.readFromAttrs(attrs);
     if (dataFromAttr) return dataFromAttr;
-    const legacy = TabDataService.decodeLegacySourceFromAttrs(attrs);
+    const legacy = TabData.decodeLegacySourceFromAttrs(attrs);
     if (legacy) {
-        const upgraded = TabDataService.upgradeFromLegacy(legacy);
+        const upgraded = TabData.upgradeFromLegacy(legacy);
         if (upgraded) {
-            await TabDataService.writeToBlock(nodeId, upgraded);
+            await TabData.writeToBlock(nodeId, upgraded);
             return upgraded;
         }
     }
@@ -56,7 +55,7 @@ async function persistTabsData(
 ): Promise<void> {
     const htmlBlock = await TabRenderer.createProtyleHtml(data);
     await updateBlock("markdown", htmlBlock, nodeId);
-    await TabDataService.writeToBlock(nodeId, data);
+    await TabData.writeToBlock(nodeId, data);
     onReload?.();
 }
 
@@ -165,7 +164,7 @@ function findHtmlBlockFromHost(host: HTMLElement): HTMLElement | null {
  * tabs 交互与全局函数注册入口。
  * 副作用：注册全局函数、监听尺寸变化。
  */
-export class TabManager {
+export class TabsCore {
     private static resizeObserver: ResizeObserver | null = null;
 
     static initGlobalFunctions(
@@ -240,9 +239,9 @@ export class TabManager {
 
         // 统一 ResizeObserver，避免多实例带来的性能损耗
         const setupResizeObserver = () => {
-            if (TabManager.resizeObserver) return;
+            if (TabsCore.resizeObserver) return;
             let timer: ReturnType<typeof setTimeout> | null = null;
-            TabManager.resizeObserver = new ResizeObserver((entries) => {
+            TabsCore.resizeObserver = new ResizeObserver((entries) => {
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     for (const entry of entries) {
@@ -257,8 +256,8 @@ export class TabManager {
         };
 
         const observeTabs = (tabsEl: HTMLElement) => {
-            if (!TabManager.resizeObserver) setupResizeObserver();
-            TabManager.resizeObserver?.observe(tabsEl);
+            if (!TabsCore.resizeObserver) setupResizeObserver();
+            TabsCore.resizeObserver?.observe(tabsEl);
         };
 
         /**
@@ -286,7 +285,6 @@ export class TabManager {
 
         // 暴露给 HTML 块内的全局交互函数
         const pluginCodeTabs = {
-            codeBlockStyle: StyleProbe,
             openTag: (evt: MouseEvent) => {
                 blurActiveElementOnMobile();
                 const clicked = evt.target as HTMLElement;
@@ -418,3 +416,4 @@ export class TabManager {
         this.resizeObserver = null;
     }
 }
+

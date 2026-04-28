@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabManager } from "@/modules/tabs/core/TabManager";
+import { TabsCore } from "@/core/TabsCore";
 import { pushErrMsg } from "@/api";
 
 vi.mock("@/api", () => ({
@@ -12,7 +12,7 @@ vi.mock("@/api", () => ({
 
 const i18n = { "msg.allTabsToCodeFailed": "failed" } as IObject;
 
-describe("TabManager", () => {
+describe("TabsCore", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -29,7 +29,7 @@ describe("TabManager", () => {
             configurable: true,
         });
 
-        TabManager.initGlobalFunctions(i18n);
+        TabsCore.initGlobalFunctions(i18n);
 
         const container = document.createElement("div");
         container.className = "tabs-container";
@@ -71,7 +71,7 @@ describe("TabManager", () => {
             configurable: true,
         });
 
-        TabManager.initGlobalFunctions(i18n);
+        TabsCore.initGlobalFunctions(i18n);
 
         const container = document.createElement("div");
         container.className = "tabs-container";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildEditorDialogContent } from "@/modules/tabs/editor/TabEditor";
+import { buildEditorDialogContent } from "@/core/TabEditor";
 
 vi.mock("@/utils/i18n", () => ({
     t: (_i18n: Record<string, string>, key: string) => key,

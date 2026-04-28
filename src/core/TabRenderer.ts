@@ -1,4 +1,4 @@
-import type { FencedBlockType, TabsData } from "@/modules/tabs/types";
+import type { FencedBlockType, TabsData } from "@/types/tabs";
 import { FENCED_BLOCK_META, PROTYLE_HTML } from "@/constants";
 import { encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";

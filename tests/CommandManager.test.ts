@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandManager } from "@/modules/command/CommandManager";
-import type { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
+import type { TransformCore } from "@/core/TransformCore";
 import type { IMenu } from "siyuan";
 
 const getSelectedElements = vi.fn();
@@ -36,7 +36,7 @@ describe("CommandManager", () => {
         const tabTransformManager = {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
-        } as unknown as TabTransformManager;
+        } as unknown as TransformCore;
         const addCommand = vi.fn();
         getSelectedElements.mockReturnValue([document.createElement("div")]);
 
@@ -63,7 +63,7 @@ describe("CommandManager", () => {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
             tabsToCodeBlocksInDocument: vi.fn(),
-        } as unknown as TabTransformManager;
+        } as unknown as TransformCore;
         const addCommand = vi.fn();
         const menuItems: IMenu[] = [];
         const node = document.createElement("div");
@@ -97,7 +97,7 @@ describe("CommandManager", () => {
         const tabTransformManager = {
             tabsToCodeBlocksBatch: vi.fn(),
             mergeCodeBlocksToTabSyntax: vi.fn(),
-        } as unknown as TabTransformManager;
+        } as unknown as TransformCore;
         const menuItems: IMenu[] = [];
 
         const manager = new CommandManager({

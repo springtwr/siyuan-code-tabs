@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IObject } from "siyuan";
-import { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
+import { TransformCore } from "@/core/TransformCore";
 import { CODE_TABS_DATA_ATTR } from "@/constants";
-import { TabRenderer } from "@/modules/tabs/rendering/TabRenderer";
+import { TabRenderer } from "@/core/TabRenderer";
 import * as api from "@/api";
-import { TabDataService } from "@/modules/tabs/core/TabDataService";
+import { TabData } from "@/core/TabData";
 
 vi.mock("@/api", () => ({
     deleteBlock: vi.fn().mockResolvedValue(undefined),
@@ -16,7 +16,7 @@ vi.mock("@/api", () => ({
     sql: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/modules/tabs/rendering/TabRenderer", () => ({
+vi.mock("@/core/TabRenderer", () => ({
     TabRenderer: {
         createProtyleHtml: vi.fn(() => "<div>mock</div>"),
     },
@@ -24,7 +24,7 @@ vi.mock("@/modules/tabs/rendering/TabRenderer", () => ({
 
 const i18n = {} as IObject;
 
-describe("TabTransformManager", () => {
+describe("TransformCore", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -38,7 +38,7 @@ describe("TabTransformManager", () => {
         content.textContent = "::: JS | js\nconsole.log('ok')\n";
         block.appendChild(content);
 
-        const converter = new TabTransformManager(i18n);
+        const converter = new TransformCore(i18n);
         const stats = await converter.codeToTabsBatch([block]);
 
         expect(stats.success).toBe(1);
@@ -56,16 +56,16 @@ describe("TabTransformManager", () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "tab-2";
         block.dataset.type = "NodeHTMLBlock";
-        const data = TabDataService.createDefaultData();
+        const data = TabData.createDefaultData();
         data.tabs = [
             { title: "Custom1", lang: "js", code: "console.log('a')" },
             { title: "Custom2", lang: "python", code: "print('b')" },
         ];
         vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
-            [CODE_TABS_DATA_ATTR]: TabDataService.encode(data),
+            [CODE_TABS_DATA_ATTR]: TabData.encode(data),
         });
 
-        const converter = new TabTransformManager(i18n);
+        const converter = new TransformCore(i18n);
         const stats = await converter.tabsToCodeBlocksBatch([block]);
 
         expect(stats.success).toBe(1);
@@ -92,7 +92,7 @@ describe("TabTransformManager", () => {
         const blockA = makeBlock("a", "js", "console.log('a')");
         const blockB = makeBlock("b", "python", "print('b')");
 
-        const converter = new TabTransformManager(i18n);
+        const converter = new TransformCore(i18n);
         await converter.mergeCodeBlocksToTabSyntax([blockA, blockB]);
 
         expect(api.updateBlock).toHaveBeenCalledWith("markdown", expect.any(String), "a");

@@ -9,8 +9,8 @@ import {
     LEGACY_EXISTS_KEY,
     PLUGIN_VERSION,
 } from "@/constants";
-import { TabTransformManager } from "@/modules/tabs/core/TabTransformManager";
-import { TabManager } from "@/modules/tabs/core/TabManager";
+import { TransformCore } from "@/core/TransformCore";
+import { TabsCore } from "@/core/TabsCore";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
 import { EditorRefreshManager } from "@/modules/lifecycle/EditorRefreshManager";
@@ -31,7 +31,7 @@ import { delay } from "@/utils/common";
  */
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
-    private tabTransformManager!: TabTransformManager;
+    private tabTransformManager!: TransformCore;
     private editorRefreshManager!: EditorRefreshManager;
     private themeObserver!: ThemeObserver;
     private settingsPanel!: SettingsPanel;
@@ -93,7 +93,7 @@ export default class CodeTabs extends Plugin {
         this.themeObserver?.stop();
         this.tabTransformManager?.cancelCurrentTask();
         LineNumberManager.cleanup();
-        TabManager.cleanup();
+        TabsCore.cleanup();
         StyleProbe.cleanup();
         this.debugLogManager?.cleanup();
         if (window.pluginCodeTabs) {
@@ -145,7 +145,7 @@ export default class CodeTabs extends Plugin {
      * @returns void
      */
     private initTabModules(): void {
-        const pluginApi = TabManager.initGlobalFunctions(
+        const pluginApi = TabsCore.initGlobalFunctions(
             this.i18n,
             () => this.editorRefreshManager.reloadActiveDocument(),
             this.data,
@@ -153,7 +153,7 @@ export default class CodeTabs extends Plugin {
         );
         this.editorRefreshManager.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
-        this.tabTransformManager = new TabTransformManager(this.i18n, () =>
+        this.tabTransformManager = new TransformCore(this.i18n, () =>
             this.editorRefreshManager.reloadActiveDocument()
         );
     }

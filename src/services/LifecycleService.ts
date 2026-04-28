@@ -1,61 +1,91 @@
-import type { ILifecycleService, LifecycleServiceDeps, IEventBus } from "@/types/services";
-import { EditorRefreshService } from "./EditorRefreshService";
-import { ProtyleLifecycleService } from "./ProtyleLifecycleService";
+import { getActiveEditor } from "siyuan";
+
+import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import logger from "@/utils/logger";
+
+type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
+
+type LifecycleServiceOptions = {
+    getActiveEditor?: (readOnly?: boolean) => { reload: (reset?: boolean) => void } | null;
+    getRefreshOverflow?: () => RefreshOverflow | undefined;
+};
 
 /**
  * 生命周期服务
- * 协调编辑器刷新和Protyle事件监听，提供统一的生命周期管理接口
+ * 合并编辑器刷新和Protyle事件监听功能
  */
-export class LifecycleService implements ILifecycleService {
-    private readonly editorRefreshService: EditorRefreshService;
-    private readonly protyleLifecycleService: ProtyleLifecycleService;
-    private registeredEventBus: IEventBus | null = null;
+export class LifecycleService {
+    private readonly getEditor: (
+        readOnly?: boolean
+    ) => { reload: (reset?: boolean) => void } | null;
+    private getRefreshOverflow: () => RefreshOverflow | undefined;
+    private readonly onLoadedProtyle = (evt: unknown) => {
+        this.handleProtyleLoaded(evt);
+    };
 
-    constructor(deps: LifecycleServiceDeps) {
-        this.editorRefreshService = deps.editorRefreshService as EditorRefreshService;
-        this.protyleLifecycleService = deps.protyleLifecycleService as ProtyleLifecycleService;
+    constructor(options: LifecycleServiceOptions = {}) {
+        this.getEditor = options.getActiveEditor ?? ((readOnly) => getActiveEditor(readOnly));
+        this.getRefreshOverflow =
+            options.getRefreshOverflow ??
+            (() =>
+                (
+                    window as typeof window & {
+                        pluginCodeTabs?: { refreshOverflow?: RefreshOverflow };
+                    }
+                ).pluginCodeTabs?.refreshOverflow);
     }
 
-    init(): void {
-        logger.info("LifecycleService 初始化");
+    setRefreshOverflowProvider(provider: () => RefreshOverflow | undefined): void {
+        this.getRefreshOverflow = provider;
     }
 
-    cleanup(): void {
-        logger.info("LifecycleService 清理");
-        if (this.registeredEventBus) {
-            this.unregisterEventListeners(this.registeredEventBus);
+    reloadActiveDocument(): void {
+        const activeEditor = this.getEditor(true);
+        if (activeEditor) {
+            logger.info("刷新页面");
+            activeEditor.reload(true);
         }
-    }
-
-    refreshActiveDocument(): void {
-        this.editorRefreshService.reloadActiveDocument();
     }
 
     refreshOverflow(root?: HTMLElement | ShadowRoot): void {
-        this.editorRefreshService.refreshOverflow(root);
-    }
-
-    setRefreshOverflowProvider(
-        provider: () => ((root?: HTMLElement | ShadowRoot) => void) | undefined
-    ): void {
-        this.editorRefreshService.setRefreshOverflowProvider(provider);
-    }
-
-    registerEventListeners(eventBus: IEventBus): void {
-        if (this.registeredEventBus) {
-            logger.warn("LifecycleService: 事件已注册，先注销旧监听");
-            this.unregisterEventListeners(this.registeredEventBus);
+        const refresh = this.getRefreshOverflow();
+        if (refresh) {
+            refresh(root);
         }
-
-        this.protyleLifecycleService.register(eventBus);
-        this.registeredEventBus = eventBus;
-        logger.debug("LifecycleService: 事件监听已注册");
     }
 
-    unregisterEventListeners(eventBus: IEventBus): void {
-        this.protyleLifecycleService.unregister(eventBus);
-        this.registeredEventBus = null;
-        logger.debug("LifecycleService: 事件监听已注销");
+    register(eventBus: { on: (name: string, callback: (evt: unknown) => void) => void }): void {
+        eventBus.on("loaded-protyle-static", this.onLoadedProtyle);
+        eventBus.on("loaded-protyle-dynamic", this.onLoadedProtyle);
+    }
+
+    unregister(eventBus: { off: (name: string, callback: (evt: unknown) => void) => void }): void {
+        eventBus.off("loaded-protyle-static", this.onLoadedProtyle);
+        eventBus.off("loaded-protyle-dynamic", this.onLoadedProtyle);
+    }
+
+    private handleProtyleLoaded(evt: unknown): void {
+        const detail = (
+            evt as {
+                detail?: {
+                    protyle?: {
+                        wysiwyg?: { element?: HTMLElement };
+                    };
+                    element?: HTMLElement;
+                };
+            }
+        )?.detail;
+        const root = detail?.protyle?.wysiwyg?.element || detail?.element;
+        LineNumberManager.scanProtyle(root);
+        this.refreshOverflow(root);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.refreshOverflow(root);
+            });
+        });
+    }
+
+    cleanup(): void {
+        // 清理逻辑（如有需要）
     }
 }

@@ -18,8 +18,6 @@ import { ThemeService } from "@/services/ThemeService";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
-import { EditorRefreshService } from "@/services/EditorRefreshService";
-import { ProtyleLifecycleService } from "@/services/ProtyleLifecycleService";
 import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
@@ -132,26 +130,15 @@ export default class CodeTabs extends Plugin {
     }
 
     private registerProtyleEvents(): void {
-        this.lifecycleService.registerEventListeners(this.eventBus);
+        this.lifecycleService.register(this.eventBus);
     }
 
     private unregisterProtyleEvents(): void {
-        this.lifecycleService.unregisterEventListeners(this.eventBus);
+        this.lifecycleService.unregister(this.eventBus);
     }
 
     private initServices(): void {
-        const editorRefreshService = new EditorRefreshService();
-        const protyleLifecycleService = new ProtyleLifecycleService({
-            onRefreshOverflow: (root: HTMLElement | ShadowRoot | undefined) =>
-                editorRefreshService.refreshOverflow(root),
-        });
-
-        this.lifecycleService = new LifecycleService({
-            editorRefreshService,
-            protyleLifecycleService,
-        });
-        this.lifecycleService.init();
-
+        this.lifecycleService = new LifecycleService();
         this.themeService = new ThemeService({
             data: this.data,
             i18n: this.i18n,
@@ -167,14 +154,14 @@ export default class CodeTabs extends Plugin {
     private initTabModules(): void {
         const pluginApi = TabsCore.initGlobalFunctions(
             this.i18n,
-            () => this.lifecycleService.refreshActiveDocument(),
+            () => this.lifecycleService.reloadActiveDocument(),
             this.data,
             () => this.configManager.saveConfig()
         );
         this.lifecycleService.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
         this.tabTransformManager = new TransformCore(this.i18n, () =>
-            this.lifecycleService.refreshActiveDocument()
+            this.lifecycleService.reloadActiveDocument()
         );
     }
 
@@ -197,7 +184,7 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             tabTransformManager: this.tabTransformManager,
-            onReload: () => this.lifecycleService.refreshActiveDocument(),
+            onReload: () => this.lifecycleService.reloadActiveDocument(),
             addCommand: (command) => this.addCommand(command),
         });
         this.uiEntryManager = new UiEntryManager({
@@ -205,7 +192,7 @@ export default class CodeTabs extends Plugin {
             addTopBar: (options) => this.addTopBar(options),
             openSetting: () => this.openSetting(),
             protyleSlash: this.protyleSlash,
-            onReload: () => this.lifecycleService.refreshActiveDocument(),
+            onReload: () => this.lifecycleService.reloadActiveDocument(),
         });
         this.configManager = new ConfigManager({
             data: this.data,

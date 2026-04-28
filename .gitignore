@@ -1,6 +1,8 @@
 .idea
 .qoder
 .trae
+.arts
+.codeartsdoer
 .vscode/*
 !.vscode/code-tabs.code-snippets
 .DS_Store

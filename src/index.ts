@@ -13,12 +13,12 @@ import { TransformCore } from "@/core/TransformCore";
 import { TabsCore } from "@/core/TabsCore";
 import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
 import { DebugLogManager } from "@/modules/developer/DebugLogManager";
-import { EditorRefreshService } from "@/services/EditorRefreshService";
-import { StyleProbe } from "@/services/StyleProbe";
-import { ThemeObserver } from "@/services/ThemeObserver";
+import { LifecycleService } from "@/services/LifecycleService";
+import { ThemeService } from "@/services/ThemeService";
 import { SettingsPanel } from "@/modules/settings/SettingsPanel";
 import { ConfigManager } from "@/modules/config/ConfigManager";
 import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
+import { EditorRefreshService } from "@/services/EditorRefreshService";
 import { ProtyleLifecycleService } from "@/services/ProtyleLifecycleService";
 import { UiEntryManager } from "@/modules/ui/UiEntryManager";
 import { syncSiyuanConfig } from "@/utils/dom";
@@ -32,13 +32,12 @@ import { delay } from "@/utils/common";
 export default class CodeTabs extends Plugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private tabTransformManager!: TransformCore;
-    private editorRefreshService!: EditorRefreshService;
-    private themeObserver!: ThemeObserver;
+    private lifecycleService!: LifecycleService;
+    private themeService!: ThemeService;
     private settingsPanel!: SettingsPanel;
     private debugLogManager!: DebugLogManager;
     private configManager!: ConfigManager;
     private commandManager!: CommandManager;
-    private protyleLifecycleService!: ProtyleLifecycleService;
     private uiEntryManager!: UiEntryManager;
 
     /**
@@ -49,7 +48,7 @@ export default class CodeTabs extends Plugin {
         this.registerBlockIconEvent();
         this.registerIcons();
         this.debugLogManager = new DebugLogManager();
-        this.editorRefreshService = new EditorRefreshService();
+        this.initServices();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
 
@@ -76,7 +75,7 @@ export default class CodeTabs extends Plugin {
 
         await this.loadConfigAndApplyTheme();
         await this.checkLegacyTabsPrompt();
-        this.themeObserver.start();
+        this.themeService.startObserving();
 
         this.registerProtyleEvents();
         LineNumberManager.scanAll();
@@ -90,11 +89,11 @@ export default class CodeTabs extends Plugin {
     onunload() {
         this.unregisterBlockIconEvent();
         this.unregisterProtyleEvents();
-        this.themeObserver?.stop();
+        this.themeService.cleanup();
+        this.lifecycleService.cleanup();
         this.tabTransformManager?.cancelCurrentTask();
         LineNumberManager.cleanup();
         TabsCore.cleanup();
-        StyleProbe.cleanup();
         this.debugLogManager?.cleanup();
         if (window.pluginCodeTabs) {
             delete window.pluginCodeTabs;
@@ -133,11 +132,32 @@ export default class CodeTabs extends Plugin {
     }
 
     private registerProtyleEvents(): void {
-        this.protyleLifecycleService.register(this.eventBus);
+        this.lifecycleService.registerEventListeners(this.eventBus);
     }
 
     private unregisterProtyleEvents(): void {
-        this.protyleLifecycleService.unregister(this.eventBus);
+        this.lifecycleService.unregisterEventListeners(this.eventBus);
+    }
+
+    private initServices(): void {
+        const editorRefreshService = new EditorRefreshService();
+        const protyleLifecycleService = new ProtyleLifecycleService({
+            onRefreshOverflow: (root: HTMLElement | ShadowRoot | undefined) =>
+                editorRefreshService.refreshOverflow(root),
+        });
+
+        this.lifecycleService = new LifecycleService({
+            editorRefreshService,
+            protyleLifecycleService,
+        });
+        this.lifecycleService.init();
+
+        this.themeService = new ThemeService({
+            data: this.data,
+            i18n: this.i18n,
+            onSaveConfig: () => this.configManager.saveConfig(),
+        });
+        this.themeService.init();
     }
 
     /**
@@ -147,14 +167,14 @@ export default class CodeTabs extends Plugin {
     private initTabModules(): void {
         const pluginApi = TabsCore.initGlobalFunctions(
             this.i18n,
-            () => this.editorRefreshService.reloadActiveDocument(),
+            () => this.lifecycleService.refreshActiveDocument(),
             this.data,
             () => this.configManager.saveConfig()
         );
-        this.editorRefreshService.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
+        this.lifecycleService.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
         this.tabTransformManager = new TransformCore(this.i18n, () =>
-            this.editorRefreshService.reloadActiveDocument()
+            this.lifecycleService.refreshActiveDocument()
         );
     }
 
@@ -173,31 +193,23 @@ export default class CodeTabs extends Plugin {
         });
         this.settingsPanel.ensureSettings();
         this.settingsPanel.applySettings();
-        this.themeObserver = new ThemeObserver({
-            data: this.data,
-            i18n: this.i18n,
-            onSaveConfig: () => this.configManager.saveConfig(),
-        });
         this.commandManager = new CommandManager({
             i18n: this.i18n,
             data: this.data,
             tabTransformManager: this.tabTransformManager,
-            onReload: () => this.editorRefreshService.reloadActiveDocument(),
+            onReload: () => this.lifecycleService.refreshActiveDocument(),
             addCommand: (command) => this.addCommand(command),
-        });
-        this.protyleLifecycleService = new ProtyleLifecycleService({
-            onRefreshOverflow: (root: HTMLElement | ShadowRoot | undefined) => this.editorRefreshService.refreshOverflow(root),
         });
         this.uiEntryManager = new UiEntryManager({
             i18n: this.i18n,
             addTopBar: (options) => this.addTopBar(options),
             openSetting: () => this.openSetting(),
             protyleSlash: this.protyleSlash,
-            onReload: () => this.editorRefreshService.reloadActiveDocument(),
+            onReload: () => this.lifecycleService.refreshActiveDocument(),
         });
         this.configManager = new ConfigManager({
             data: this.data,
-            onApplyThemeStyles: () => this.themeObserver.applyThemeStyles(),
+            onApplyThemeStyles: async () => this.themeService.applyThemeStyles(),
             onAfterLoad: () => {
                 this.settingsPanel.ensureSettings();
                 this.settingsPanel.applySettings();

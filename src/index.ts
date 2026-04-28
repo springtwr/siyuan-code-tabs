@@ -71,9 +71,9 @@ export default class CodeTabs extends Plugin {
         syncSiyuanConfig(this.data);
         logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
 
+        this.themeService.startObserving();
         await this.loadConfigAndApplyTheme();
         await this.checkLegacyTabsPrompt();
-        this.themeService.startObserving();
 
         this.registerProtyleEvents();
         LineNumberService.initEventListener();

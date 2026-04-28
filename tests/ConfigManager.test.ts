@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildConfigPayload, isRecord, mergeCustomConfig } from "@/modules/config/ConfigManager";
+import { buildConfigPayload, isRecord, mergeCustomConfig } from "@/services/ConfigService";
 
-describe("ConfigManager helpers", () => {
+describe("ConfigService helpers", () => {
     it("isRecord 仅接受对象", () => {
         expect(isRecord({})).toBe(true);
         expect(isRecord(null)).toBe(false);

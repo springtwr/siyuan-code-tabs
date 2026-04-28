@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Setting } from "siyuan";
-import { SettingsPanel } from "@/modules/settings/SettingsPanel";
+import { SettingsService } from "@/services/SettingsService";
 import { PLUGIN_STYLE_ID, TAB_WIDTH_DEFAULT, TAB_WIDTH_SETTING_KEY } from "@/constants";
 
 const createPanel = (data: Record<string, unknown>) =>
-    new SettingsPanel({
+    new SettingsService({
         i18n: {},
         data,
         onAllTabsToCodeBlocks: vi.fn(),
@@ -13,7 +13,7 @@ const createPanel = (data: Record<string, unknown>) =>
         buildDebugToggle: () => document.createElement("input"),
     });
 
-describe("SettingsPanel", () => {
+describe("SettingsService", () => {
     beforeEach(() => {
         const existing = document.getElementById(PLUGIN_STYLE_ID);
         if (existing) existing.remove();

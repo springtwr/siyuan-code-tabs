@@ -1,7 +1,7 @@
 import type { IMenu, IObject } from "siyuan";
 
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
-import { DevToggleManager } from "@/modules/developer/DevToggleManager";
+import { DevToggleService } from "./DevToggleService";
 import type { TransformCore } from "@/core/TransformCore";
 import { getSelectedElements } from "@/utils/dom";
 import { t } from "@/utils/i18n";
@@ -35,7 +35,7 @@ type CommandManagerOptions = {
 /**
  * 负责命令注册与块菜单构建。
  */
-export class CommandManager {
+export class CommandService {
     private readonly i18n: IObject;
     private readonly data: Record<string, unknown>;
     private readonly tabTransformManager: TransformCore;
@@ -173,21 +173,21 @@ export class CommandManager {
             iconHTML: "",
             label: t(this.i18n, "menu.dev.toggleLineWrap"),
             click: () => {
-                DevToggleManager.toggleEditorSetting("codeLineWrap", this.data, this.onReload);
+                DevToggleService.toggleEditorSetting("codeLineWrap", this.data, this.onReload);
             },
         });
         detail.menu.addItem({
             iconHTML: "",
             label: t(this.i18n, "menu.dev.toggleLigatures"),
             click: () => {
-                DevToggleManager.toggleEditorSetting("codeLigatures", this.data, this.onReload);
+                DevToggleService.toggleEditorSetting("codeLigatures", this.data, this.onReload);
             },
         });
         detail.menu.addItem({
             iconHTML: "",
             label: t(this.i18n, "menu.dev.toggleLineNumber"),
             click: () => {
-                DevToggleManager.toggleEditorSetting(
+                DevToggleService.toggleEditorSetting(
                     "codeSyntaxHighlightLineNum",
                     this.data,
                     this.onReload

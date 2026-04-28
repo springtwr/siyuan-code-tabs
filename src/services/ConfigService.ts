@@ -54,7 +54,7 @@ function cleanupDeprecatedKeys(target: Record<string, unknown>): void {
  * 负责插件配置文件的加载与写入。
  * 副作用：写入配置文件、触发主题样式更新。
  */
-export class ConfigManager {
+export class ConfigService {
     private readonly data: Record<string, unknown>;
     private readonly onApplyThemeStyles: () => Promise<unknown>;
     private readonly onAfterLoad: () => void;

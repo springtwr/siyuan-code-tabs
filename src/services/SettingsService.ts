@@ -26,7 +26,7 @@ type SettingsPanelOptions = {
 /**
  * 负责构建设置项与应用配置。
  */
-export class SettingsPanel {
+export class SettingsService {
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
     private readonly onAllTabsToCodeBlocks: () => void;

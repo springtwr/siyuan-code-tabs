@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { LineNumberService } from "@/services/LineNumberService";
 
-describe("LineNumberManager", () => {
+describe("LineNumberService", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
         window.siyuan.config.editor.codeSyntaxHighlightLineNum = true;
@@ -24,10 +24,10 @@ describe("LineNumberManager", () => {
         container.appendChild(content);
         document.body.appendChild(container);
 
-        LineNumberManager.refreshActive(container);
+        LineNumberService.refreshActive(container);
 
         expect(content.querySelector(".tab-line-num")).not.toBeNull();
 
-        LineNumberManager.cleanup();
+        LineNumberService.cleanup();
     });
 });

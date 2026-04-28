@@ -11,14 +11,14 @@ import {
 } from "@/constants";
 import { TransformCore } from "@/core/TransformCore";
 import { TabsCore } from "@/core/TabsCore";
-import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
-import { DebugLogManager } from "@/modules/developer/DebugLogManager";
+import { LineNumberService } from "@/services/LineNumberService";
+import { DebugService } from "@/services/DebugService";
 import { LifecycleService } from "@/services/LifecycleService";
 import { ThemeService } from "@/services/ThemeService";
-import { SettingsPanel } from "@/modules/settings/SettingsPanel";
-import { ConfigManager } from "@/modules/config/ConfigManager";
-import { CommandManager, type BlockIconEventDetail } from "@/modules/command/CommandManager";
-import { UiEntryManager } from "@/modules/ui/UiEntryManager";
+import { SettingsService } from "@/services/SettingsService";
+import { ConfigService } from "@/services/ConfigService";
+import { CommandService, type BlockIconEventDetail } from "@/services/CommandService";
+import { UIService } from "@/services/UIService";
 import { syncSiyuanConfig } from "@/utils/dom";
 import { t } from "@/utils/i18n";
 import { delay } from "@/utils/common";
@@ -32,11 +32,11 @@ export default class CodeTabs extends Plugin {
     private tabTransformManager!: TransformCore;
     private lifecycleService!: LifecycleService;
     private themeService!: ThemeService;
-    private settingsPanel!: SettingsPanel;
-    private debugLogManager!: DebugLogManager;
-    private configManager!: ConfigManager;
-    private commandManager!: CommandManager;
-    private uiEntryManager!: UiEntryManager;
+    private settingsService!: SettingsService;
+    private debugService!: DebugService;
+    private configService!: ConfigService;
+    private commandService!: CommandService;
+    private uiService!: UIService;
 
     /**
      * onload 阶段：注册事件与基础模块。
@@ -45,14 +45,14 @@ export default class CodeTabs extends Plugin {
     async onload() {
         this.registerBlockIconEvent();
         this.registerIcons();
-        this.debugLogManager = new DebugLogManager();
+        this.debugService = new DebugService();
         this.initServices();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
 
         this.initTabModules();
         this.initManagers();
-        this.uiEntryManager.registerSlashMenu();
+        this.uiService.registerSlashMenu();
 
         this.initSettings();
         this.registerCommands();
@@ -66,7 +66,7 @@ export default class CodeTabs extends Plugin {
     async onLayoutReady() {
         logger.info("布局就绪，开始初始化");
 
-        this.uiEntryManager.initTopBar();
+        this.uiService.initTopBar();
 
         syncSiyuanConfig(this.data);
         logger.info("同步思源配置完成", { configKeys: Object.keys(this.data) });
@@ -76,7 +76,7 @@ export default class CodeTabs extends Plugin {
         this.themeService.startObserving();
 
         this.registerProtyleEvents();
-        LineNumberManager.scanAll();
+        LineNumberService.scanAll();
         logger.info("行号扫描完成");
     }
 
@@ -90,9 +90,9 @@ export default class CodeTabs extends Plugin {
         this.themeService.cleanup();
         this.lifecycleService.cleanup();
         this.tabTransformManager?.cancelCurrentTask();
-        LineNumberManager.cleanup();
+        LineNumberService.cleanup();
         TabsCore.cleanup();
-        this.debugLogManager?.cleanup();
+        this.debugService?.cleanup();
         if (window.pluginCodeTabs) {
             delete window.pluginCodeTabs;
         }
@@ -100,12 +100,12 @@ export default class CodeTabs extends Plugin {
     }
 
     private blockIconEvent({ detail }: { detail: BlockIconEventDetail }) {
-        this.commandManager.handleBlockIconEvent(detail);
+        this.commandService.handleBlockIconEvent(detail);
     }
 
     private initLogging(): void {
         logger.info("插件加载开始");
-        this.debugLogManager.init();
+        this.debugService.init();
         logger.info(
             '如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")'
         );
@@ -142,21 +142,17 @@ export default class CodeTabs extends Plugin {
         this.themeService = new ThemeService({
             data: this.data,
             i18n: this.i18n,
-            onSaveConfig: () => this.configManager.saveConfig(),
+            onSaveConfig: () => this.configService.saveConfig(),
         });
         this.themeService.init();
     }
 
-    /**
-     * 初始化 tabs 交互与转换模块。
-     * @returns void
-     */
     private initTabModules(): void {
         const pluginApi = TabsCore.initGlobalFunctions(
             this.i18n,
             () => this.lifecycleService.reloadActiveDocument(),
             this.data,
-            () => this.configManager.saveConfig()
+            () => this.configService.saveConfig()
         );
         this.lifecycleService.setRefreshOverflowProvider(() => pluginApi.refreshOverflow);
         logger.info("全局函数已注册");
@@ -165,48 +161,44 @@ export default class CodeTabs extends Plugin {
         );
     }
 
-    /**
-     * 初始化 UI、配置、命令等管理器。
-     * @returns void
-     */
     private initManagers(): void {
-        this.settingsPanel = new SettingsPanel({
+        this.settingsService = new SettingsService({
             i18n: this.i18n,
             data: this.data,
             onAllTabsToCodeBlocks: () => this.tabTransformManager.allTabsToCodeBlocks(),
             onUpgradeLegacyTabs: () => this.upgradeLegacyTabs(),
-            onSaveConfig: () => this.configManager.saveConfig(),
-            buildDebugToggle: () => this.debugLogManager.createToggle(),
+            onSaveConfig: () => this.configService.saveConfig(),
+            buildDebugToggle: () => this.debugService.createToggle(),
         });
-        this.settingsPanel.ensureSettings();
-        this.settingsPanel.applySettings();
-        this.commandManager = new CommandManager({
+        this.settingsService.ensureSettings();
+        this.settingsService.applySettings();
+        this.commandService = new CommandService({
             i18n: this.i18n,
             data: this.data,
             tabTransformManager: this.tabTransformManager,
             onReload: () => this.lifecycleService.reloadActiveDocument(),
             addCommand: (command) => this.addCommand(command),
         });
-        this.uiEntryManager = new UiEntryManager({
+        this.uiService = new UIService({
             i18n: this.i18n,
             addTopBar: (options) => this.addTopBar(options),
             openSetting: () => this.openSetting(),
             protyleSlash: this.protyleSlash,
             onReload: () => this.lifecycleService.reloadActiveDocument(),
         });
-        this.configManager = new ConfigManager({
+        this.configService = new ConfigService({
             data: this.data,
             onApplyThemeStyles: async () => this.themeService.applyThemeStyles(),
             onAfterLoad: () => {
-                this.settingsPanel.ensureSettings();
-                this.settingsPanel.applySettings();
-                this.settingsPanel.syncInputs();
+                this.settingsService.ensureSettings();
+                this.settingsService.applySettings();
+                this.settingsService.syncInputs();
             },
         });
     }
 
     private async loadConfigAndApplyTheme(): Promise<void> {
-        await this.configManager.loadAndApply();
+        await this.configService.loadAndApply();
     }
 
     /**
@@ -237,7 +229,7 @@ export default class CodeTabs extends Plugin {
                 .replace("{1}", this.displayName || "code-tabs");
             pushMsg(message, 12000);
         }
-        await this.configManager.saveConfig();
+        await this.configService.saveConfig();
     }
 
     /**
@@ -253,7 +245,7 @@ export default class CodeTabs extends Plugin {
         this.data[LEGACY_COUNT_KEY] = remaining;
         logger.debug(`重置 LEGACY_COUNT_KEY 为 ${this.data[LEGACY_COUNT_KEY]}`);
         this.data[LEGACY_CHECK_VERSION_KEY] = PLUGIN_VERSION;
-        await this.configManager.saveConfig();
+        await this.configService.saveConfig();
     }
 
     /**
@@ -279,10 +271,10 @@ export default class CodeTabs extends Plugin {
         this.setting = new Setting({
             confirmCallback: () => {},
         });
-        this.settingsPanel.init(this.setting);
+        this.settingsService.init(this.setting);
     }
 
     private registerCommands(): void {
-        this.commandManager.registerCommands();
+        this.commandService.registerCommands();
     }
 }

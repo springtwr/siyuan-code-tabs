@@ -13,7 +13,7 @@ type DebugLogManagerOptions = {
  * 调试日志开关与写入管理。
  * 副作用：写入 debug.log、修改 logger 行为。
  */
-export class DebugLogManager {
+export class DebugService {
     private readonly logPath: string;
     private readonly bufferLimit: number;
     private readonly debounceMs: number;

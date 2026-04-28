@@ -6,7 +6,7 @@ import logger from "@/utils/logger";
  * tabs 代码块行号管理。
  * 副作用：注入行号 DOM、监听尺寸变化。
  */
-export class LineNumberManager {
+export class LineNumberService {
     private static readonly lineNumClass = "tab-line-num";
     private static readonly lineNumEnabledClass = "tab-content--linenumber";
     private static readonly rowClass = "tab-line-num__row";

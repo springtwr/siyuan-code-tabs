@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { UiEntryManager, buildSlashMenuHtml } from "@/modules/ui/UiEntryManager";
+import { UIService, buildSlashMenuHtml } from "@/services/UIService";
 
 vi.mock("@/utils/i18n", () => ({
     t: (_i18n: Record<string, string>, key: string) => key,
@@ -27,7 +27,7 @@ vi.mock("@/modules/tabs/TabRenderer", () => ({
     },
 }));
 
-describe("UiEntryManager", () => {
+describe("UIService", () => {
     it("buildSlashMenuHtml 生成包含 i18n key 的 HTML", () => {
         const html = buildSlashMenuHtml({});
         expect(html).toContain("slash.tabs");
@@ -35,7 +35,7 @@ describe("UiEntryManager", () => {
 
     it("initTopBar 调用 addTopBar", () => {
         const addTopBar = vi.fn();
-        const manager = new UiEntryManager({
+        const manager = new UIService({
             i18n: {},
             addTopBar,
             openSetting: vi.fn(),
@@ -48,7 +48,7 @@ describe("UiEntryManager", () => {
 
     it("registerSlashMenu 注册入口项", () => {
         const protyleSlash: Array<{ id?: string; html?: string }> = [];
-        const manager = new UiEntryManager({
+        const manager = new UIService({
             i18n: {},
             addTopBar: vi.fn(),
             openSetting: vi.fn(),

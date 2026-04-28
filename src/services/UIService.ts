@@ -48,7 +48,7 @@ export function buildSlashMenuHtml(i18n: IObject): string {
 /**
  * 负责注册顶部按钮与斜杠菜单入口。
  */
-export class UiEntryManager {
+export class UIService {
     private readonly i18n: IObject;
     private readonly addTopBar: (options: TopBarOptions) => void;
     private readonly openSetting: () => void;

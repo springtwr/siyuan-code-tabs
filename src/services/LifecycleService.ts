@@ -1,6 +1,6 @@
 import { getActiveEditor } from "siyuan";
 
-import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { LineNumberService } from "./LineNumberService";
 import logger from "@/utils/logger";
 
 type RefreshOverflow = (root?: HTMLElement | ShadowRoot) => void;
@@ -76,7 +76,7 @@ export class LifecycleService {
             }
         )?.detail;
         const root = detail?.protyle?.wysiwyg?.element || detail?.element;
-        LineNumberManager.scanProtyle(root);
+        LineNumberService.scanProtyle(root);
         this.refreshOverflow(root);
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {

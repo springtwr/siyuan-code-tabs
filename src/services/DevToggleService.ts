@@ -1,6 +1,6 @@
 import logger from "@/utils/logger";
 import { ThemeManager } from "@/services/ThemeManager";
-import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { LineNumberService } from "@/services/LineNumberService";
 import { syncSiyuanConfig } from "@/utils/dom";
 
 type ToggleKey = "codeLineWrap" | "codeLigatures" | "codeSyntaxHighlightLineNum";
@@ -8,7 +8,7 @@ type ToggleKey = "codeLineWrap" | "codeLigatures" | "codeSyntaxHighlightLineNum"
 /**
  * 开发模式下快速切换编辑器配置。
  */
-export class DevToggleManager {
+export class DevToggleService {
     /**
      * 切换编辑器配置并触发相关样式刷新。
      * @param key 配置字段
@@ -31,8 +31,8 @@ export class DevToggleManager {
                 if (result.changed) {
                     ThemeManager.updateAllTabsStyle(result);
                 }
-                LineNumberManager.refreshAll();
-                LineNumberManager.scanAll();
+                LineNumberService.refreshAll();
+                LineNumberService.scanAll();
                 onReload();
             })
             .catch((error) => {

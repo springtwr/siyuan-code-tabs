@@ -3,7 +3,7 @@ import { debounce } from "@/utils/common";
 import { t } from "@/utils/i18n";
 import { getSiyuanConfig } from "@/utils/dom";
 import { ThemeManager } from "./ThemeManager";
-import { LineNumberManager } from "@/modules/line-number/LineNumberManager";
+import { LineNumberService } from "@/services/LineNumberService";
 
 /**
  * 主题变更监听与更新计划生成。
@@ -347,14 +347,14 @@ export class ThemeObserver {
     }
 
     private refreshLineNumbersIfNeeded(): void {
-        const enabled = LineNumberManager.isEnabled();
+        const enabled = LineNumberService.isEnabled();
         if (this.lastLineNumberEnabled === undefined) {
             this.lastLineNumberEnabled = enabled;
         }
         if (enabled) {
-            LineNumberManager.refreshAll();
+            LineNumberService.refreshAll();
         } else if (this.lastLineNumberEnabled) {
-            LineNumberManager.cleanup();
+            LineNumberService.cleanup();
         }
         this.lastLineNumberEnabled = enabled;
     }

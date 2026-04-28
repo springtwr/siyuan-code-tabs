@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CommandManager } from "@/modules/command/CommandManager";
+import { CommandService } from "@/services/CommandService";
 import type { TransformCore } from "@/core/TransformCore";
 import type { IMenu } from "siyuan";
 
@@ -23,8 +23,8 @@ vi.mock("@/utils/env", () => ({
 }));
 
 const toggleEditorSetting = vi.fn();
-vi.mock("@/modules/developer/DevToggleManager", () => ({
-    DevToggleManager: { toggleEditorSetting: (...args: unknown[]) => toggleEditorSetting(...args) },
+vi.mock("@/services/DevToggleService", () => ({
+    DevToggleService: { toggleEditorSetting: (...args: unknown[]) => toggleEditorSetting(...args) },
 }));
 
 vi.mock("@/services/ThemeManager", () => ({
@@ -43,7 +43,7 @@ vi.mock("@/utils/i18n", () => ({
     t: (_i18n: Record<string, string>, key: string) => key,
 }));
 
-describe("CommandManager", () => {
+describe("CommandService", () => {
     beforeEach(() => {
         getSelectedElements.mockReset();
         isDevMode.mockReturnValue(true);
@@ -59,7 +59,7 @@ describe("CommandManager", () => {
         const addCommand = vi.fn();
         getSelectedElements.mockReturnValue([document.createElement("div")]);
 
-        const manager = new CommandManager({
+        const manager = new CommandService({
             i18n: {},
             data: {},
             tabTransformManager,
@@ -89,7 +89,7 @@ describe("CommandManager", () => {
         node.dataset.type = "NodeHTMLBlock";
         node.setAttribute("data-custom", "true");
 
-        const manager = new CommandManager({
+        const manager = new CommandService({
             i18n: {},
             data: {},
             tabTransformManager,
@@ -119,7 +119,7 @@ describe("CommandManager", () => {
         } as unknown as TransformCore;
         const menuItems: IMenu[] = [];
 
-        const manager = new CommandManager({
+        const manager = new CommandService({
             i18n: {},
             data: {},
             tabTransformManager,

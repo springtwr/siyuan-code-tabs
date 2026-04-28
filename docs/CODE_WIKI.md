@@ -83,7 +83,7 @@ graph TB
 
     %% 依赖关系
     index ==>|初始化| MainLayer
-    CoreLayer -->|调用| ServiceLayer
+    CoreLayer -->|事件驱动| ServiceLayer
     MainLayer -.->|使用| FoundationLayer
 
     %% 样式应用
@@ -98,18 +98,24 @@ graph TB
    - **基础层（Foundation）**：API、工具、类型、常量
 
 2. **依赖规则**：
-   - 核心层 → 服务层：仅限**工具性服务**（StyleProbe、LineNumberService）
-   - 核心层 → 服务层：禁止依赖**协调性服务**（LifecycleService、ThemeService等）
+   - 核心层 → 服务层：通过**事件驱动**通信（CustomEvent）
+   - 核心层 → 基础层：正常使用
    - 服务层 → 基础层：正常使用
    - 无循环依赖
 
-3. **职责单一**：每个模块只负责一项核心功能
+3. **事件驱动机制**：
+   - 核心层通过 `CustomEvent` 触发事件，服务层监听并响应
+   - 事件：`tab-activated`（标签激活）→ LineNumberService 刷新行号
+   - 必须设置 `composed: true` 以穿越 ShadowRoot 边界
+   - 优点：解耦彻底，支持多个监听器，性能影响可忽略（< 0.01ms）
+
+4. **职责单一**：每个模块只负责一项核心功能
 
 ### 模块职责说明
 
 | 模块 | 职责 | 文件位置 |
 |------|------|----------|
-| **TabsCore** | 标签页交互与全局函数 | `src/core/TabsCore.ts` |
+| **TabsCore** | 标签页交互与全局函数（触发 tab-activated 事件） | `src/core/TabsCore.ts` |
 | **TransformCore** | 批量转换（代码块↔标签页） | `src/core/TransformCore.ts` |
 | **TabEditor** | 标签页编辑器主模块 | `src/core/TabEditor.ts` |
 | **TabRenderer** | HTML渲染与代码高亮 | `src/core/TabRenderer.ts` |
@@ -120,7 +126,7 @@ graph TB
 | **ConfigService** | 配置加载与保存 | `src/services/ConfigService.ts` |
 | **SettingsService** | 设置面板管理 | `src/services/SettingsService.ts` |
 | **UIService** | UI入口（顶栏+斜杠菜单） | `src/services/UIService.ts` |
-| **LineNumberService** | 行号扫描与管理 | `src/services/LineNumberService.ts` |
+| **LineNumberService** | 行号扫描与管理（监听 tab-activated 事件） | `src/services/LineNumberService.ts` |
 | **DebugService** | 调试日志管理 | `src/services/DebugService.ts` |
 
 ### 目录结构
@@ -786,6 +792,6 @@ index.ts (入口)
 1. **兼容性**：要求思源笔记 3.5.0+
 2. **安全设置**：需在设置中开启"允许HTML块内执行脚本"
 3. **架构约束**：
-   - 核心层可依赖工具性服务（StyleProbe、LineNumberService），禁止依赖协调性服务
+   - 核心层通过事件驱动与服务层通信（CustomEvent），无直接依赖
    - 服务层（Services）不得相互循环依赖
-   - 所有资源必须在 `onunload` 中清理
+   - 所有资源必须在 `onunload` 中清理（包括事件监听器）

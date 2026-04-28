@@ -76,6 +76,7 @@ export default class CodeTabs extends Plugin {
         this.themeService.startObserving();
 
         this.registerProtyleEvents();
+        LineNumberService.initEventListener();
         LineNumberService.scanAll();
         logger.info("行号扫描完成");
     }

@@ -95,6 +95,14 @@ export class LineNumberService {
     }
 
     /**
+     * 初始化事件监听（监听 tab-activated 事件）。
+     * @returns void
+     */
+    static initEventListener(): void {
+        document.addEventListener("tab-activated", this.handleTabActivated);
+    }
+
+    /**
      * 关闭并清理所有行号相关 DOM 与监听。
      * @returns void
      */
@@ -144,7 +152,15 @@ export class LineNumberService {
 
     static cleanup(): void {
         this.disableAll();
+        document.removeEventListener("tab-activated", this.handleTabActivated);
     }
+
+    private static handleTabActivated = ((event: CustomEvent) => {
+        const { tabContainer } = event.detail;
+        if (tabContainer instanceof HTMLElement) {
+            LineNumberService.refreshActive(tabContainer);
+        }
+    }) as EventListener;
 
     /**
      * 绑定 HTML 块并初始化行号。

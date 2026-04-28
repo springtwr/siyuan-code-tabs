@@ -2,7 +2,6 @@ import { IObject, Menu } from "siyuan";
 
 import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
 import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
-import { LineNumberService } from "@/services/LineNumberService";
 import { decodeSource } from "@/utils/encoding";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
@@ -194,7 +193,13 @@ export class TabsCore {
                 }
             });
             refreshOverflowForContainer(tabContainer);
-            LineNumberService.refreshActive(tabContainer);
+            tabContainer.dispatchEvent(
+                new CustomEvent("tab-activated", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { tabContainer },
+                })
+            );
         };
 
         const openMoreMenu = (evt: MouseEvent, tabContainer: HTMLElement) => {

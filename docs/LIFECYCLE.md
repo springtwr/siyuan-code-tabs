@@ -31,7 +31,8 @@
 2. `ConfigService.loadAndApply()` - 加载配置
 3. `ThemeService.startObserving()` - 启动主题监听
 4. `LifecycleService.register(eventBus)` - 注册Protyle事件
-5. `LineNumberService.scanAll()` - 扫描行号
+5. `LineNumberService.initEventListener()` - 初始化事件监听（tab-activated）
+6. `LineNumberService.scanAll()` - 扫描行号
 
 ### onunload阶段
 
@@ -39,5 +40,5 @@
 1. `LifecycleService.cleanup()` - 注销事件
 2. `ThemeService.cleanup()` - 停止监听
 3. `TabsCore.cleanup()` - 清理全局对象
-4. `LineNumberService.cleanup()` - 清理行号
+4. `LineNumberService.cleanup()` - 清理行号与事件监听
 5. `DebugService.cleanup()` - 清理日志

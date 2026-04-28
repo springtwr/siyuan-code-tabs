@@ -20,91 +20,174 @@
 
 ```mermaid
 graph TB
-    style index fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
-    style Modules fill:#f0f9ff,stroke:#0ea5e9,stroke-width:2px
-    style tabs fill:#fef3c7,stroke:#f59e0b,stroke-width:1px
-    style theme fill:#ecfdf5,stroke:#10b981,stroke-width:1px
-    style 配置与命令 fill:#e0e7ff,stroke:#6366f1,stroke-width:1px
-    style 生命周期 fill:#fce7f3,stroke:#ec4899,stroke-width:1px
+    %% 样式定义
+    classDef index fill:#6366f1,stroke:#4f46e5,stroke-width:3px,color:#fff,font-weight:bold
+    classDef core fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e
+    classDef service fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46
+    classDef foundation fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#3730a3
+    classDef layer fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,stroke-dasharray: 5 5
 
-    subgraph CodeTabs Plugin
-        index[index.ts<br/>插件入口/生命周期]
+    %% 入口
+    index[📋 index.ts<br/><small>生命周期编排</small>]:::index
 
-        subgraph Modules
-            subgraph tabs
-                TabManager([TabManager<br/>交互与全局函数])
-                TabRenderer([TabRenderer<br/>HTML渲染])
-                TabDataService([TabDataService<br/>数据读写/校验])
-                TabTransform([TabTransformManager<br/>批量转换])
-                TabEditor([TabEditor<br/>编辑弹窗])
-            end
-
-            subgraph theme
-                ThemeManager([ThemeManager<br/>样式生成])
-                ThemeObserver([ThemeObserver<br/>主题监听])
-                StyleProbe([StyleProbe<br/>样式采集])
-            end
-
-            subgraph 配置与命令
-                SettingsPanel([SettingsPanel<br/>设置面板])
-                CommandManager([CommandManager<br/>命令注册])
-            end
-
-            subgraph 生命周期
-                Lifecycle([Lifecycle<br/>Protyle事件])
-                Refresh([Refresh<br/>编辑器刷新])
-                LineNumberMgr([LineNumberMgr<br/>行号管理])
-            end
+    %% 核心层与服务层横向并排
+    subgraph MainLayer[ ]
+        direction LR
+        
+        %% 核心层
+        subgraph CoreLayer[🔷 核心层]
+            direction LR
+            TabsCore[TabsCore<br/><small>标签页核心</small>]:::core
+            TransformCore[TransformCore<br/><small>批量转换</small>]:::core
+            TabEditor[TabEditor<br/><small>编辑器模块</small>]:::core
+            TabRenderer[TabRenderer<br/><small>HTML渲染</small>]:::core
+            TabData[TabData<br/><small>数据读写</small>]:::core
+            TabOverflowHandler[TabOverflowHandler<br/><small>溢出处理</small>]:::core
         end
 
-        subgraph 基础层
-            api[(api/<br/>思源API封装)]
-            utils[(utils/<br/>通用工具)]
-            types[(types/<br/>类型定义)]
-            constants[(constants/<br/>常量定义)]
+        %% 服务层
+        subgraph ServiceLayer[🛠️ 服务层]
+            direction TB
+            subgraph CoreServices[核心服务]
+                LifecycleService[LifecycleService<br/><small>生命周期</small>]:::service
+                ThemeService[ThemeService<br/><small>主题协调</small>]:::service
+                ConfigService[ConfigService<br/><small>配置管理</small>]:::service
+            end
+            subgraph UIServices[UI服务]
+                CommandService[CommandService<br/><small>命令注册</small>]:::service
+                SettingsService[SettingsService<br/><small>设置面板</small>]:::service
+                UIService[UIService<br/><small>UI入口</small>]:::service
+            end
+            subgraph SupportServices[支撑服务]
+                LineNumberService[LineNumberService<br/><small>行号管理</small>]:::service
+                DebugService[DebugService<br/><small>调试日志</small>]:::service
+                DevToggleService[DevToggleService<br/><small>开发切换</small>]:::service
+            end
+            subgraph ThemeServices[主题服务]
+                direction LR
+                ThemeManager[ThemeManager<br/><small>样式生成</small>]:::service
+                ThemeObserver[ThemeObserver<br/><small>主题监听</small>]:::service
+                StyleProbe[StyleProbe<br/><small>样式探测</small>]:::service
+            end
         end
     end
 
-    index -->|初始化| Modules
-    Modules -->|调用| api
-    Modules -->|使用| utils
-    Modules -->|依赖| types
-    Modules -->|引用| constants
+    %% 基础层
+    subgraph FoundationLayer[📦 基础层]
+        direction TB
+        api[(api/<br/><small>思源API</small>)]:::foundation
+        utils[(utils/<br/><small>工具函数</small>)]:::foundation
+        types[(types/<br/><small>类型定义</small>)]:::foundation
+        constants[(constants/<br/><small>常量</small>)]:::foundation
+    end
+
+    %% 依赖关系
+    index ==>|初始化| MainLayer
+    CoreLayer -->|调用| ServiceLayer
+    MainLayer -.->|使用| FoundationLayer
+
+    %% 样式应用
+    class CoreLayer,ServiceLayer,FoundationLayer layer
 ```
+
+### 架构设计原则
+
+1. **三层架构**：
+   - **核心层（Core）**：业务逻辑，可依赖工具性服务
+   - **服务层（Services）**：协调服务与工具性服务
+   - **基础层（Foundation）**：API、工具、类型、常量
+
+2. **依赖规则**：
+   - 核心层 → 服务层：仅限**工具性服务**（StyleProbe、LineNumberService）
+   - 核心层 → 服务层：禁止依赖**协调性服务**（LifecycleService、ThemeService等）
+   - 服务层 → 基础层：正常使用
+   - 无循环依赖
+
+3. **职责单一**：每个模块只负责一项核心功能
 
 ### 模块职责说明
 
-| 模块           | 职责           | 文件位置                   |
-| -------------- | -------------- | -------------------------- |
-| **Tabs**       | 标签页核心逻辑 | `src/modules/tabs/`        |
-| **Theme**      | 主题样式管理   | `src/modules/theme/`       |
-| **Settings**   | 设置面板       | `src/modules/settings/`    |
-| **Command**    | 命令注册       | `src/modules/command/`     |
-| **Lifecycle**  | 编辑器生命周期 | `src/modules/lifecycle/`   |
-| **LineNumber** | 行号管理       | `src/modules/line-number/` |
+| 模块 | 职责 | 文件位置 |
+|------|------|----------|
+| **TabsCore** | 标签页交互与全局函数 | `src/core/TabsCore.ts` |
+| **TransformCore** | 批量转换（代码块↔标签页） | `src/core/TransformCore.ts` |
+| **TabEditor** | 标签页编辑器主模块 | `src/core/TabEditor.ts` |
+| **TabRenderer** | HTML渲染与代码高亮 | `src/core/TabRenderer.ts` |
+| **TabData** | 数据编码解码与读写 | `src/core/TabData.ts` |
+| **LifecycleService** | 生命周期管理（刷新+事件） | `src/services/LifecycleService.ts` |
+| **ThemeService** | 主题协调（生成+监听+探测） | `src/services/ThemeService.ts` |
+| **CommandService** | 命令注册与块菜单 | `src/services/CommandService.ts` |
+| **ConfigService** | 配置加载与保存 | `src/services/ConfigService.ts` |
+| **SettingsService** | 设置面板管理 | `src/services/SettingsService.ts` |
+| **UIService** | UI入口（顶栏+斜杠菜单） | `src/services/UIService.ts` |
+| **LineNumberService** | 行号扫描与管理 | `src/services/LineNumberService.ts` |
+| **DebugService** | 调试日志管理 | `src/services/DebugService.ts` |
 
-### Tabs 模块子目录结构
+### 目录结构
 
 ```
-src/modules/tabs/
-├── core/          # 核心管理器
-│   ├── TabManager.ts
-│   ├── TabDataService.ts
-│   └── TabTransformManager.ts
-├── editor/        # 编辑器组件
-│   ├── TabEditor.ts
-│   ├── CodeEditorManager.ts
-│   ├── DragDropManager.ts
-│   ├── KeyboardNavigator.ts
-│   ├── LanguageSuggest.ts
-│   └── TabListRenderer.ts
-├── rendering/     # 渲染层
-│   ├── TabRenderer.ts
-│   └── TabOverflowHandler.ts
-├── utils/         # 工具函数
-│   ├── LegacyTabParser.ts
-│   └── language.ts
-└── types.ts       # 类型定义
+src/
+├── index.ts              # 入口：生命周期编排
+├── core/                 # 核心层：业务逻辑
+│   ├── TabsCore.ts       # 标签页交互核心
+│   ├── TransformCore.ts  # 批量转换
+│   ├── TabEditor.ts      # 编辑器主模块
+│   ├── TabRenderer.ts    # HTML渲染
+│   ├── TabData.ts # 数据读写服务
+│   ├── TabOverflowHandler.ts # 溢出处理
+│   └── edit-panel/      # 代码编辑器组件
+│       ├── CodeEditorManager.ts  # 编辑器管理
+│       ├── DragDropManager.ts    # 拖拽管理
+│       ├── KeyboardNavigator.ts  # 键盘导航
+│       ├── LanguageSuggest.ts    # 语言建议
+│       └── TabListRenderer.ts    # 标签列表渲染
+├── services/             # 服务层：协调服务
+│   ├── LifecycleService.ts   # 生命周期服务
+│   ├── ThemeService.ts       # 主题服务（协调层）
+│   ├── ThemeManager.ts       # 主题样式管理
+│   ├── ThemeObserver.ts      # 主题变更监听
+│   ├── StyleProbe.ts         # 样式探针
+│   ├── CommandService.ts     # 命令服务
+│   ├── ConfigService.ts      # 配置服务
+│   ├── SettingsService.ts    # 设置服务
+│   ├── UIService.ts          # UI入口服务
+│   ├── LineNumberService.ts  # 行号服务
+│   ├── DebugService.ts       # 调试服务
+│   └── DevToggleService.ts   # 开发者切换服务
+├── api/                  # 思源API封装
+│   ├── index.ts          # API汇总导出
+│   ├── request.ts        # 基础请求方法
+│   ├── block.ts          # 块操作API
+│   ├── file.ts           # 文件操作API
+│   ├── attr.ts           # 属性操作API
+│   ├── sql.ts            # SQL查询API
+│   ├── notebook.ts       # 笔记本API
+│   ├── notification.ts   # 通知API
+│   ├── template.ts       # 模板API
+│   ├── system.ts         # 系统API
+│   └── network.ts        # 网络API
+├── utils/                # 通用工具函数
+│   ├── common.ts         # 通用工具（防抖、延迟等）
+│   ├── dom.ts            # DOM操作工具
+│   ├── encoding.ts       # Base64编码解码
+│   ├── env.ts            # 环境检测
+│   ├── i18n.ts           # 国际化工具
+│   ├── language.ts       # 语言相关工具
+│   ├── logger.ts         # 日志工具
+│   ├── network.ts        # 网络请求工具
+│   └── LegacyTabParser.ts # 旧版标签解析
+├── types/                # 类型定义
+│   ├── index.ts          # 类型汇总导出
+│   ├── tabs.ts           # 标签页相关类型
+│   ├── theme.ts          # 主题相关类型
+│   ├── services.ts       # 服务相关类型
+│   ├── siyuan.ts         # 思源相关类型
+│   └── vite-env.d.ts     # Vite环境类型
+└── constants/            # 常量与模板
+    ├── index.ts          # 常量汇总导出
+    ├── keys.ts           # 属性键名常量
+    ├── paths.ts          # 文件路径常量
+    └── templates.ts      # HTML模板与SVG图标
 ```
 
 ---
@@ -114,7 +197,7 @@ src/modules/tabs/
 ### Tabs 数据结构
 
 ```typescript
-// src/modules/tabs/types.ts
+// src/types/tabs.ts
 
 export type CodeTab = {
   title: string; // 标签标题
@@ -139,7 +222,7 @@ export type TabsData = {
 ### 主题样式类型
 
 ```typescript
-// src/modules/theme/types.ts
+// src/types/theme.ts
 
 export type ThemeStyle = {
   // 字体相关
@@ -183,7 +266,7 @@ export type ThemeStyle = {
 
 ## 核心模块详解
 
-### 1. TabManager（标签页交互管理）
+### 1. TabsCore（标签页交互核心）
 
 **职责**：管理标签页的交互逻辑，注册全局函数供HTML块调用。
 
@@ -208,7 +291,7 @@ const pluginCodeTabs = {
 };
 ```
 
-**位置**：`src/modules/tabs/TabManager.ts`
+**位置**：`src/core/TabsCore.ts`
 
 ---
 
@@ -239,11 +322,11 @@ const pluginCodeTabs = {
 - `plantumlEncoder` - UML图
 - `Viz` - Graphviz图
 
-**位置**：`src/modules/tabs/TabRenderer.ts`
+**位置**：`src/core/TabRenderer.ts`
 
 ---
 
-### 3. TabDataService（数据服务）
+### 3. TabData（数据服务）
 
 **职责**：处理tabs数据的编码、解码、校验与迁移。
 
@@ -269,11 +352,11 @@ const pluginCodeTabs = {
 - 使用Base64编码存储在块属性 `custom-code-tabs-data` 中
 - 数据结构包含版本号，支持向后兼容
 
-**位置**：`src/modules/tabs/TabDataService.ts`
+**位置**：`src/core/TabData.ts`
 
 ---
 
-### 4. TabTransformManager（批量转换）
+### 4. TransformCore（批量转换）
 
 **职责**：处理代码块与标签页之间的批量转换操作。
 
@@ -299,7 +382,7 @@ const pluginCodeTabs = {
 3. 执行转换
 4. 显示进度与结果
 
-**位置**：`src/modules/tabs/TabTransformManager.ts`
+**位置**：`src/core/TransformCore.ts`
 
 ---
 
@@ -315,11 +398,45 @@ const pluginCodeTabs = {
 - 拖拽排序标签页
 - 语言输入联想
 
-**位置**：`src/modules/tabs/TabEditor.ts`
+**位置**：`src/core/TabEditor.ts`
+
+**编辑器子组件**：
+
+| 组件 | 职责 | 位置 |
+|------|------|------|
+| CodeEditorManager | 编辑器状态管理 | `src/core/code-editor/CodeEditorManager.ts` |
+| DragDropManager | 拖拽排序管理 | `src/core/code-editor/DragDropManager.ts` |
+| KeyboardNavigator | 键盘导航 | `src/core/code-editor/KeyboardNavigator.ts` |
+| LanguageSuggest | 语言输入建议 | `src/core/code-editor/LanguageSuggest.ts` |
+| TabListRenderer | 标签列表渲染 | `src/core/code-editor/TabListRenderer.ts` |
 
 ---
 
-### 6. ThemeManager（主题管理）
+### 6. ThemeService（主题服务）
+
+**职责**：协调主题样式生成、变更监听与样式探测。
+
+**核心方法**：
+
+| 方法                   | 功能             |
+| ---------------------- | ---------------- |
+| `init`                 | 初始化主题服务   |
+| `updateStyle`          | 更新样式文件     |
+| `startObserver`        | 启动主题监听     |
+| `stopObserver`         | 停止主题监听     |
+| `cleanup`              | 清理资源         |
+
+**协调的子模块**：
+
+- **ThemeManager**：生成并管理主题样式文件
+- **ThemeObserver**：监听主题变更并触发更新
+- **StyleProbe**：从思源编辑器探测样式
+
+**位置**：`src/services/ThemeService.ts`
+
+---
+
+### 7. ThemeManager（主题样式管理）
 
 **职责**：生成并管理主题样式文件。
 
@@ -337,11 +454,11 @@ const pluginCodeTabs = {
 - `background.css` - 背景与布局样式
 - `github-markdown.css` - Markdown渲染样式
 
-**位置**：`src/modules/theme/ThemeManager.ts`
+**位置**：`src/services/ThemeManager.ts`
 
 ---
 
-### 7. ThemeObserver（主题监听）
+### 8. ThemeObserver（主题监听）
 
 **职责**：监听主题变更并触发样式更新。
 
@@ -368,11 +485,11 @@ const pluginCodeTabs = {
 | `themeLight` / `themeDark`                   | background + codeStyle                |
 | `codeBlockThemeLight` / `codeBlockThemeDark` | codeStyle                             |
 
-**位置**：`src/modules/theme/ThemeObserver.ts`
+**位置**：`src/services/ThemeObserver.ts`
 
 ---
 
-### 8. ConfigManager（配置管理）
+### 9. ConfigService（配置管理）
 
 **职责**：管理插件配置的加载、合并与保存。
 
@@ -389,7 +506,43 @@ const pluginCodeTabs = {
 - 包含配置版本号，支持版本升级
 - 自动清理废弃的配置键
 
-**位置**：`src/modules/config/ConfigManager.ts`
+**位置**：`src/services/ConfigService.ts`
+
+---
+
+### 10. LifecycleService（生命周期服务）
+
+**职责**：管理编辑器刷新与Protyle生命周期事件。
+
+**核心方法**：
+
+| 方法                    | 功能               |
+| ----------------------- | ------------------ |
+| `init`                  | 初始化服务         |
+| `registerProtyleEvents` | 注册Protyle事件    |
+| `unregisterProtyleEvents` | 注销Protyle事件  |
+| `refreshEditors`        | 刷新编辑器         |
+| `cleanup`               | 清理资源           |
+
+**位置**：`src/services/LifecycleService.ts`
+
+---
+
+### 11. LineNumberService（行号服务）
+
+**职责**：管理代码行号的显示与刷新。
+
+**核心方法**：
+
+| 方法            | 功能                   |
+| --------------- | ---------------------- |
+| `scanAll`       | 扫描所有tabs并添加行号 |
+| `refreshAll`    | 刷新所有行号           |
+| `refreshActive` | 刷新活动标签行号       |
+| `cleanup`       | 清理所有行号           |
+| `isEnabled`     | 检查是否启用行号       |
+
+**位置**：`src/services/LineNumberService.ts`
 
 ---
 
@@ -399,30 +552,28 @@ const pluginCodeTabs = {
 
 ```typescript
 async onload() {
-    // 1. 注册事件
-    this.registerBlockIconEvent();
+    // 1. 初始化调试服务
+    this.debugService = new DebugService();
 
-    // 2. 注册图标
-    this.registerIcons();
+    // 2. 初始化生命周期服务
+    this.lifecycleService = new LifecycleService();
 
-    // 3. 初始化模块
-    this.debugLogManager = new DebugLogManager();
-    this.editorRefreshManager = new EditorRefreshManager();
+    // 3. 初始化核心模块
+    TabsCore.initGlobalFunctions(i18n, onReload);
 
-    // 4. 初始化Tabs模块
-    this.initTabModules();
+    // 4. 初始化服务层
+    this.configService = new ConfigService();
+    this.themeService = new ThemeService();
+    this.commandService = new CommandService();
+    this.uiService = new UIService();
+    this.settingsService = new SettingsService();
+    this.lineNumberService = new LineNumberService();
 
-    // 5. 初始化管理器
-    this.initManagers();
+    // 5. 注册斜杠菜单
+    this.uiService.registerSlashMenu();
 
-    // 6. 注册斜杠菜单
-    this.uiEntryManager.registerSlashMenu();
-
-    // 7. 初始化设置
-    this.initSettings();
-
-    // 8. 注册命令
-    this.registerCommands();
+    // 6. 注册命令
+    this.commandService.register();
 }
 ```
 
@@ -431,25 +582,25 @@ async onload() {
 ```typescript
 async onLayoutReady() {
     // 1. 初始化顶部按钮
-    this.uiEntryManager.initTopBar();
+    this.uiService.initTopBar();
 
     // 2. 同步思源配置
     syncSiyuanConfig(this.data);
 
     // 3. 加载配置并应用主题
-    await this.loadConfigAndApplyTheme();
+    await this.configService.loadAndApply();
 
     // 4. 检查旧版标签页并提示升级
-    await this.checkLegacyTabsPrompt();
+    await TransformCore.checkLegacyTabsPrompt();
 
     // 5. 启动主题监听
-    this.themeObserver.start();
+    this.themeService.startObserver();
 
     // 6. 注册Protyle事件
-    this.registerProtyleEvents();
+    this.lifecycleService.registerProtyleEvents();
 
     // 7. 扫描行号
-    LineNumberManager.scanAll();
+    this.lineNumberService.scanAll();
 }
 ```
 
@@ -458,14 +609,13 @@ async onLayoutReady() {
 ```typescript
 onunload() {
     // 清理所有资源
-    this.unregisterBlockIconEvent();
-    this.unregisterProtyleEvents();
-    this.themeObserver?.stop();
-    this.tabTransformManager?.cancelCurrentTask();
-    LineNumberManager.cleanup();
-    TabManager.cleanup();
+    this.lifecycleService?.unregisterProtyleEvents();
+    this.themeService?.stopObserver();
+    TransformCore.cancelCurrentTask();
+    this.lineNumberService?.cleanup();
+    TabsCore.cleanup();
     StyleProbe.cleanup();
-    this.debugLogManager?.cleanup();
+    this.debugService?.cleanup();
 
     // 删除全局对象
     if (window.pluginCodeTabs) {
@@ -505,15 +655,17 @@ onunload() {
 
 `src/utils/` 目录包含通用工具函数：
 
-| 文件          | 功能                         |
-| ------------- | ---------------------------- |
-| `common.ts`   | 通用工具函数（防抖、延迟等） |
-| `dom.ts`      | DOM操作工具                  |
-| `encoding.ts` | Base64编码解码               |
-| `env.ts`      | 环境检测（移动端判断等）     |
-| `i18n.ts`     | 国际化工具                   |
-| `logger.ts`   | 日志工具                     |
-| `network.ts`  | 网络请求工具                 |
+| 文件               | 功能                         |
+| ------------------ | ---------------------------- |
+| `common.ts`        | 通用工具函数（防抖、延迟等） |
+| `dom.ts`           | DOM操作工具                  |
+| `encoding.ts`      | Base64编码解码               |
+| `env.ts`           | 环境检测（移动端判断等）     |
+| `i18n.ts`          | 国际化工具                   |
+| `language.ts`      | 语言相关工具                 |
+| `logger.ts`        | 日志工具                     |
+| `network.ts`       | 网络请求工具                 |
+| `LegacyTabParser.ts` | 旧版标签解析器             |
 
 ---
 
@@ -537,11 +689,11 @@ onunload() {
 Tabs数据通过块属性存储：
 
 ```typescript
-// 新版数据格式
-CODE_TABS_DATA_ATTR = "custom-code-tabs-data";
+// src/constants/keys.ts
+export const CODE_TABS_DATA_ATTR = "custom-code-tabs-data";
 
 // 旧版数据格式（已废弃）
-CUSTOM_ATTR = "custom";
+export const CUSTOM_ATTR = "custom";
 ```
 
 ### 数据编码流程
@@ -585,77 +737,47 @@ themes:
 
 ---
 
-## 行号管理
-
-### LineNumberManager
-
-**职责**：管理代码行号的显示与刷新。
-
-**核心方法**：
-
-| 方法            | 功能                   |
-| --------------- | ---------------------- |
-| `scanAll`       | 扫描所有tabs并添加行号 |
-| `refreshAll`    | 刷新所有行号           |
-| `refreshActive` | 刷新活动标签行号       |
-| `cleanup`       | 清理所有行号           |
-| `isEnabled`     | 检查是否启用行号       |
-
-**位置**：`src/modules/line-number/LineNumberManager.ts`
-
----
-
 ## 依赖关系图
 
 ```
 index.ts (入口)
     │
-    ├── TabManager (交互管理)
-    │       ├── TabDataService (数据服务)
+    ├── TabsCore (交互核心)
+    │       ├── TabData (数据服务)
     │       ├── TabRenderer (渲染)
     │       ├── TabEditor (编辑器)
     │       └── StyleProbe (样式探针)
     │
-    ├── TabTransformManager (转换管理)
-    │       ├── TabDataService
+    ├── TransformCore (转换核心)
+    │       ├── TabData
     │       └── TabRenderer
     │
-    ├── ThemeObserver (主题监听)
+    ├── ThemeService (主题服务)
     │       ├── ThemeManager (主题管理)
     │       │       └── StyleProbe
-    │       └── LineNumberManager (行号管理)
+    │       ├── ThemeObserver (主题监听)
+    │       └── LineNumberService (行号服务)
     │
-    ├── ConfigManager (配置管理)
-    │       └── ThemeObserver
+    ├── ConfigService (配置服务)
+    │       └── ThemeService
     │
-    ├── SettingsPanel (设置面板)
-    │       ├── TabTransformManager
-    │       └── ConfigManager
+    ├── SettingsService (设置服务)
+    │       ├── TransformCore
+    │       └── ConfigService
     │
-    ├── CommandManager (命令管理)
-    │       └── TabTransformManager
+    ├── CommandService (命令服务)
+    │       └── TransformCore
     │
-    ├── UiEntryManager (UI入口)
-    │       ├── TabTransformManager
-    │       └── TabDataService
+    ├── UIService (UI服务)
+    │       ├── TransformCore
+    │       └── TabData
     │
-    └── ProtyleLifecycleManager (生命周期)
-            └── EditorRefreshManager (编辑器刷新)
+    ├── LifecycleService (生命周期服务)
+    │       └── 编辑器刷新逻辑
+    │
+    └── LineNumberService (行号服务)
+            └── StyleProbe
 ```
-
----
-
-## 版本历史
-
-| 版本   | 主要变更                                             |
-| ------ | ---------------------------------------------------- |
-| v2.1.2 | 修复插件首次启动时的无效ID参数错误                   |
-| v2.1.1 | 修复调用属性API时的节点错误                          |
-| v2.1.0 | 添加移动端"新建标签"菜单项                           |
-| v2.0.4 | 改进编辑器面板键盘交互、拖拽稳定性                   |
-| v2.0.3 | 修复Tab插入空格后撤销不工作、CSS变量污染             |
-| v2.0.2 | 修复移动端IME问题、语言建议点击无响应                |
-| v2.0.0 | 重大升级：不再使用代码块作为中间格式，添加编辑器面板 |
 
 ---
 
@@ -663,6 +785,7 @@ index.ts (入口)
 
 1. **兼容性**：要求思源笔记 3.5.0+
 2. **安全设置**：需在设置中开启"允许HTML块内执行脚本"
-3. **主题适配**：若样式显示异常，尝试切换主题或重启思源
-4. **数据恢复**：原始标签数据以Base64格式存储在块属性中，可恢复
-5. **导出限制**：导出为Markdown/HTML时样式会丢失，PDF导出保留样式但标签不可切换
+3. **架构约束**：
+   - 核心层可依赖工具性服务（StyleProbe、LineNumberService），禁止依赖协调性服务
+   - 服务层（Services）不得相互循环依赖
+   - 所有资源必须在 `onunload` 中清理

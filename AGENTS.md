@@ -13,8 +13,9 @@
 
 ```
 src/
-├── index.ts          # 入口与生命周期
-├── modules/          # 业务模块
+├── index.ts          # 入口与生命周期编排
+├── core/             # 核心层：业务逻辑
+├── services/         # 服务层：协调服务
 ├── api/              # 思源API封装
 ├── utils/            # 通用工具函数
 ├── types/            # 共享类型定义

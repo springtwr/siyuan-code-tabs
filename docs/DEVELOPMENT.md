@@ -4,8 +4,9 @@
 
 ## 项目结构概览
 
-- `src/index.ts`：插件入口与生命周期调度，尽量只保留编排逻辑。
-- `src/modules/`：核心业务模块（tabs、theme、line-number 等）。
+- `src/index.ts`：插件入口与生命周期编排，仅保留协调逻辑。
+- `src/core/`：核心层，业务逻辑（TabsCore、TransformCore、TabEditor等）。
+- `src/services/`：服务层，协调服务（LifecycleService、ThemeService等）。
 - `src/api/`：思源内置 API 的薄封装，不承载业务逻辑。
 - `src/utils/`：通用工具函数与日志。
 - `src/constants/`：常量与模板。
@@ -28,7 +29,7 @@
 - debug 日志会写入 `data/plugins/code-tabs/debug.log`。
 - 日志统一由 `src/utils/logger.ts` 管理，新增日志请使用统一接口。
 - 开发模式下会为 代码块换行/代码块连字/代码块显示行号 注册块菜单选项，方便调试。
-- 只在开发环境中生效的相关逻辑集中在 `src/modules/developer/`。
+- 只在开发环境中生效的相关逻辑集中在 `src/services/`（DebugService、DevToggleService）。
 
 ## i18n 规范
 

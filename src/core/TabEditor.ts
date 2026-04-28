@@ -5,11 +5,11 @@ import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 
 import { TabData } from "./TabData";
-import { TabListRenderer } from "./editor/TabListRenderer";
-import { DragDropManager } from "./editor/DragDropManager";
-import { LanguageSuggest } from "./editor/LanguageSuggest";
-import { KeyboardNavigator } from "./editor/KeyboardNavigator";
-import { CodeEditorManager } from "./editor/CodeEditorManager";
+import { TabListRenderer } from "./edit-panel/TabListRenderer";
+import { DragDropManager } from "./edit-panel/DragDropManager";
+import { LanguageSuggest } from "./edit-panel/LanguageSuggest";
+import { KeyboardNavigator } from "./edit-panel/KeyboardNavigator";
+import { CodeEditorManager } from "./edit-panel/CodeEditorManager";
 import type { TabsData } from "@/types/tabs";
 import { isLanguageSupported, normalizeLanguageInput } from "@/utils/language";
 
@@ -407,5 +407,6 @@ export class TabEditor {
         dialog.element.addEventListener("destroy", cleanup, { once: true });
     }
 }
+
 
 

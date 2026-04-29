@@ -14,6 +14,24 @@ import githubLightTheme from "prism-code-editor/themes/github-light.css?raw";
 import { t } from "@/utils/i18n";
 import { EDITOR_TAB_SIZE_KEY, EDITOR_WORD_WRAP_KEY, EDITOR_LINE_NUMBERS_KEY } from "@/constants";
 
+const PRISM_LANGUAGE_ALIASES: Record<string, string> = {
+    "markdown-render": "markdown",
+    "c++": "cpp",
+    "c#": "csharp",
+    "f#": "fsharp",
+    "objective-c": "objectivec",
+    "objective-c++": "objectivecpp",
+    "obj-c": "objectivec",
+    "rs": "rust",
+    "zsh": "bash",
+    "hbs": "handlebars",
+};
+
+function normalizeForPrism(language: string): string {
+    const normalized = language.toLowerCase().trim();
+    return PRISM_LANGUAGE_ALIASES[normalized] || normalized;
+}
+
 export interface CodeEditorOptions {
     language?: string;
     lineNumbers?: boolean;
@@ -135,7 +153,7 @@ export class CodeEditorManager implements CodeEditorInterface {
         this.editor = createEditor(
             editorWrapper,
             {
-                language: options.language || "plaintext",
+                language: normalizeForPrism(options.language || "plaintext"),
                 value: "",
                 lineNumbers: this.showLineNumbers,
                 wordWrap: this.wordWrap,
@@ -273,7 +291,8 @@ export class CodeEditorManager implements CodeEditorInterface {
 
     public updateLanguage(language: string): void {
         if (this.editor) {
-            this.editor.setOptions({ language });
+            const normalized = normalizeForPrism(language);
+            this.editor.setOptions({ language: normalized });
             if (this.statusLanguage) {
                 this.statusLanguage.textContent = language.charAt(0).toUpperCase() + language.slice(1);
             }

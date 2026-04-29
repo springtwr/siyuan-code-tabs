@@ -167,6 +167,62 @@ export class LanguageSuggest {
         this.hideSuggest();
     }
 
+    private getLanguagePriority(lang: string): number {
+        const priorityMap: Record<string, number> = {
+            javascript: 1,
+            typescript: 2,
+            python: 3,
+            java: 4,
+            cpp: 5,
+            c: 6,
+            go: 7,
+            rust: 8,
+            php: 9,
+            ruby: 10,
+            swift: 11,
+            kotlin: 12,
+            bash: 13,
+            shell: 14,
+            sql: 15,
+            json: 16,
+            xml: 17,
+            yaml: 18,
+            markdown: 19,
+            plaintext: 20,
+        };
+        return priorityMap[lang] ?? 100;
+    }
+
+    private compareLanguageMatch(a: string, b: string, query: string): number {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+
+        const aStartsWith = aLower.startsWith(query);
+        const bStartsWith = bLower.startsWith(query);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+
+        if (aStartsWith && bStartsWith) {
+            const aLen = a.length;
+            const bLen = b.length;
+            if (aLen !== bLen) return aLen - bLen;
+
+            const aPriority = this.getLanguagePriority(aLower);
+            const bPriority = this.getLanguagePriority(bLower);
+            if (aPriority !== bPriority) return aPriority - bPriority;
+        } else {
+            const aIndex = aLower.indexOf(query);
+            const bIndex = bLower.indexOf(query);
+            if (aIndex !== bIndex) return aIndex - bIndex;
+
+            const aLen = a.length;
+            const bLen = b.length;
+            if (aLen !== bLen) return aLen - bLen;
+        }
+
+        return a.localeCompare(b);
+    }
+
     private renderSuggest(): void {
         const query = this.inputEl.value.trim().toLowerCase();
         if (!query) {
@@ -174,7 +230,10 @@ export class LanguageSuggest {
             return;
         }
 
-        const matched = this.allOptions.filter((lang) => lang.includes(query)).slice(0, 60);
+        const matched = this.allOptions
+            .filter((lang) => lang.includes(query))
+            .sort((a, b) => this.compareLanguageMatch(a, b, query))
+            .slice(0, 60);
         if (matched.length === 0) {
             this.hideSuggest();
             return;

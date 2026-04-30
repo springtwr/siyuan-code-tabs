@@ -74,9 +74,15 @@
 
 - 插件开发过程中使用了 AI 辅助
 - 参考项目：[obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- 测试思源版本：3.5.3
+- 感谢 [prism-code-editor](https://github.com/jonpyt/prism-code-editor) 提供代码编辑器组件
+- 测试思源版本：3.6.5
 
 ## 更新日志
+
+### v2.2.0
+
+- 代码编辑器升级为 Prism Code Editor，新增状态栏显示
+- 优化语言联想列表排序策略，提升输入体验
 
 ### v2.1.2
 

@@ -74,9 +74,15 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 - Built with AI assistance
 - Inspired by [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
-- Tested with SiYuan 3.5.3
+- Thanks to [prism-code-editor](https://github.com/jonpyt/prism-code-editor) for the code editor component
+- Tested with SiYuan 3.6.5
 
 ## Changelog
+
+### v2.2.0
+
+- Upgraded code editor to Prism Code Editor with status bar
+- Improved language suggestion sorting for better input experience
 
 ### v2.1.2
 

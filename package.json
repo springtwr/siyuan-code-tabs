@@ -1,12 +1,15 @@
 {
   "name": "code-tabs",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "type": "module",
   "description": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
   "repository": "https://github.com/springtwr/siyuan-code-tabs",
   "homepage": "",
   "author": "springtwr",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "make-link": "node  --no-warnings ./scripts/make_dev_link.js",
     "tsc": "tsc -b tsconfig.json tsconfig.vitest.json",

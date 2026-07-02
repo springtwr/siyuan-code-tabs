@@ -33,7 +33,7 @@
 
 ## i18n 规范
 
-- 语言文件：`public/i18n/zh_CN.json`、`public/i18n/en_US.json`，使用**扁平 key**（例如 `menu.block.codeToTabs`）。
+- 语言文件：`public/i18n/zh-CN.json`、`public/i18n/en.json`，使用**扁平 key**（例如 `menu.block.codeToTabs`）。
 - 访问方式：统一通过 `src/utils/i18n.ts` 的 `t(i18n, key)`。
 - 新增文案需同时更新两份 JSON，并在调用处使用正确 key。
 

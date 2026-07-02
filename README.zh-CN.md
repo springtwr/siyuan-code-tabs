@@ -14,7 +14,7 @@
 
 ## 兼容性
 
-- **仅支持思源 3.5.0 及以上版本**
+- **仅支持思源 3.7.0 及以上版本**
 - 需要开启：设置 -> 编辑器 -> `允许执行HTML块内脚本`
 
 ## 快速开始
@@ -75,9 +75,14 @@
 - 插件开发过程中使用了 AI 辅助
 - 参考项目：[obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
 - 感谢 [prism-code-editor](https://github.com/jonpyt/prism-code-editor) 提供代码编辑器组件
-- 测试思源版本：3.6.5
+- 测试思源版本：3.7.0
 
 ## 更新日志
+
+### v2.2.1
+
+- 适配 siyuan 3.7.0 的 lang 破坏性变更
+- 最低支持版本调整为 3.7.0
 
 ### v2.2.0
 

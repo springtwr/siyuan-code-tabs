@@ -2,21 +2,21 @@
   "name": "code-tabs",
   "author": "springtwr",
   "url": "https://github.com/springtwr/siyuan-code-tabs",
-  "version": "2.2.0",
-  "minAppVersion": "3.5.0",
+  "version": "2.2.1",
+  "minAppVersion": "3.7.0",
   "backends": ["windows", "linux", "darwin", "harmony", "ios", "android", "docker"],
   "frontends": ["desktop", "mobile", "browser-desktop", "browser-mobile", "desktop-window"],
   "displayName": {
-    "en_US": "code-tabs",
-    "zh_CN": "code-tabs"
+    "en": "code-tabs",
+    "zh-CN": "code-tabs"
   },
   "description": {
-    "en_US": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
-    "zh_CN": "这个思源插件允许你将多种语言的代码放在一组标签页下"
+    "en": "Siyuan plugin that allows you to put code in multiple languages under a set of tabs",
+    "zh-CN": "这个思源插件允许你将多种语言的代码放在一组标签页下"
   },
   "readme": {
-    "en_US": "README.md",
-    "zh_CN": "README_zh_CN.md"
+    "en": "README.md",
+    "zh-CN": "README.zh-CN.md"
   },
   "keywords": ["code", "tab", "代码块", "标签"]
 }

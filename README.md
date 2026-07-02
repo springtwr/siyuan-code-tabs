@@ -1,6 +1,6 @@
 # Siyuan Code Tabs
 
-[中文版](./README_zh_CN.md)
+[中文版](./README.zh-CN.md)
 
 A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
@@ -14,7 +14,7 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Compatibility
 
-- **Requires SiYuan 3.5.0+**
+- **Requires SiYuan 3.7.0+**
 - Enable: Settings -> Editor -> `Allow execution of scripts within HTML blocks`
 
 ## Quick Start
@@ -75,9 +75,14 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 - Built with AI assistance
 - Inspired by [obsidian-code-tab](https://github.com/lazyloong/obsidian-code-tab)
 - Thanks to [prism-code-editor](https://github.com/jonpyt/prism-code-editor) for the code editor component
-- Tested with SiYuan 3.6.5
+- Tested with SiYuan 3.7.0
 
 ## Changelog
+
+### v2.2.1
+
+- Adapted to SiYuan 3.7.0 breaking change in `lang`
+- Minimum supported version bumped to 3.7.0
 
 ### v2.2.0
 

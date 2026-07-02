@@ -2,7 +2,7 @@
 
 ## 基本规则
 
-- **文件位置**: `public/i18n/zh_CN.json`、`public/i18n/en_US.json`，必须同时更新两份
+- **文件位置**: `public/i18n/zh-CN.json`、`public/i18n/en.json`，必须同时更新两份
 - **格式**: 扁平 key，使用英文点号分隔（如 `"editor.add": "添加"`）
 - **访问方式**: 统一通过 `src/utils/i18n.ts` 的 `t(i18n, key)`
 - **新增文案**: 需同时更新两份 JSON，添加新 key 时同步中英文

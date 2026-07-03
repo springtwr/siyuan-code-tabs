@@ -1,7 +1,10 @@
+import logger from "@/utils/logger";
+
 export class DragDropManager {
     private listEl: HTMLElement;
     private dropIndicator: HTMLElement;
     private onReorder: (fromIndex: number, toIndex: number) => void;
+    private readonly instanceId: string;
 
     private dragIndex: number | null = null;
     private isDragEnding = false;
@@ -11,6 +14,7 @@ export class DragDropManager {
     private indicatorRaf = 0;
     private pendingIndicator: { item: HTMLElement; position: "before" | "after" } | null = null;
     private lastIndicatorTop: number | null = null;
+    private isPointerDrag = false;
 
     constructor(
         listEl: HTMLElement,
@@ -20,6 +24,10 @@ export class DragDropManager {
         this.listEl = listEl;
         this.dropIndicator = dropIndicator;
         this.onReorder = onReorder;
+        this.instanceId = `dm_${Math.random().toString(36).slice(2, 8)}`;
+        logger.debug(`[DnD:${this.instanceId}] 构造完成`, {
+            children: listEl.children.length,
+        });
         this.bindEvents();
     }
 
@@ -50,21 +58,26 @@ export class DragDropManager {
         if (event.dataTransfer) {
             event.dataTransfer.effectAllowed = "move";
         }
+        logger.debug(`[DnD:${this.instanceId}] 拖拽开始`, { fromIndex: this.dragIndex });
     }
 
     private handleDragOver(event: DragEvent): void {
         if (this.dragIndex === null) return;
         if (this.isDragEnding) return;
 
-        const item = this.resolveDragItem(event);
-        if (!item) return;
+        const resolved = this.resolveDragItem(event) ?? this.resolveEdgeDrop(event.clientY) ?? null;
+        if (!resolved) return;
 
         event.preventDefault();
-        const position = this.resolveDropPosition(event, item);
+        const item = resolved.item;
+        const edge = this.resolveEdgeDrop(event.clientY);
+        const position = edge?.item === item ? edge.position : this.resolveDropPosition(event, item);
         const rawIndex = Number(item.dataset.index ?? 0);
         const dropIndex = this.resolveDropIndex(this.dragIndex, rawIndex, position);
 
         if (dropIndex === this.dragIndex) {
+            this.lastDropIndex = null;
+            this.lastDropPosition = null;
             this.clearDropIndicator();
             return;
         }
@@ -83,28 +96,51 @@ export class DragDropManager {
         this.isDragEnding = true;
         this.didDrop = true;
 
-        const item = this.resolveDragItem(event);
-        if (!item && this.lastDropIndex !== null && this.lastDropPosition) {
-            if (this.lastDropIndex !== this.dragIndex) {
-                this.onReorder(this.dragIndex, this.lastDropIndex);
+        const resolved = this.resolveDragItem(event) ?? this.resolveEdgeDrop(event.clientY) ?? null;
+        if (!resolved) {
+            if (this.lastDropIndex !== null && this.lastDropPosition) {
+                if (this.lastDropIndex !== this.dragIndex) {
+                    logger.debug(`[DnD:${this.instanceId}] 落点回退`, {
+                        from: this.dragIndex,
+                        to: this.lastDropIndex,
+                    });
+                    this.onReorder(this.dragIndex, this.lastDropIndex);
+                }
             }
-        } else if (item) {
-            event.preventDefault();
-            const position = this.resolveDropPosition(event, item);
-            const rawIndex = Number(item.dataset.index ?? 0);
-            const dropIndex = this.resolveDropIndex(this.dragIndex, rawIndex, position);
-            if (dropIndex !== this.dragIndex) {
-                this.onReorder(this.dragIndex, dropIndex);
-            }
+            this.dragIndex = null;
+            this.lastDropIndex = null;
+            this.lastDropPosition = null;
+            this.clearDropIndicator();
+            return;
         }
 
-        this.reset();
+        event.preventDefault();
+        const item = resolved.item;
+        const edge = this.resolveEdgeDrop(event.clientY);
+        const position = edge?.item === item ? edge.position : this.resolveDropPosition(event, item);
+        const rawIndex = Number(item.dataset.index ?? 0);
+        const dropIndex = this.resolveDropIndex(this.dragIndex, rawIndex, position);
+        if (dropIndex !== this.dragIndex) {
+            logger.debug(`[DnD:${this.instanceId}] 放下`, {
+                from: this.dragIndex,
+                to: dropIndex,
+            });
+            this.onReorder(this.dragIndex, dropIndex);
+        }
+        this.dragIndex = null;
+        this.lastDropIndex = null;
+        this.lastDropPosition = null;
+        this.clearDropIndicator();
     }
 
     private handleDragEnd(): void {
         this.isDragEnding = true;
         if (!this.didDrop && this.dragIndex !== null) {
             if (this.lastDropIndex !== null && this.lastDropIndex !== this.dragIndex) {
+                logger.debug(`[DnD:${this.instanceId}] 拖拽结束回退`, {
+                    from: this.dragIndex,
+                    to: this.lastDropIndex,
+                });
                 this.onReorder(this.dragIndex, this.lastDropIndex);
             }
         }
@@ -124,6 +160,7 @@ export class DragDropManager {
         this.dragIndex = Number(item.dataset.index ?? 0);
         this.lastDropIndex = this.dragIndex;
         this.lastDropPosition = "after";
+        this.isPointerDrag = true;
 
         if (handle.setPointerCapture) handle.setPointerCapture(event.pointerId);
         this.clearDropIndicator();
@@ -133,6 +170,7 @@ export class DragDropManager {
 
     private handlePointerMove(event: PointerEvent): void {
         if (this.dragIndex === null) return;
+        if (!this.isPointerDrag) return;
 
         const item = this.resolvePointerItem(event);
         if (!item) return;
@@ -154,6 +192,7 @@ export class DragDropManager {
 
     private handlePointerUp(event: PointerEvent): void {
         if (this.dragIndex === null) return;
+        if (!this.isPointerDrag) return;
 
         if (this.lastDropIndex !== null && this.lastDropPosition) {
             const nextIndex = this.resolveDropIndex(
@@ -162,6 +201,10 @@ export class DragDropManager {
                 this.lastDropPosition
             );
             if (nextIndex !== this.dragIndex) {
+                logger.debug(`[DnD:${this.instanceId}] 指针拖拽结束`, {
+                    from: this.dragIndex,
+                    to: nextIndex,
+                });
                 this.onReorder(this.dragIndex, nextIndex);
             }
         }
@@ -171,9 +214,26 @@ export class DragDropManager {
         this.reset();
     }
 
-    private resolveDragItem(event: DragEvent): HTMLElement | null {
+    private resolveDragItem(event: DragEvent): { item: HTMLElement } | null {
         const target = document.elementFromPoint(event.clientX, event.clientY);
-        return target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
+        const item = target?.closest<HTMLElement>(".code-tabs__editor-item") ?? null;
+        return item ? { item } : null;
+    }
+
+    private resolveEdgeDrop(clientY: number): { item: HTMLElement; position: "before" | "after" } | null {
+        const items = Array.from(
+            this.listEl.querySelectorAll<HTMLElement>(".code-tabs__editor-item")
+        );
+        if (items.length === 0) return null;
+        const listRect = this.listEl.getBoundingClientRect();
+        const edgeThreshold = 6;
+        if (clientY <= listRect.top + edgeThreshold) {
+            return { item: items[0], position: "before" };
+        }
+        if (clientY >= listRect.bottom - edgeThreshold) {
+            return { item: items[items.length - 1], position: "after" };
+        }
+        return null;
     }
 
     private resolvePointerItem(event: PointerEvent): HTMLElement | null {
@@ -186,6 +246,10 @@ export class DragDropManager {
         return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
     }
 
+    private getItemsCount(): number {
+        return this.listEl.querySelectorAll(".code-tabs__editor-item").length;
+    }
+
     private resolveDropIndex(
         fromIndex: number,
         targetIndex: number,
@@ -195,7 +259,9 @@ export class DragDropManager {
         if (fromIndex < nextIndex) {
             nextIndex -= 1;
         }
-        return Math.max(0, nextIndex);
+        const itemCount = this.getItemsCount();
+        const maxIndex = Math.max(itemCount - 1, 0);
+        return Math.min(Math.max(nextIndex, 0), maxIndex);
     }
 
     private showDropIndicator(item: HTMLElement, position: "before" | "after"): void {
@@ -248,6 +314,7 @@ export class DragDropManager {
         this.lastDropPosition = null;
         this.isDragEnding = false;
         this.didDrop = false;
+        this.isPointerDrag = false;
     }
 
     destroy(): void {

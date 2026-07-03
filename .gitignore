@@ -7,8 +7,6 @@
 !.vscode/code-tabs.code-snippets
 .DS_Store
 .env
-pnpm-lock.yaml
-package-lock.json
 package.zip
 node_modules
 dev

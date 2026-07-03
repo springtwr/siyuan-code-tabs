@@ -56,16 +56,16 @@ export function buildEditorDialogContent(i18n: IObject): string {
             <div class="b3-text-field code-tabs__editor-code" data-field="code"></div>
         </div>
     </div>
-    <div class="b3-dialog__action">
-        <button class="b3-button b3-button--cancel" data-action="cancel">${t(
-            i18n,
-            "editor.cancel"
-        )}</button>
-        <button class="b3-button b3-button--text" data-action="save">${t(
-            i18n,
-            "editor.save"
-        )}</button>
-    </div>
+</div>
+<div class="b3-dialog__action">
+    <button class="b3-button b3-button--cancel" data-action="cancel">${t(
+        i18n,
+        "editor.cancel"
+    )}</button>
+    <button class="b3-button b3-button--text" data-action="save">${t(
+        i18n,
+        "editor.save"
+    )}</button>
 </div>
 `.trim();
 }

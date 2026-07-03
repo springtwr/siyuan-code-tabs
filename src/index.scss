@@ -78,7 +78,6 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
     &__editor {
         display: flex;
         flex-direction: column;
-        gap: 12px;
         min-width: 0;
         min-height: 0;
         max-height: 90dvh;
@@ -88,7 +87,7 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
     &__editor-body {
         display: grid;
         grid-template-columns: minmax(140px, 200px) minmax(280px, 1fr);
-        gap: 16px;
+        gap: 12px;
         align-items: stretch;
         flex: 1;
         min-height: 0;
@@ -98,8 +97,8 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
     &__editor-left {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        padding: 10px;
+        gap: 8px;
+        padding: 8px;
         border: 1px solid var(--b3-theme-surface-lighter, #ddd);
         border-radius: 8px;
         background: var(--b3-theme-surface, #f5f5f5);
@@ -112,9 +111,6 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        padding: 10px;
-        border: 1px solid var(--b3-theme-surface-lighter, #ddd);
-        border-radius: 8px;
         background: var(--b3-theme-surface, #f5f5f5);
         min-height: 0;
         min-width: 0;
@@ -199,6 +195,7 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         min-height: 180px;
         overflow: hidden;
         position: relative;
+        padding: 0;
         border: 1px solid var(--b3-theme-surface-lighter, #ddd);
         border-radius: 6px;
         background: var(--b3-theme-background, #fff);
@@ -396,6 +393,10 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         flex-direction: column;
         overflow: hidden;
 
+        .b3-dialog__header {
+            border-bottom: none;
+        }
+
         .b3-dialog__body {
             flex: 1;
             min-height: 0;
@@ -409,14 +410,14 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
             min-height: 0;
             display: flex;
             flex-direction: column;
-            padding: 8px;
+            padding: 0 8px;
         }
 
         .b3-dialog__action {
             flex-shrink: 0;
             height: auto;
-            min-height: 48px;
             padding: 8px 12px;
+            border-top: none;
             box-sizing: border-box;
         }
     }

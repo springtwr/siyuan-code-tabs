@@ -79,6 +79,11 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.2.2
+
+- Fixed drag-and-drop sorting not working in the editor panel
+- Adjusted spacing and styling in the editor panel
+
 ### v2.2.1
 
 - Adapted to SiYuan 3.7.0 breaking change in `lang`

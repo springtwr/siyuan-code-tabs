@@ -99,6 +99,8 @@
   "editor.shortcut.indentLines": "Indent lines",
   "editor.shortcut.outdentLines": "Outdent lines",
   "editor.shortcut.deleteLines": "Delete lines",
+  "editor.shortcut.toggleLineComment": "Toggle line comment",
+  "editor.shortcut.toggleBlockComment": "Toggle block comment",
   "editor.shortcut.startSearch": "Start search",
   "editor.shortcut.findNext": "Find next match",
   "editor.shortcut.findPrev": "Find previous match",

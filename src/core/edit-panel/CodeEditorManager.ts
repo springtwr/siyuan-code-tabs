@@ -8,6 +8,17 @@ import "prism-code-editor/guides.css";
 import "prism-code-editor/search.css";
 import "prism-code-editor/invisibles.css";
 import "prism-code-editor/prism/languages/common";
+import "prism-code-editor/languages/clike";
+import "prism-code-editor/languages/python";
+import "prism-code-editor/languages/css";
+import "prism-code-editor/languages/html";
+import "prism-code-editor/languages/sql";
+import "prism-code-editor/languages/yaml";
+import "prism-code-editor/languages/xml";
+import "prism-code-editor/languages/ruby";
+import "prism-code-editor/languages/rust";
+import "prism-code-editor/languages/php";
+import "prism-code-editor/languages/bash";
 import githubDarkTheme from "prism-code-editor/themes/github-dark.css?raw";
 import githubLightTheme from "prism-code-editor/themes/github-light.css?raw";
 
@@ -100,6 +111,7 @@ export class CodeEditorManager implements CodeEditorInterface {
     private tabSize: number = 4;
     private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
     private searchWasOpen: boolean = false;
+    private shouldStopBubble: boolean = false;
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
     private readonly onSaveConfig: () => Promise<void>;
@@ -223,11 +235,17 @@ export class CodeEditorManager implements CodeEditorInterface {
 
     private setupKeyboardInterceptor(): void {
         this.keydownHandler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (e.eventPhase === Event.CAPTURING_PHASE) {
-                    this.searchWasOpen = !!this.container.querySelector(".prism-search-container");
-                } else if (this.searchWasOpen) {
+            if (e.eventPhase === Event.CAPTURING_PHASE) {
+                this.searchWasOpen = e.key === "Escape" && !!this.container.querySelector(".prism-search-container");
+                this.shouldStopBubble =
+                    (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "/") ||
+                    (e.altKey && e.shiftKey && !e.ctrlKey && (e.key === "A" || e.key === "a"));
+            } else {
+                if (e.key === "Escape" && this.searchWasOpen) {
                     this.searchWasOpen = false;
+                    e.stopPropagation();
+                } else if (this.shouldStopBubble) {
+                    this.shouldStopBubble = false;
                     e.stopPropagation();
                 }
             }

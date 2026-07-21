@@ -49,6 +49,8 @@ const EDITOR_SHORTCUT_SECTIONS: ShortcutSection[] = [
             { key: "editor.shortcut.indentLines", keys: "Ctrl+]" },
             { key: "editor.shortcut.outdentLines", keys: "Ctrl+[" },
             { key: "editor.shortcut.deleteLines", keys: "Ctrl+Shift+K" },
+            { key: "editor.shortcut.toggleLineComment", keys: "Ctrl+/" },
+            { key: "editor.shortcut.toggleBlockComment", keys: "Alt+Shift+A" },
         ],
     },
     {

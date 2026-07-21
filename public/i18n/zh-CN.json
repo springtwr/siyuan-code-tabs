@@ -99,6 +99,8 @@
   "editor.shortcut.indentLines": "增加缩进",
   "editor.shortcut.outdentLines": "减少缩进",
   "editor.shortcut.deleteLines": "删除行",
+  "editor.shortcut.toggleLineComment": "切换行注释",
+  "editor.shortcut.toggleBlockComment": "切换块注释",
   "editor.shortcut.startSearch": "开始搜索",
   "editor.shortcut.findNext": "查找下一个",
   "editor.shortcut.findPrev": "查找上一个",

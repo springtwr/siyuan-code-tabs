@@ -98,6 +98,8 @@ export class CodeEditorManager implements CodeEditorInterface {
     private showLineNumbers: boolean = true;
     private wordWrap: boolean = true;
     private tabSize: number = 4;
+    private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private searchWasOpen: boolean = false;
     private readonly i18n: Record<string, string>;
     private readonly data: Record<string, unknown>;
     private readonly onSaveConfig: () => Promise<void>;
@@ -170,6 +172,7 @@ export class CodeEditorManager implements CodeEditorInterface {
 
         this.createStatusBar(isDark);
         this.setupEventListeners();
+        this.setupKeyboardInterceptor();
     }
 
     private createStatusBar(isDark: boolean): void {
@@ -216,6 +219,21 @@ export class CodeEditorManager implements CodeEditorInterface {
         this.editor.on("selectionChange", () => {
             this.updateStatusBar();
         });
+    }
+
+    private setupKeyboardInterceptor(): void {
+        this.keydownHandler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                if (e.eventPhase === Event.CAPTURING_PHASE) {
+                    this.searchWasOpen = !!this.container.querySelector(".prism-search-container");
+                } else if (this.searchWasOpen) {
+                    this.searchWasOpen = false;
+                    e.stopPropagation();
+                }
+            }
+        };
+        this.container.addEventListener("keydown", this.keydownHandler, true);
+        this.container.addEventListener("keydown", this.keydownHandler, false);
     }
 
     private updateStatusBar(): void {
@@ -275,6 +293,11 @@ export class CodeEditorManager implements CodeEditorInterface {
     public destroy(): void {
         this.editor?.remove();
         this.editor = null;
+        if (this.keydownHandler) {
+            this.container.removeEventListener("keydown", this.keydownHandler, true);
+            this.container.removeEventListener("keydown", this.keydownHandler, false);
+            this.keydownHandler = null;
+        }
         if (this.themeElement) {
             this.themeElement.remove();
             this.themeElement = null;

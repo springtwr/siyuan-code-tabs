@@ -27,6 +27,71 @@ type EditorState = {
     currentIndex: number;
 };
 
+type ShortcutEntry = {
+    key: string;
+    keys: string;
+};
+
+type ShortcutSection = {
+    titleKey: string;
+    entries: ShortcutEntry[];
+};
+
+const EDITOR_SHORTCUT_SECTIONS: ShortcutSection[] = [
+    {
+        titleKey: "editor.shortcut.section.editor",
+        entries: [
+            { key: "editor.shortcut.moveLineDown", keys: "Alt+↓" },
+            { key: "editor.shortcut.moveLineUp", keys: "Alt+↑" },
+            { key: "editor.shortcut.copyLineDown", keys: "Alt+Shift+↓" },
+            { key: "editor.shortcut.copyLineUp", keys: "Alt+Shift+↑" },
+            { key: "editor.shortcut.insertBlankLine", keys: "Ctrl+Enter" },
+            { key: "editor.shortcut.indentLines", keys: "Ctrl+]" },
+            { key: "editor.shortcut.outdentLines", keys: "Ctrl+[" },
+            { key: "editor.shortcut.deleteLines", keys: "Ctrl+Shift+K" },
+        ],
+    },
+    {
+        titleKey: "editor.shortcut.section.search",
+        entries: [
+            { key: "editor.shortcut.startSearch", keys: "Ctrl+F" },
+            { key: "editor.shortcut.findNext", keys: "Ctrl+G, F3" },
+            { key: "editor.shortcut.findPrev", keys: "Ctrl+Shift+G, Shift+F3" },
+            { key: "editor.shortcut.selectNext", keys: "Enter" },
+            { key: "editor.shortcut.selectPrev", keys: "Shift+Enter" },
+            { key: "editor.shortcut.closeSearch", keys: "Esc" },
+        ],
+    },
+];
+
+function buildShortcutHelpHTML(i18n: IObject): string {
+    const sections = EDITOR_SHORTCUT_SECTIONS.map(
+        (section) => `
+<div class="code-tabs__shortcut-help-section">
+    <div class="code-tabs__shortcut-help-title">${t(i18n, section.titleKey)}</div>
+    ${section.entries
+        .map(
+            (e) => `
+    <div class="code-tabs__shortcut-help-row">
+        <span class="code-tabs__shortcut-help-action">${t(i18n, e.key)}</span>
+        <span class="code-tabs__shortcut-help-keys">${e.keys
+            .split(", ")
+            .map(
+                (k) =>
+                    `<span class="code-tabs__shortcut-help-kbd">${k
+                        .split("+")
+                        .map((part) => `<kbd>${part}</kbd>`)
+                        .join("")}</span>`
+            )
+            .join(", ")}</span>
+    </div>`
+        )
+        .join("")}
+</div>`
+    ).join("");
+    return sections;
+}
+
 export function buildEditorDialogContent(i18n: IObject): string {
     return `
 <div class="code-tabs__editor">
@@ -52,7 +117,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
                 <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
                 <div class="code-tabs__editor-lang-suggest" data-role="lang-suggest"></div>
             </div>
-            <label class="code-tabs__editor-label">${t(i18n, "editor.tabCode")}</label>
+            <div class="code-tabs__editor-label-wrap"><label class="code-tabs__editor-label">${t(i18n, "editor.tabCode")}</label><span class="code-tabs__shortcut-help-trigger" aria-label="?">?</span></div>
             <div class="b3-text-field code-tabs__editor-code" data-field="code"></div>
         </div>
     </div>
@@ -104,6 +169,45 @@ export class TabEditor {
         if (!listEl || !inputTitle || !inputLang || !codeContainer) {
             dialog.destroy();
             return;
+        }
+
+        const shortcutTrigger = root.querySelector<HTMLElement>(".code-tabs__shortcut-help-trigger");
+        if (shortcutTrigger) {
+            const shortcutHelp = document.createElement("div");
+            shortcutHelp.className = "code-tabs__shortcut-help";
+            shortcutHelp.innerHTML = buildShortcutHelpHTML(options.i18n);
+            root.appendChild(shortcutHelp);
+
+            let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+            const showTooltip = () => {
+                if (hideTimer) {
+                    clearTimeout(hideTimer);
+                    hideTimer = null;
+                }
+                const triggerRect = shortcutTrigger.getBoundingClientRect();
+                shortcutHelp.style.position = "fixed";
+                shortcutHelp.style.left = `${triggerRect.left}px`;
+                shortcutHelp.style.top = `${triggerRect.bottom + 4}px`;
+                shortcutHelp.style.display = "block";
+            };
+
+            const scheduleHide = () => {
+                hideTimer = setTimeout(() => {
+                    shortcutHelp.style.display = "none";
+                    hideTimer = null;
+                }, 200);
+            };
+
+            shortcutTrigger.addEventListener("mouseenter", showTooltip);
+            shortcutTrigger.addEventListener("mouseleave", scheduleHide);
+            shortcutHelp.addEventListener("mouseenter", () => {
+                if (hideTimer) {
+                    clearTimeout(hideTimer);
+                    hideTimer = null;
+                }
+            });
+            shortcutHelp.addEventListener("mouseleave", scheduleHide);
         }
 
         const dropIndicator = document.createElement("div");

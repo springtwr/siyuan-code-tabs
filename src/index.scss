@@ -117,9 +117,109 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         overflow-y: auto;
     }
 
+    &__editor-label-wrap {
+        position: relative;
+        z-index: 2;
+    }
+
     &__editor-label {
         font-size: 12px;
         opacity: 0.8;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    &__shortcut-help-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid currentColor;
+        font-size: 9px;
+        line-height: 1;
+        cursor: help;
+        opacity: 0.6;
+        flex-shrink: 0;
+        user-select: none;
+        margin-left: 2px;
+        transition: opacity 0.15s;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
+
+    &__shortcut-help {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        min-width: 320px;
+        max-width: 420px;
+        max-height: 360px;
+        overflow-y: auto;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--b3-theme-background, #fff);
+        border: 1px solid var(--b3-theme-surface-lighter, #ddd);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+        color: var(--b3-theme-on-background, #333);
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: normal;
+    }
+
+    &__shortcut-help-section {
+        & + & {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--b3-theme-surface-lighter, #eee);
+        }
+    }
+
+    &__shortcut-help-title {
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 4px;
+        opacity: 0.85;
+    }
+
+    &__shortcut-help-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 2px 0;
+    }
+
+    &__shortcut-help-action {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__shortcut-help-keys {
+        display: inline-flex;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    &__shortcut-help-kbd {
+        display: inline-flex;
+        gap: 2px;
+
+        kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid var(--b3-theme-surface-lighter, #ccc);
+            background: var(--b3-theme-surface, #f5f5f5);
+            font-family: var(--b3-font-family-code, monospace);
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
     }
 
     &__editor-input {

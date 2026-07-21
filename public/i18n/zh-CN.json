@@ -88,5 +88,21 @@
   "task.progress.tabsToCodeBlocks": "批量转换：标签页 → 代码块",
   "task.progress.upgradeLegacy": "批量升级：旧标签页 → 新标签页",
   "task.progress.detail": "进度：{0}/{1}",
-  "task.progress.cancel": "取消"
+  "task.progress.cancel": "取消",
+  "editor.shortcut.section.editor": "代码编辑器",
+  "editor.shortcut.section.search": "搜索",
+  "editor.shortcut.moveLineDown": "下移行",
+  "editor.shortcut.moveLineUp": "上移行",
+  "editor.shortcut.copyLineDown": "向下复制行",
+  "editor.shortcut.copyLineUp": "向上复制行",
+  "editor.shortcut.insertBlankLine": "插入空行",
+  "editor.shortcut.indentLines": "增加缩进",
+  "editor.shortcut.outdentLines": "减少缩进",
+  "editor.shortcut.deleteLines": "删除行",
+  "editor.shortcut.startSearch": "开始搜索",
+  "editor.shortcut.findNext": "查找下一个",
+  "editor.shortcut.findPrev": "查找上一个",
+  "editor.shortcut.selectNext": "选中下一个",
+  "editor.shortcut.selectPrev": "选中上一个",
+  "editor.shortcut.closeSearch": "关闭搜索组件"
 }

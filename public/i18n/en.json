@@ -88,5 +88,21 @@
   "task.progress.tabsToCodeBlocks": "Batch: tabs -> code blocks",
   "task.progress.upgradeLegacy": "Batch: legacy tabs -> new format",
   "task.progress.detail": "Progress: {0}/{1}",
-  "task.progress.cancel": "Cancel"
+  "task.progress.cancel": "Cancel",
+  "editor.shortcut.section.editor": "Code editor",
+  "editor.shortcut.section.search": "Search",
+  "editor.shortcut.moveLineDown": "Move lines down",
+  "editor.shortcut.moveLineUp": "Move lines up",
+  "editor.shortcut.copyLineDown": "Copy lines down",
+  "editor.shortcut.copyLineUp": "Copy lines up",
+  "editor.shortcut.insertBlankLine": "Insert blank line",
+  "editor.shortcut.indentLines": "Indent lines",
+  "editor.shortcut.outdentLines": "Outdent lines",
+  "editor.shortcut.deleteLines": "Delete lines",
+  "editor.shortcut.startSearch": "Start search",
+  "editor.shortcut.findNext": "Find next match",
+  "editor.shortcut.findPrev": "Find previous match",
+  "editor.shortcut.selectNext": "Select next match",
+  "editor.shortcut.selectPrev": "Select previous match",
+  "editor.shortcut.closeSearch": "Close search widget"
 }

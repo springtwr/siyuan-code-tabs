@@ -384,7 +384,7 @@ export class TabsCore {
                     return;
                 }
 
-                TabEditor.open({
+                await TabEditor.open({
                     i18n,
                     data,
                     currentIndex: Number.isNaN(activeId) ? 0 : activeId,

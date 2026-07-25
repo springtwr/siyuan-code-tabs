@@ -5,6 +5,7 @@ import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 
 import { TabData } from "./TabData";
+import { TabRenderer } from "./TabRenderer";
 import { TabListRenderer } from "./edit-panel/TabListRenderer";
 import { DragDropManager } from "./edit-panel/DragDropManager";
 import { LanguageSuggest } from "./edit-panel/LanguageSuggest";
@@ -138,7 +139,11 @@ export function buildEditorDialogContent(i18n: IObject): string {
 }
 
 export class TabEditor {
-    static open(options: EditorOptions): void {
+    static async open(options: EditorOptions): Promise<void> {
+        if (!window.hljs) {
+            await TabRenderer.ensureLibraryLoaded("hljs");
+        }
+
         const state: EditorState = {
             data: TabData.clone(options.data),
             currentIndex: Math.min(

@@ -1,18 +1,22 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { DebugService } from "@/services/DebugService";
 import logger from "@/utils/logger";
-import { mockLocalStorage, restoreAllMocks } from "../helpers/env-mock";
+import { restoreAllMocks } from "../helpers/env-mock";
+import { DEBUG_ENABLED_KEY } from "@/constants";
 
 describe("DebugService", () => {
     let service: DebugService;
+    let data: Record<string, unknown>;
+    let onSaveConfig: Mock<() => Promise<void>>;
     let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
     let loggerSetDebugEnabledSpy: ReturnType<typeof vi.spyOn>;
     let loggerSetLogWriterSpy: ReturnType<typeof vi.spyOn>;
     let loggerInfoSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-        mockLocalStorage();
-        service = new DebugService();
+        data = {};
+        onSaveConfig = vi.fn().mockResolvedValue(undefined) as Mock<() => Promise<void>>;
+        service = new DebugService({ data, onSaveConfig });
         consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
         loggerSetDebugEnabledSpy = vi.spyOn(logger, "setDebugEnabled").mockImplementation(() => {});
         loggerSetLogWriterSpy = vi.spyOn(logger, "setLogWriter").mockImplementation(() => {});
@@ -29,7 +33,7 @@ describe("DebugService", () => {
 
     describe("init", () => {
         it("should call logger.setDebugEnabled with stored value", () => {
-            localStorage.setItem("code-tabs.debug", "true");
+            data[DEBUG_ENABLED_KEY] = true;
             service.init();
             expect(loggerSetDebugEnabledSpy).toHaveBeenCalledWith(true);
         });
@@ -48,17 +52,17 @@ describe("DebugService", () => {
             expect(toggle.className).toBe("b3-switch");
         });
 
-        it("should have checked state from localStorage", () => {
-            localStorage.setItem("code-tabs.debug", "true");
+        it("should have checked state from data", () => {
+            data[DEBUG_ENABLED_KEY] = true;
             const toggle = service.createToggle();
             expect(toggle.checked).toBe(true);
         });
 
-        it("should update localStorage on change", () => {
+        it("should update data on change", () => {
             const toggle = service.createToggle();
             toggle.checked = true;
             toggle.dispatchEvent(new Event("change"));
-            expect(localStorage.getItem("code-tabs.debug")).toBe("true");
+            expect(data[DEBUG_ENABLED_KEY]).toBe(true);
         });
 
         it("should call setDebugEnabled on change", () => {
@@ -70,9 +74,14 @@ describe("DebugService", () => {
     });
 
     describe("setDebugEnabled", () => {
-        it("should update localStorage", () => {
+        it("should update data", () => {
             service.setDebugEnabled(true);
-            expect(localStorage.getItem("code-tabs.debug")).toBe("true");
+            expect(data[DEBUG_ENABLED_KEY]).toBe(true);
+        });
+
+        it("should call onSaveConfig", () => {
+            service.setDebugEnabled(true);
+            expect(onSaveConfig).toHaveBeenCalled();
         });
 
         it("should call logger.setDebugEnabled", () => {
@@ -85,10 +94,8 @@ describe("DebugService", () => {
             expect(loggerInfoSpy).toHaveBeenCalledWith("调试日志开关变更", { enabled: true });
         });
 
-        it("should handle localStorage error gracefully", () => {
-            vi.spyOn(localStorage, "setItem").mockImplementation(() => {
-                throw new Error("QuotaExceededError");
-            });
+        it("should handle onSaveConfig error gracefully", () => {
+            onSaveConfig.mockRejectedValue(new Error("Save failed"));
             
             service.setDebugEnabled(true);
             
@@ -97,28 +104,18 @@ describe("DebugService", () => {
     });
 
     describe("getDebugEnabled", () => {
-        it("should return true when localStorage has true", () => {
-            localStorage.setItem("code-tabs.debug", "true");
+        it("should return true when data has true", () => {
+            data[DEBUG_ENABLED_KEY] = true;
             expect(service.getDebugEnabled()).toBe(true);
         });
 
-        it("should return false when localStorage has false", () => {
-            localStorage.setItem("code-tabs.debug", "false");
+        it("should return false when data has false", () => {
+            data[DEBUG_ENABLED_KEY] = false;
             expect(service.getDebugEnabled()).toBe(false);
         });
 
-        it("should return false when localStorage is empty", () => {
+        it("should return false when data is empty", () => {
             expect(service.getDebugEnabled()).toBe(false);
-        });
-
-        it("should handle localStorage error gracefully", () => {
-            const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-                throw new Error("Storage error");
-            });
-            
-            expect(service.getDebugEnabled()).toBe(false);
-            
-            getItemSpy.mockRestore();
         });
     });
 
@@ -138,17 +135,17 @@ describe("DebugService", () => {
 
     describe("constructor options", () => {
         it("should use custom logPath", () => {
-            const customService = new DebugService({ logPath: "/custom/path.log" });
+            const customService = new DebugService({ data, onSaveConfig, logPath: "/custom/path.log" });
             expect(customService).toBeDefined();
         });
 
         it("should use custom bufferLimit", () => {
-            const customService = new DebugService({ bufferLimit: 500 });
+            const customService = new DebugService({ data, onSaveConfig, bufferLimit: 500 });
             expect(customService).toBeDefined();
         });
 
         it("should use custom debounceMs", () => {
-            const customService = new DebugService({ debounceMs: 2000 });
+            const customService = new DebugService({ data, onSaveConfig, debounceMs: 2000 });
             expect(customService).toBeDefined();
         });
     });

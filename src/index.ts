@@ -45,7 +45,6 @@ export default class CodeTabs extends Plugin {
     async onload() {
         this.registerBlockIconEvent();
         this.registerIcons();
-        this.debugService = new DebugService();
         this.initServices();
         this.initLogging();
         this.checkHtmlBlockScriptPermission();
@@ -106,10 +105,12 @@ export default class CodeTabs extends Plugin {
 
     private initLogging(): void {
         logger.info("插件加载开始");
+        this.debugService = new DebugService({
+            data: this.data,
+            onSaveConfig: () => this.configService.saveConfig(),
+        });
         this.debugService.init();
-        logger.info(
-            '如需开启 debug，请在控制台运行：localStorage.setItem("code-tabs.debug", "true")'
-        );
+        logger.info("如需开启 debug，请在设置中开启调试日志开关");
     }
 
     private checkHtmlBlockScriptPermission(): void {
@@ -191,6 +192,8 @@ export default class CodeTabs extends Plugin {
             data: this.data,
             onApplyThemeStyles: async () => this.themeService.applyThemeStyles(),
             onAfterLoad: () => {
+                logger.setDebugEnabled(this.debugService.getDebugEnabled());
+                this.debugService.syncToggle();
                 this.settingsService.ensureSettings();
                 this.settingsService.applySettings();
                 this.settingsService.syncInputs();

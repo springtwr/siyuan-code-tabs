@@ -21,6 +21,7 @@ export const VIRTUAL_NODE_ID = "19700101000000-codetab";
 export const EDITOR_TAB_SIZE_KEY = "codeTabsEditorTabSize";
 export const EDITOR_WORD_WRAP_KEY = "codeTabsEditorWordWrap";
 export const EDITOR_LINE_NUMBERS_KEY = "codeTabsEditorLineNumbers";
+export const DEBUG_ENABLED_KEY = "codeTabsDebugEnabled";
 
 const ECHARTS_SCRIPTS = [
     {

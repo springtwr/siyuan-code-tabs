@@ -1,5 +1,5 @@
 import { putFile } from "@/api";
-import { DEBUG_LOG } from "@/constants";
+import { DEBUG_ENABLED_KEY, DEBUG_LOG } from "@/constants";
 import { debounce } from "@/utils/common";
 import logger from "@/utils/logger";
 
@@ -7,6 +7,8 @@ type DebugLogManagerOptions = {
     logPath?: string;
     bufferLimit?: number;
     debounceMs?: number;
+    data: Record<string, unknown>;
+    onSaveConfig: () => Promise<void>;
 };
 
 /**
@@ -17,14 +19,18 @@ export class DebugService {
     private readonly logPath: string;
     private readonly bufferLimit: number;
     private readonly debounceMs: number;
-    private readonly storageKey = "code-tabs.debug";
+    private readonly data: Record<string, unknown>;
+    private readonly onSaveConfig: () => Promise<void>;
     private logBuffer: string[] = [];
     private flushLogFile: () => void = () => {};
+    private debugToggle?: HTMLInputElement;
 
-    constructor(options: DebugLogManagerOptions = {}) {
+    constructor(options: DebugLogManagerOptions) {
         this.logPath = options.logPath ?? DEBUG_LOG;
         this.bufferLimit = options.bufferLimit ?? 2000;
         this.debounceMs = options.debounceMs ?? 1000;
+        this.data = options.data;
+        this.onSaveConfig = options.onSaveConfig;
     }
 
     /**
@@ -48,7 +54,18 @@ export class DebugService {
         debugToggle.addEventListener("change", () => {
             this.setDebugEnabled(debugToggle.checked);
         });
+        this.debugToggle = debugToggle;
         return debugToggle;
+    }
+
+    /**
+     * 同步调试开关控件状态。
+     * @returns void
+     */
+    syncToggle(): void {
+        if (this.debugToggle) {
+            this.debugToggle.checked = this.getDebugEnabled();
+        }
     }
 
     /**
@@ -57,11 +74,10 @@ export class DebugService {
      * @returns void
      */
     setDebugEnabled(enabled: boolean): void {
-        try {
-            localStorage.setItem(this.storageKey, enabled ? "true" : "false");
-        } catch {
-            logger.warn("无法写入 debug 配置");
-        }
+        this.data[DEBUG_ENABLED_KEY] = enabled;
+        this.onSaveConfig().catch((error) => {
+            logger.warn("无法写入 debug 配置", { error });
+        });
         logger.setDebugEnabled(enabled);
         logger.info("调试日志开关变更", { enabled });
     }
@@ -71,11 +87,7 @@ export class DebugService {
      * @returns 是否启用
      */
     getDebugEnabled(): boolean {
-        try {
-            return localStorage.getItem(this.storageKey) === "true";
-        } catch {
-            return false;
-        }
+        return this.data[DEBUG_ENABLED_KEY] === true;
     }
 
     /**

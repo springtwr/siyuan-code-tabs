@@ -226,6 +226,15 @@
     overflow-x: auto;
 }
 
+/* 折叠时禁用内部滚动，让宿主元素的折叠裁剪生效 */
+:host-context([fold="1"]) .tab-contents > .hljs {
+    overflow-y: unset;
+}
+
+:host-context([fold="1"]) .hljs.tab-content--active {
+    overflow-x: unset;
+}
+
 /* 自定义滚动条整体（只影响水平方向）*/
 ::-webkit-scrollbar {
     width: 10px;

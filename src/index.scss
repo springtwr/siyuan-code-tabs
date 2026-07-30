@@ -130,7 +130,8 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         gap: 4px;
     }
 
-    &__shortcut-help-trigger {
+    &__shortcut-help-trigger,
+    &__lang-hint-trigger {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -152,7 +153,8 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         }
     }
 
-    &__shortcut-help {
+    &__shortcut-help,
+    &__lang-hint {
         display: none;
         position: fixed;
         z-index: 9999;
@@ -169,6 +171,18 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
         font-size: 12px;
         line-height: 1.5;
         white-space: normal;
+
+        kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid var(--b3-theme-surface-lighter, #ccc);
+            background: var(--b3-theme-surface, #f5f5f5);
+            font-family: var(--b3-font-family-code, monospace);
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
     }
 
     &__shortcut-help-section {
@@ -208,18 +222,6 @@ div[data-type="NodeHTMLBlock"][custom-code-tabs-data] > .protyle-icons {
     &__shortcut-help-kbd {
         display: inline-flex;
         gap: 2px;
-
-        kbd {
-            display: inline-block;
-            padding: 1px 5px;
-            border-radius: 3px;
-            border: 1px solid var(--b3-theme-surface-lighter, #ccc);
-            background: var(--b3-theme-surface, #f5f5f5);
-            font-family: var(--b3-font-family-code, monospace);
-            font-size: 11px;
-            line-height: 1.4;
-            white-space: nowrap;
-        }
     }
 
     &__editor-input {

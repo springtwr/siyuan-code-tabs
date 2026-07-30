@@ -106,5 +106,6 @@
   "editor.shortcut.findPrev": "Find previous match",
   "editor.shortcut.selectNext": "Select next match",
   "editor.shortcut.selectPrev": "Select previous match",
-  "editor.shortcut.closeSearch": "Close search widget"
+  "editor.shortcut.closeSearch": "Close search widget",
+  "editor.langHint": "Use <kbd>markdown-render</kbd> to preview <kbd>markdown</kbd> in tabs"
 }

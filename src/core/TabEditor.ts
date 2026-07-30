@@ -115,7 +115,7 @@ export function buildEditorDialogContent(i18n: IObject): string {
         <div class="code-tabs__editor-right">
             <label class="code-tabs__editor-label">${t(i18n, "editor.tabTitle")}</label>
             <input class="b3-text-field code-tabs__editor-input" data-field="title" />
-            <label class="code-tabs__editor-label">${t(i18n, "editor.tabLang")}</label>
+            <div class="code-tabs__editor-label-wrap"><label class="code-tabs__editor-label">${t(i18n, "editor.tabLang")}</label><span class="code-tabs__lang-hint-trigger" aria-label="?">?</span></div>
             <div class="code-tabs__editor-lang">
                 <input class="b3-text-field code-tabs__editor-input" data-field="lang" />
                 <div class="code-tabs__editor-lang-suggest" data-role="lang-suggest"></div>
@@ -176,6 +176,45 @@ export class TabEditor {
         if (!listEl || !inputTitle || !inputLang || !codeContainer) {
             dialog.destroy();
             return;
+        }
+
+        const langHintTrigger = root.querySelector<HTMLElement>(".code-tabs__lang-hint-trigger");
+        if (langHintTrigger) {
+            const langHint = document.createElement("div");
+            langHint.className = "code-tabs__lang-hint";
+            langHint.innerHTML = t(options.i18n, "editor.langHint");
+            root.appendChild(langHint);
+
+            let langHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+            const showLangHint = () => {
+                if (langHideTimer) {
+                    clearTimeout(langHideTimer);
+                    langHideTimer = null;
+                }
+                const triggerRect = langHintTrigger.getBoundingClientRect();
+                langHint.style.position = "fixed";
+                langHint.style.left = `${triggerRect.left}px`;
+                langHint.style.top = `${triggerRect.bottom + 4}px`;
+                langHint.style.display = "block";
+            };
+
+            const scheduleLangHide = () => {
+                langHideTimer = setTimeout(() => {
+                    langHint.style.display = "none";
+                    langHideTimer = null;
+                }, 200);
+            };
+
+            langHintTrigger.addEventListener("mouseenter", showLangHint);
+            langHintTrigger.addEventListener("mouseleave", scheduleLangHide);
+            langHint.addEventListener("mouseenter", () => {
+                if (langHideTimer) {
+                    clearTimeout(langHideTimer);
+                    langHideTimer = null;
+                }
+            });
+            langHint.addEventListener("mouseleave", scheduleLangHide);
         }
 
         const shortcutTrigger = root.querySelector<HTMLElement>(".code-tabs__shortcut-help-trigger");

@@ -106,5 +106,6 @@
   "editor.shortcut.findPrev": "查找上一个",
   "editor.shortcut.selectNext": "选中下一个",
   "editor.shortcut.selectPrev": "选中上一个",
-  "editor.shortcut.closeSearch": "关闭搜索组件"
+  "editor.shortcut.closeSearch": "关闭搜索组件",
+  "editor.langHint": "使用 <kbd>markdown-render</kbd> 可在标签页中对 <kbd>markdown</kbd> 进行预览"
 }

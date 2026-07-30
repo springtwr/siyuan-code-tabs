@@ -239,6 +239,16 @@
     pointer-events: none;
 }
 
+:host-context([fold="1"]) .tabs-container {
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 10px,
+        rgba(128, 128, 128, 0.2) 0,
+        rgba(128, 128, 128, 0.2) 15px
+    );
+}
+
 /* 自定义滚动条整体（只影响水平方向）*/
 ::-webkit-scrollbar {
     width: 10px;

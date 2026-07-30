@@ -235,6 +235,10 @@
     overflow-x: unset;
 }
 
+:host-context([fold="1"]) :is(.code-tabs--icon_edit, .code-tabs--icon_default) {
+    pointer-events: none;
+}
+
 /* 自定义滚动条整体（只影响水平方向）*/
 ::-webkit-scrollbar {
     width: 10px;

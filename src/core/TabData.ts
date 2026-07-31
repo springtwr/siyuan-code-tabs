@@ -1,12 +1,11 @@
 import { getBlockAttrs, setBlockAttrs } from "@/api";
-import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
+import { CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR, DATA_VERSION, HTML_TEMPLATE_VERSION } from "@/constants";
 import { decodeSource, encodeSource } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { LegacyTabParser } from "@/utils/LegacyTabParser";
 import { normalizeLanguageInput } from "@/utils/language";
-import type { CodeTab, TabDataItem, TabsData } from "@/types/tabs";
+import type { CodeTab, CodeTabsMetadata, TabDataItem, TabsData } from "@/types/tabs";
 
-const CURRENT_VERSION = 2;
 /**
  * 规范化标签数组，保证标题与语言字段可用。
  * @param tabs 原始 tabs
@@ -56,7 +55,6 @@ export class TabData {
      */
     static createDefaultData(titleIndex: number = 1): TabsData {
         return {
-            version: CURRENT_VERSION,
             active: 0,
             tabs: [
                 {
@@ -76,7 +74,6 @@ export class TabData {
     static fromCodeTabs(codeTabs: CodeTab[]): TabsData {
         const activeIndex = codeTabs.findIndex((tab) => tab.isActive);
         return {
-            version: CURRENT_VERSION,
             active: activeIndex >= 0 ? activeIndex : 0,
             tabs: normalizeTabs(
                 codeTabs.map((tab) => ({
@@ -129,7 +126,6 @@ export class TabData {
         const tabs = normalizeTabs(data.tabs ?? []);
         const active = Math.min(Math.max(data.active ?? 0, 0), Math.max(tabs.length - 1, 0));
         return {
-            version: CURRENT_VERSION,
             active,
             tabs,
         };
@@ -154,7 +150,11 @@ export class TabData {
         if (!raw) return null;
         try {
             const decoded = decodeSource(raw);
-            const parsed = JSON.parse(decoded) as TabsData;
+            const parsed = JSON.parse(decoded) as TabsData & { version?: number };
+            // 兼容旧版：移除 version 字段
+            if ("version" in parsed) {
+                delete (parsed as Record<string, unknown>).version;
+            }
             return this.normalize(parsed);
         } catch (error) {
             logger.warn("解析 TabsData 失败", { error });
@@ -197,18 +197,6 @@ export class TabData {
     }
 
     /**
-     * 将 tabs 数据写入块属性。
-     * @param nodeId 块 ID
-     * @param data tabs 数据
-     * @returns Promise<void>
-     */
-    static async writeToBlock(nodeId: string, data: TabsData): Promise<void> {
-        // 副作用：写入块属性
-        const encoded = this.encode(data);
-        await setBlockAttrs(nodeId, { [CODE_TABS_DATA_ATTR]: encoded });
-    }
-
-    /**
      * 从旧语法文本升级为 TabsData。
      * @param codeText 旧语法文本
      * @returns TabsData 或 null
@@ -234,5 +222,83 @@ export class TabData {
         const raw = attrs[CUSTOM_ATTR];
         if (!raw) return null;
         return decodeSource(raw);
+    }
+
+    /**
+     * 生成唯一 ID。
+     * @returns 唯一 ID 字符串
+     */
+    private static generateId(): string {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`;
+    }
+
+    /**
+     * 创建当前版本的元数据；传入已有元数据时保留其 id 并刷新版本号。
+     * @param existing 已有元数据（可选）
+     * @returns CodeTabsMetadata
+     */
+    static createMetadata(existing?: CodeTabsMetadata | null): CodeTabsMetadata {
+        return {
+            id: existing?.id || this.generateId(),
+            dataVersion: DATA_VERSION,
+            htmlVersion: HTML_TEMPLATE_VERSION,
+        };
+    }
+
+    /**
+     * 编码元数据为 Base64 字符串（与 encode 一致，安全存储于 SiYuan IAL）。
+     * @param metadata 元数据
+     * @returns Base64 编码字符串
+     */
+    static encodeMetadata(metadata: CodeTabsMetadata): string {
+        return encodeSource(JSON.stringify(metadata));
+    }
+
+    /**
+     * 解码 Base64 元数据字符串。
+     * @param raw 原始字符串
+     * @returns CodeTabsMetadata 或 null
+     */
+    static decodeMetadata(raw: string): CodeTabsMetadata | null {
+        if (!raw) return null;
+        try {
+            return JSON.parse(decodeSource(raw)) as CodeTabsMetadata;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * 检查元数据是否为当前版本。
+     * @param metadata 元数据
+     * @returns 是否当前版本
+     */
+    static isMetadataCurrent(metadata: CodeTabsMetadata | null): boolean {
+        if (!metadata) return false;
+        return (
+            !!metadata.id &&
+            metadata.dataVersion >= DATA_VERSION &&
+            metadata.htmlVersion >= HTML_TEMPLATE_VERSION
+        );
+    }
+
+    /**
+     * 一次性写入数据 + 元数据（合并为单次 setBlockAttrs 调用）。
+     * @param nodeId 块 ID
+     * @param data tabs 数据
+     * @param metadata 元数据
+     */
+    static async writeFullToBlock(
+        nodeId: string,
+        data: TabsData,
+        metadata: CodeTabsMetadata
+    ): Promise<void> {
+        await setBlockAttrs(nodeId, {
+            [CODE_TABS_DATA_ATTR]: this.encode(data),
+            [CODE_TABS_METADATA_ATTR]: this.encodeMetadata(metadata),
+        });
     }
 }

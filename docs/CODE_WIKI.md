@@ -350,7 +350,7 @@ const pluginCodeTabs = {
 | `readFromElement`   | 从DOM元素读取              |
 | `readFromAttrs`     | 从属性读取                 |
 | `readFromBlock`     | 从块读取                   |
-| `writeToBlock`      | 写入块属性                 |
+| `writeFullToBlock`  | 写入数据+元数据属性        |
 | `upgradeFromLegacy` | 从旧版语法升级             |
 
 **数据存储格式**：

@@ -72,7 +72,7 @@ export default class CodeTabs extends Plugin {
 
         this.themeService.startObserving();
         await this.loadConfigAndApplyTheme();
-        await this.checkLegacyTabsPrompt();
+        await this.checkUpgradableTabsPrompt();
 
         this.registerProtyleEvents();
         LineNumberService.initEventListener();
@@ -168,7 +168,7 @@ export default class CodeTabs extends Plugin {
             i18n: this.i18n,
             data: this.data,
             onAllTabsToCodeBlocks: () => this.tabTransformManager.allTabsToCodeBlocks(),
-            onUpgradeLegacyTabs: () => this.upgradeLegacyTabs(),
+            onUpgradeLegacyTabs: () => this.runUpgradeAllTabs(),
             onSaveConfig: () => this.configService.saveConfig(),
             buildDebugToggle: () => this.debugService.createToggle(),
         });
@@ -206,30 +206,30 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
-     * 每次版本首次运行检测旧版标签页并提示升级。
+     * 每次版本首次运行检测可升级的标签页并提示升级。
      * @returns Promise<void>
      */
-    private async checkLegacyTabsPrompt(): Promise<void> {
+    private async checkUpgradableTabsPrompt(): Promise<void> {
         const lastCheckedVersion = String(this.data[LEGACY_CHECK_VERSION_KEY] ?? "");
         if (lastCheckedVersion === PLUGIN_VERSION) {
             if (this.data[LEGACY_EXISTS_KEY]) {
-                const legacyCountStored = Number(this.data[LEGACY_COUNT_KEY] ?? 0);
-                logger.debug(`存在 ${legacyCountStored} 个旧版标签页`);
-                const count = Number.isFinite(legacyCountStored) ? legacyCountStored : 0;
-                const message = t(this.i18n, "msg.legacyTabsDetected")
+                const countStored = Number(this.data[LEGACY_COUNT_KEY] ?? 0);
+                logger.debug(`存在 ${countStored} 个可升级标签页`);
+                const count = Number.isFinite(countStored) ? countStored : 0;
+                const message = t(this.i18n, "msg.upgradableTabsDetected")
                     .replace("{0}", String(Math.max(count, 1)))
                     .replace("{1}", this.displayName || "code-tabs");
                 pushMsg(message, 12000);
             }
             return;
         }
-        const legacyCount = await this.tabTransformManager.countLegacyTabs();
+        const upgradableCount = await this.tabTransformManager.countUpgradableTabs();
         this.data[LEGACY_CHECK_VERSION_KEY] = PLUGIN_VERSION;
-        this.data[LEGACY_EXISTS_KEY] = legacyCount > 0;
-        this.data[LEGACY_COUNT_KEY] = legacyCount;
-        if (legacyCount > 0) {
-            const message = t(this.i18n, "msg.legacyTabsDetected")
-                .replace("{0}", String(legacyCount))
+        this.data[LEGACY_EXISTS_KEY] = upgradableCount > 0;
+        this.data[LEGACY_COUNT_KEY] = upgradableCount;
+        if (upgradableCount > 0) {
+            const message = t(this.i18n, "msg.upgradableTabsDetected")
+                .replace("{0}", String(upgradableCount))
                 .replace("{1}", this.displayName || "code-tabs");
             pushMsg(message, 12000);
         }
@@ -237,35 +237,33 @@ export default class CodeTabs extends Plugin {
     }
 
     /**
-     * 执行旧版标签页升级并刷新缓存状态。
+     * 执行统一标签页升级并刷新缓存状态。
      * @returns Promise<void>
      */
-    private async upgradeLegacyTabs(): Promise<void> {
-        await this.tabTransformManager.upgradeLegacyTabs();
-        const remaining = await this.waitForLegacyCount(3, 300);
-        logger.debug(`升级完成，剩余 ${remaining} 个旧版标签页`);
+    private async runUpgradeAllTabs(): Promise<void> {
+        await this.tabTransformManager.upgradeAllTabs();
+        const remaining = await this.waitForUpgradableCount(3, 300);
+        logger.debug(`升级完成，剩余 ${remaining} 个可升级标签页`);
         this.data[LEGACY_EXISTS_KEY] = remaining > 0;
-        logger.debug(`重置 LEGACY_EXISTS_KEY 为 ${this.data[LEGACY_EXISTS_KEY]}`);
         this.data[LEGACY_COUNT_KEY] = remaining;
-        logger.debug(`重置 LEGACY_COUNT_KEY 为 ${this.data[LEGACY_COUNT_KEY]}`);
         this.data[LEGACY_CHECK_VERSION_KEY] = PLUGIN_VERSION;
         await this.configService.saveConfig();
     }
 
     /**
-     * 重试查询旧版标签页数量，规避异步更新延迟。
+     * 重试查询可升级标签页数量，规避异步更新延迟。
      * @param retries 最大重试次数
      * @param delayMs 重试间隔
-     * @returns 剩余旧版标签页数量
+     * @returns 剩余可升级标签页数量
      */
-    private async waitForLegacyCount(retries: number, delayMs: number): Promise<number> {
-        let remaining = await this.tabTransformManager.countLegacyTabs();
-        logger.debug(`升级后第1次查询旧版标签页数量，剩余 ${remaining} 个`);
+    private async waitForUpgradableCount(retries: number, delayMs: number): Promise<number> {
+        let remaining = await this.tabTransformManager.countUpgradableTabs();
+        logger.debug(`升级后第1次查询可升级标签页数量，剩余 ${remaining} 个`);
         if (remaining === 0) return 0;
         for (let attempt = 0; attempt < retries; attempt += 1) {
             await delay(delayMs);
-            remaining = await this.tabTransformManager.countLegacyTabs();
-            logger.debug(`升级后第${attempt + 1}次重试查询旧版标签页数量，剩余 ${remaining} 个`);
+            remaining = await this.tabTransformManager.countUpgradableTabs();
+            logger.debug(`升级后第${attempt + 1}次重试查询可升级标签页数量，剩余 ${remaining} 个`);
             if (remaining === 0) return 0;
         }
         return remaining;

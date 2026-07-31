@@ -10,7 +10,7 @@ vi.mock("@/api", () => ({
     updateBlock: vi.fn().mockResolvedValue(undefined),
 }));
 
-const i18n = { "msg.allTabsToCodeFailed": "failed" } as IObject;
+const i18n = { "msg.copyToClipboard": "copied", "msg.copyToClipboardFailed": "failed" } as IObject;
 
 describe("TabsCore", () => {
     beforeEach(() => {

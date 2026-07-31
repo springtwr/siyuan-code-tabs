@@ -29,7 +29,6 @@ export function createMockApiResponses(): {
     return {
         getBlockAttrs: vi.fn().mockResolvedValue({
             "custom-code-tabs-data": JSON.stringify({
-                version: 2,
                 active: 0,
                 tabs: [
                     { title: "JavaScript", lang: "javascript", code: "console.log(1);" },

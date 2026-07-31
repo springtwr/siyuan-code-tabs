@@ -96,7 +96,7 @@ export class UIService {
                 const targetId = nodeElement?.dataset?.nodeId ?? "";
                 if (targetId) {
                     await updateBlock("markdown", htmlBlock, targetId);
-                    await TabData.writeToBlock(targetId, data);
+                    await TabData.writeFullToBlock(targetId, data, TabData.createMetadata());
                     this.onReload();
                     return;
                 }

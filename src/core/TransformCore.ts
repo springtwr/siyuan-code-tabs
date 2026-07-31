@@ -9,7 +9,7 @@ import {
     sql,
     updateBlock,
 } from "@/api";
-import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
+import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
@@ -341,7 +341,7 @@ export class TransformCore {
                 const data = TabData.fromCodeTabs(codeArr);
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
-                await TabData.writeToBlock(id, data);
+                await TabData.writeFullToBlock(id, data, TabData.createMetadata());
             }
         );
 
@@ -361,10 +361,14 @@ export class TransformCore {
         return stats;
     }
 
-    private extractTabsDataFromIal(ial: string): { dataRaw: string; legacyRaw: string } {
-        const dataRaw = ial.match(new RegExp(`${CODE_TABS_DATA_ATTR}="([^"]*)"`, "i"))?.[1] ?? "";
-        const legacyRaw = ial.match(new RegExp(`${CUSTOM_ATTR}="([^"]*)"`))?.[1] ?? "";
-        return { dataRaw, legacyRaw };
+    /**
+     * 从 IAL 字符串中提取指定属性值。
+     * @param ial IAL 字符串
+     * @param attrName 属性名
+     * @returns 属性值，未找到返回空字符串
+     */
+    private extractAttrFromIal(ial: string, attrName: string): string {
+        return ial.match(new RegExp(`${attrName}="([^"]*)"`, "i"))?.[1] ?? "";
     }
 
     private async extractTabsData(block: TabBlock): Promise<{ id: string; data: TabsData | null }> {
@@ -373,9 +377,8 @@ export class TransformCore {
         let legacyRaw: string;
         if ("ial" in block && typeof block.ial === "string") {
             id = block.id ?? "";
-            const extracted = this.extractTabsDataFromIal(block.ial);
-            dataRaw = extracted.dataRaw;
-            legacyRaw = extracted.legacyRaw;
+            dataRaw = this.extractAttrFromIal(block.ial, CODE_TABS_DATA_ATTR);
+            legacyRaw = this.extractAttrFromIal(block.ial, CUSTOM_ATTR);
         } else {
             const domBlock = block as HTMLElement;
             id = domBlock.getAttribute("data-node-id") ?? "";
@@ -509,7 +512,7 @@ export class TransformCore {
         const data = TabData.createDefaultData();
         const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
-        await TabData.writeToBlock(targetId, data);
+        await TabData.writeFullToBlock(targetId, data, TabData.createMetadata());
         return;
     }
 
@@ -594,7 +597,7 @@ export class TransformCore {
         const targetId = filteredBlocks[0].id;
         const htmlBlock = await TabRenderer.createProtyleHtml(data);
         await updateBlock("markdown", htmlBlock, targetId);
-        await TabData.writeToBlock(targetId, data);
+        await TabData.writeFullToBlock(targetId, data, TabData.createMetadata());
         const restIds = filteredBlocks.slice(1).map((item) => item.id);
         await Promise.all(restIds.map((id) => deleteBlock(id)));
         logger.info("合并代码块为标签页完成", { count: filteredBlocks.length });
@@ -647,66 +650,75 @@ export class TransformCore {
     }
 
     /**
-     * 检测是否存在旧版标签页（仅统计，不做转换）。
-     * @returns 旧版标签页数量
+     * 查询所有标签页块（旧格式 + 新格式），单次查询后在 JS 中分类。
+     * @returns 旧格式块和新格式块
      */
-    async countLegacyTabs(): Promise<number> {
-        const rows = (await sql(
-            `SELECT id FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}') AND id NOT IN (SELECT block_id FROM attributes AS b WHERE b.name='${CODE_TABS_DATA_ATTR}')`
-        )) as Array<{ id?: string }>;
-        const ids = rows.map((row) => row.id).filter((id): id is string => Boolean(id));
-        logger.debug("旧版标签页计数完成", { count: ids.length });
-        logger.debug("旧版标签页块明细", { ids });
-        return ids.length;
+    private async queryAllTabsBlocks(): Promise<{
+        legacyBlocks: SqlBlock[];
+        dataBlocks: SqlBlock[];
+    }> {
+        const allBlocks = (await sql(
+            `SELECT id, ial FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name IN ('${CUSTOM_ATTR}', '${CODE_TABS_DATA_ATTR}'))`
+        )) as SqlBlock[];
+
+        const legacyBlocks: SqlBlock[] = [];
+        const dataBlocks: SqlBlock[] = [];
+        for (const block of allBlocks) {
+            if (typeof block.ial === "string" && block.ial.includes(CODE_TABS_DATA_ATTR)) {
+                dataBlocks.push(block);
+            } else {
+                legacyBlocks.push(block);
+            }
+        }
+        return { legacyBlocks, dataBlocks };
     }
 
     /**
-     * 全局升级旧版标签页（旧属性数据迁移）。
+     * 统计需要升级的标签页数量（旧格式 + 元数据过期）。
+     * @returns 需要升级的标签页数量
+     */
+    async countUpgradableTabs(): Promise<number> {
+        const { legacyBlocks, dataBlocks } = await this.queryAllTabsBlocks();
+        logger.debug("可升级标签页统计", { legacyBlocks: legacyBlocks.length, dataBlocks: dataBlocks.length })
+        const legacyCount = legacyBlocks.length;
+
+        let outdatedCount = 0;
+        for (const block of dataBlocks) {
+            const id = block.id ?? "";
+            if (!id) continue;
+
+            const metadataRaw = this.extractAttrFromIal(block.ial ?? "", CODE_TABS_METADATA_ATTR);
+            const metadata = TabData.decodeMetadata(metadataRaw);
+            if (!TabData.isMetadataCurrent(metadata)) {
+                outdatedCount++;
+            }
+        }
+
+        const total = legacyCount + outdatedCount;
+        logger.info("可升级标签页统计", { legacyCount, outdatedCount, total });
+        return total;
+    }
+
+    /**
+     * 全局统一升级所有需要升级的标签页（旧格式迁移 + 元数据/HTML 更新）。
      * @returns 转换统计
      */
-    async upgradeLegacyTabs(): Promise<ConversionStats> {
-        logger.info("全局旧版标签页升级查询开始");
-        const blockList = (await sql(
-            `SELECT * FROM blocks WHERE id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CUSTOM_ATTR}')`
-        )) as SqlBlock[];
-        logger.info("全局旧版标签页升级查询完成", { count: blockList.length });
-
-        if (!blockList || blockList.length === 0) {
-            pushMsg(`${t(this.i18n, "msg.noLegacyTabsToUpgrade")}`);
-            return { success: 0, failure: 0 };
-        }
+    async upgradeAllTabs(): Promise<ConversionStats> {
+        logger.info("全局标签页升级开始");
+        const { legacyBlocks, dataBlocks } = await this.queryAllTabsBlocks();
 
         const toProcess: Array<{ id: string; data: TabsData }> = [];
         const skipped: { nodeId: string; reason: string }[] = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
-        for (const block of blockList) {
+        // 处理旧格式块
+        for (const block of legacyBlocks) {
             const id = block.id ?? "";
             if (!id) {
                 invalid.push({ nodeId: "unknown", reason: "缺少 nodeId" });
                 continue;
             }
-            let dataRaw: string;
-            let legacyRaw: string;
-            if (typeof block.ial === "string") {
-                const extracted = this.extractTabsDataFromIal(block.ial);
-                dataRaw = extracted.dataRaw;
-                legacyRaw = extracted.legacyRaw;
-            } else {
-                const attrs = await getBlockAttrs(id);
-                const attrDataRaw = attrs?.[CODE_TABS_DATA_ATTR];
-                const attrLegacyRaw = attrs?.[CUSTOM_ATTR];
-                if (attrDataRaw !== undefined) dataRaw = attrDataRaw;
-                else dataRaw = "";
-                if (attrLegacyRaw !== undefined) legacyRaw = attrLegacyRaw;
-                else legacyRaw = "";
-            }
-
-            // 已有新格式数据则跳过升级
-            if (dataRaw) {
-                skipped.push({ nodeId: id, reason: "已是新格式" });
-                continue;
-            }
+            const legacyRaw = this.extractAttrFromIal(block.ial ?? "", CUSTOM_ATTR);
             if (!legacyRaw) {
                 invalid.push({ nodeId: id, reason: "缺少旧版标签数据" });
                 continue;
@@ -724,23 +736,44 @@ export class TransformCore {
             toProcess.push({ id, data: upgraded });
         }
 
-        logger.debug("旧版标签页升级统计", {
-            total: blockList.length,
+        // 处理新格式但元数据过期的块
+        for (const block of dataBlocks) {
+            const id = block.id ?? "";
+            if (!id) continue;
+
+            const metadataRaw = this.extractAttrFromIal(block.ial ?? "", CODE_TABS_METADATA_ATTR);
+            const metadata = TabData.decodeMetadata(metadataRaw);
+            if (TabData.isMetadataCurrent(metadata)) {
+                skipped.push({ nodeId: id, reason: "元数据已是最新" });
+                continue;
+            }
+
+            const dataRaw = this.extractAttrFromIal(block.ial ?? "", CODE_TABS_DATA_ATTR);
+            if (!dataRaw) {
+                invalid.push({ nodeId: id, reason: "缺少标签数据" });
+                continue;
+            }
+            const data = TabData.decode(dataRaw);
+            if (!data) {
+                invalid.push({ nodeId: id, reason: "标签数据解码失败" });
+                continue;
+            }
+            toProcess.push({ id, data });
+        }
+
+        logger.info("全局标签页升级统计", {
+            legacyBlocks: legacyBlocks.length,
+            dataBlocks: dataBlocks.length,
             toProcess: toProcess.length,
             skipped: skipped.length,
             invalid: invalid.length,
         });
-        logger.debug("旧版标签页升级明细", {
-            toProcess: toProcess.map((item) => item.id),
-            skipped: skipped.map((item) => item.nodeId),
-            invalid: invalid.map((item) => item.nodeId),
-        });
 
         const messages = {
-            completed: t(this.i18n, "msg.upgradeLegacyCompleted"),
-            failed: t(this.i18n, "msg.upgradeLegacyFailed"),
+            completed: t(this.i18n, "msg.upgradeAllCompleted"),
+            failed: t(this.i18n, "msg.upgradeAllFailed"),
             invalidBlocks: t(this.i18n, "msg.invalidBlocks"),
-            noItems: t(this.i18n, "msg.noLegacyTabsToUpgrade"),
+            noItems: t(this.i18n, "msg.noTabsToUpgrade"),
             skippedDueToFormat: t(this.i18n, "msg.skippedBlocks"),
         };
 
@@ -749,13 +782,17 @@ export class TransformCore {
         }
 
         const { results } = await this.runBatch(
-            t(this.i18n, "task.progress.upgradeLegacy"),
+            t(this.i18n, "task.progress.upgradeAll"),
             toProcess,
             async ({ id, data }) => {
-                logger.debug("升级旧版标签页", { id });
+                logger.debug("升级标签页", { id });
                 const htmlBlock = await TabRenderer.createProtyleHtml(data);
                 await updateBlock("markdown", htmlBlock, id);
-                await TabData.writeToBlock(id, data);
+                await setBlockAttrs(id, {
+                    [CODE_TABS_DATA_ATTR]: TabData.encode(data),
+                    [CODE_TABS_METADATA_ATTR]: TabData.encodeMetadata(TabData.createMetadata()),
+                    [CUSTOM_ATTR]: "",
+                });
             },
             { forceProgress: true }
         );

@@ -23,9 +23,14 @@ export type TabDataItem = {
 };
 
 export type TabsData = {
-    version: number;
     active: number;
     tabs: TabDataItem[];
+};
+
+export type CodeTabsMetadata = {
+    id: string;
+    dataVersion: number;
+    htmlVersion: number;
 };
 
 export type FencedBlockType = keyof typeof FENCED_BLOCK_META;

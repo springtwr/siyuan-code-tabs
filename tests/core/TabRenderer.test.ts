@@ -16,7 +16,6 @@ window.Lute = {
 describe("TabRenderer", () => {
     it("createProtyleHtml 生成基础结构", async () => {
         const data: TabsData = {
-            version: 2,
             active: 0,
             tabs: [{ title: "A", lang: "plaintext", code: "const a = 1;" }],
         };
@@ -28,7 +27,6 @@ describe("TabRenderer", () => {
 
     it("createProtyleHtml 支持 markdown-render", async () => {
         const data: TabsData = {
-            version: 2,
             active: 0,
             tabs: [{ title: "MD", lang: "markdown-render", code: "## Title" }],
         };
@@ -56,7 +54,6 @@ describe("TabRenderer", () => {
         };
 
         const data: TabsData = {
-            version: 2,
             active: 0,
             tabs: [{ title: "MD", lang: "markdown-render", code: "```js\\nconst a=1\\n```" }],
         };

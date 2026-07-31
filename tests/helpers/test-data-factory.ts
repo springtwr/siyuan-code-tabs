@@ -2,7 +2,6 @@ import type { TabsData, TabDataItem, CodeTab } from "@/types/tabs";
 
 export function createValidTabData(overrides: Partial<TabsData> = {}): TabsData {
     return {
-        version: 2,
         active: 0,
         tabs: [
             { title: "JavaScript", lang: "javascript", code: "console.log('hello');" },
@@ -14,7 +13,6 @@ export function createValidTabData(overrides: Partial<TabsData> = {}): TabsData 
 
 export function createInvalidTabData(): Partial<TabsData> {
     return {
-        version: 2,
         active: 999,
         tabs: [],
     };
@@ -63,7 +61,6 @@ export function createMultipleTabs(count: number): TabDataItem[] {
 
 export function createLargeTabData(tabCount: number): TabsData {
     return {
-        version: 2,
         active: 0,
         tabs: createMultipleTabs(tabCount),
     };

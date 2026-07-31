@@ -10,14 +10,14 @@ vi.mock("@/api", () => ({
     updateBlock: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/modules/tabs/TabData", () => ({
+vi.mock("@/core/TabData", () => ({
     TabData: {
         createDefaultData: () => ({
-            version: 1,
             active: 0,
             tabs: [{ title: "Tab1", lang: "plaintext", code: "code" }],
         }),
-        writeToBlock: vi.fn().mockResolvedValue(undefined),
+        writeFullToBlock: vi.fn().mockResolvedValue(undefined),
+        createMetadata: vi.fn(() => ({ id: "test-id", dataVersion: 1, htmlVersion: 1 })),
     },
 }));
 

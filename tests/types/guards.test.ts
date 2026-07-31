@@ -1,25 +1,22 @@
 import { describe, it, expect } from "vitest";
-import type { TabsData } from "@/types/tabs";
+import type { TabsData, CodeTabsMetadata } from "@/types/tabs";
 
 describe("types", () => {
     describe("TabsData 类型守卫", () => {
         it("should validate correct TabsData structure", () => {
             const validData: TabsData = {
-                version: 2,
                 active: 0,
                 tabs: [
                     { title: "JavaScript", lang: "javascript", code: "console.log(1);" },
                 ],
             };
             
-            expect(validData.version).toBe(2);
             expect(validData.active).toBeGreaterThanOrEqual(0);
             expect(Array.isArray(validData.tabs)).toBe(true);
         });
 
         it("should validate TabsData with multiple tabs", () => {
             const data: TabsData = {
-                version: 2,
                 active: 1,
                 tabs: [
                     { title: "JS", lang: "javascript", code: "code1" },
@@ -94,10 +91,33 @@ describe("types", () => {
         });
     });
 
+    describe("CodeTabsMetadata 类型", () => {
+        it("should validate metadata structure", () => {
+            const metadata: CodeTabsMetadata = {
+                id: "test-uuid",
+                dataVersion: 2,
+                htmlVersion: 2,
+            };
+
+            expect(typeof metadata.id).toBe("string");
+            expect(typeof metadata.dataVersion).toBe("number");
+            expect(typeof metadata.htmlVersion).toBe("number");
+        });
+
+        it("should not accept metadata without required fields", () => {
+            // 类型级别验证：缺少字段不应通过编译
+            const partial = {
+                id: "test",
+            } as Partial<CodeTabsMetadata>;
+
+            expect(partial.dataVersion).toBeUndefined();
+            expect(partial.htmlVersion).toBeUndefined();
+        });
+    });
+
     describe("边界条件验证", () => {
         it("should handle tabs array with empty items", () => {
             const data: TabsData = {
-                version: 2,
                 active: 0,
                 tabs: [],
             };
@@ -107,7 +127,6 @@ describe("types", () => {
 
         it("should handle active index at boundary", () => {
             const data: TabsData = {
-                version: 2,
                 active: 2,
                 tabs: [
                     { title: "Tab1", lang: "js", code: "code1" },

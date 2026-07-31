@@ -1,7 +1,7 @@
 import { IObject, Menu } from "siyuan";
 
 import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
-import { CODE_TABS_DATA_ATTR, CUSTOM_ATTR } from "@/constants";
+import { CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR } from "@/constants";
 import { decodeSource } from "@/utils/encoding";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
@@ -32,7 +32,7 @@ async function resolveTabsData(
     if (legacy) {
         const upgraded = TabData.upgradeFromLegacy(legacy);
         if (upgraded) {
-            await TabData.writeToBlock(nodeId, upgraded);
+            await TabData.writeFullToBlock(nodeId, upgraded, TabData.createMetadata());
             return upgraded;
         }
     }
@@ -54,7 +54,10 @@ async function persistTabsData(
 ): Promise<void> {
     const htmlBlock = await TabRenderer.createProtyleHtml(data);
     await updateBlock("markdown", htmlBlock, nodeId);
-    await TabData.writeToBlock(nodeId, data);
+    // 保留已有元数据 id 并刷新版本号，缺失时创建，避免块被误判为待升级
+    const attrs = await getBlockAttrs(nodeId).catch((): Record<string, string> => ({}));
+    const existing = TabData.decodeMetadata(attrs[CODE_TABS_METADATA_ATTR] ?? "");
+    await TabData.writeFullToBlock(nodeId, data, TabData.createMetadata(existing));
     onReload?.();
 }
 

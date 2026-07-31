@@ -114,6 +114,7 @@ export class TabRenderer {
         tabsOuter.appendChild(tabs);
 
         tabContainer.appendChild(tabsOuter);
+        tabContainer.append("\n")
         tabContainer.appendChild(tabContents);
         const escaped = this.normalizeHtmlBlockContent(this.escapeHtml(containerDiv.innerHTML));
         logger.debug("Tabs HTML 块生成完成");
@@ -469,6 +470,8 @@ export class TabRenderer {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;")
             .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+            .replace(/>/g, "&gt;")
+            .replace(/^[ \t]+$/gm, "")
+            .replace(/\n+/g, "\n");
     }
 }

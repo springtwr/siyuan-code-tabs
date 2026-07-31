@@ -23,28 +23,18 @@ export const PROTYLE_HTML = `
         <div class="tabs"></div>
         <span class="code-tabs--icon_group">
             <span class="code-tabs--icon_default" onclick="pluginCodeTabs.setDefault(event)" title="设为默认">
-                <svg width="14" height="14" style="display:block">
-                    <use xlink:href="${CODE_TABS_ICONS}#iconStar"></use>
-                </svg>
+                <svg width="14" height="14" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconStar"></use></svg>
             </span>
             <span class="code-tabs--icon_edit" onclick="pluginCodeTabs.editTab(event)" title="编辑">
-                <svg width="14" height="14" style="display:block">
-                    <use xlink:href="${CODE_TABS_ICONS}#iconEdit"></use>
-                </svg>
+                <svg width="14" height="14" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconEdit"></use></svg>
             </span>
             <span class="code-tabs--icon_copy" onclick="pluginCodeTabs.copyCode(event)" title="复制">
-                <svg width="14" height="14" style="display:block">
-                    <use xlink:href="${CODE_TABS_ICONS}#iconCopy"></use>
-                </svg>
+                <svg width="14" height="14" style="display:block"><use xlink:href="${CODE_TABS_ICONS}#iconCopy"></use></svg>
             </span>
         </span>
     </div>
-    <div class="tab-contents">
-    </div>
-</div>`
-    .replace(/>\s+</g, "><")
-    .replace(/\s+/g, " ")
-    .trim();
+    <div class="tab-contents"></div>
+</div>`.trim();
 
 export const ICON_MAIN = `<svg id="iconCodeTabsMain" viewBox="0 0 500 500">
   <path d="M 92.837891,40 C 51.377247,40 18,73.45 18,115 v 270 c 0,41.55 33.377247,75 74.837891,75 H 407.16211 C 448.62275,460 482,426.55 482,385 V 115 C 482,73.45 448.62275,40 407.16211,40 Z m 2.433593,50 H 127.58984 A 28.410985,28.410985 0 0 1 156,118.41016 V 186 c 0,0 0.11959,8.14544 5.56641,14.30273 4.38561,4.95765 11.06504,5.62518 13.50195,5.69727 H 176 402 c 16.62,0 30,16.77757 30,37.61719 V 372.38281 C 432,393.22243 418.62,410 402,410 H 98 C 81.379999,410 68,393.22243 68,372.38281 V 243.61719 117.27148 A 27.271843,27.271843 0 0 1 95.271484,90 Z M 216,90 h 68 c 5.54,0 10,4.46 10,10 v 46 c 0,5.54 -4.46,10 -10,10 h -68 c -5.54,0 -10,-4.46 -10,-10 v -46 c 0,-5.54 4.46,-10 10,-10 z m 138,0 h 68 c 5.54,0 10,4.46 10,10 v 46 c 0,5.54 -4.46,10 -10,10 h -68 c -5.54,0 -10,-4.46 -10,-10 v -46 c 0,-5.54 4.46,-10 10,-10 z" />

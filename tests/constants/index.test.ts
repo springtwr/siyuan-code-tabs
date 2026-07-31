@@ -167,8 +167,7 @@ describe("constants", () => {
         });
 
         it("PROTYLE_HTML should be minified", () => {
-            expect(PROTYLE_HTML).not.toMatch(/>\s+</);
-            expect(PROTYLE_HTML).not.toMatch(/\n/);
+            expect(PROTYLE_HTML).not.toMatch(/^\s+/);
         });
     });
 

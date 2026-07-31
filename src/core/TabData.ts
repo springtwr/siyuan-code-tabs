@@ -1,10 +1,16 @@
 import { getBlockAttrs, setBlockAttrs } from "@/api";
-import { CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR, DATA_VERSION, HTML_TEMPLATE_VERSION } from "@/constants";
-import { decodeSource, encodeSource } from "@/utils/encoding";
+import {
+    CODE_TABS_DATA_ATTR,
+    CODE_TABS_METADATA_ATTR,
+    CUSTOM_ATTR,
+    DATA_VERSION,
+    HTML_TEMPLATE_VERSION,
+} from "@/constants";
+import { decodeJson, decodeSource, encodeJson } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { LegacyTabParser } from "@/utils/LegacyTabParser";
 import { normalizeLanguageInput } from "@/utils/language";
-import type { CodeTab, CodeTabsMetadata, TabDataItem, TabsData } from "@/types/tabs";
+import type { CodeTab, CodeTabSource, CodeTabsMetadata, TabDataItem, TabsData } from "@/types/tabs";
 
 /**
  * 规范化标签数组，保证标题与语言字段可用。
@@ -138,7 +144,7 @@ export class TabData {
      */
     static encode(data: TabsData): string {
         const normalized = this.normalize(data);
-        return encodeSource(JSON.stringify(normalized));
+        return encodeJson(normalized);
     }
 
     /**
@@ -237,10 +243,10 @@ export class TabData {
 
     /**
      * 创建当前版本的元数据；传入已有元数据时保留其 id 并刷新版本号。
-     * @param existing 已有元数据（可选）
+     * @param existing 已有元数据（可选，仅需 id）
      * @returns CodeTabsMetadata
      */
-    static createMetadata(existing?: CodeTabsMetadata | null): CodeTabsMetadata {
+    static createMetadata(existing?: Pick<CodeTabsMetadata, "id"> | null): CodeTabsMetadata {
         return {
             id: existing?.id || this.generateId(),
             dataVersion: DATA_VERSION,
@@ -254,7 +260,7 @@ export class TabData {
      * @returns Base64 编码字符串
      */
     static encodeMetadata(metadata: CodeTabsMetadata): string {
-        return encodeSource(JSON.stringify(metadata));
+        return encodeJson(metadata);
     }
 
     /**
@@ -263,12 +269,32 @@ export class TabData {
      * @returns CodeTabsMetadata 或 null
      */
     static decodeMetadata(raw: string): CodeTabsMetadata | null {
-        if (!raw) return null;
-        try {
-            return JSON.parse(decodeSource(raw)) as CodeTabsMetadata;
-        } catch {
-            return null;
-        }
+        return decodeJson<CodeTabsMetadata>(raw);
+    }
+
+    /**
+     * 编码分组来源信息为 Base64 字符串（与 metadata 一致，安全存储于 SiYuan IAL）。
+     * @param source 分组来源信息
+     * @returns Base64 编码字符串
+     */
+    static encodeTabSource(source: CodeTabSource): string {
+        return encodeJson(source);
+    }
+
+    /**
+     * 解码 Base64 分组来源信息字符串。
+     * @param raw 原始字符串
+     * @returns CodeTabSource 或 null（结构非法时返回 null）
+     */
+    static decodeTabSource(raw: string): CodeTabSource | null {
+        const parsed = decodeJson<Partial<CodeTabSource>>(raw);
+        if (typeof parsed?.id !== "string" || !parsed.id) return null;
+        return {
+            id: parsed.id,
+            order: typeof parsed.order === "number" ? parsed.order : NaN,
+            active: typeof parsed.active === "boolean" ? parsed.active : undefined,
+            title: typeof parsed.title === "string" ? parsed.title : undefined,
+        };
     }
 
     /**

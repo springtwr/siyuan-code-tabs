@@ -152,6 +152,13 @@ export class CommandService {
                 this.tabTransformManager.tabsToCodeBlocksInDocument();
             },
         });
+        detail.menu.addItem({
+            icon: "iconCodeTabsMain",
+            label: t(this.i18n, "menu.more.codeBlocksToTabsInDocument"),
+            click: () => {
+                this.tabTransformManager.codeBlocksToTabsInDocument();
+            },
+        });
     }
 
     /**

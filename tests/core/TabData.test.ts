@@ -135,6 +135,19 @@ describe("TabData", () => {
             expect(TabData.decodeMetadata("not-json")).toBeNull();
         });
 
+        it("encodeTabSource/decodeTabSource should roundtrip", () => {
+            const source = { id: "meta-1", order: 2, title: "JS" };
+            const encoded = TabData.encodeTabSource(source);
+            expect(encoded).not.toContain("{");
+            expect(TabData.decodeTabSource(encoded)).toEqual(source);
+        });
+
+        it("decodeTabSource should return null for structurally invalid data", () => {
+            expect(TabData.decodeTabSource(btoa(JSON.stringify({ id: 123 })))).toBeNull();
+            expect(TabData.decodeTabSource(btoa(JSON.stringify("x")))).toBeNull();
+            expect(TabData.decodeTabSource(btoa(JSON.stringify([])))).toBeNull();
+        });
+
         it("isMetadataCurrent should return true for current metadata", () => {
             const metadata = TabData.createMetadata();
             expect(TabData.isMetadataCurrent(metadata)).toBe(true);

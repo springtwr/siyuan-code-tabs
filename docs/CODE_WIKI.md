@@ -374,12 +374,19 @@ const pluginCodeTabs = {
 | `codeToTabsInDocument`       | 当前文档代码块转标签页   |
 | `tabsToCodeBlocksBatch`      | 批量将标签页拆分为代码块 |
 | `tabsToCodeBlocksInDocument` | 当前文档标签页拆分       |
+| `codeBlocksToTabsInDocument` | 当前文档拆分后的代码块重新合并为标签页 |
 | `allTabsToCodeBlocks`        | 全局拆分所有标签页       |
 | `mergeCodeBlocksToTabSyntax` | 合并多个代码块           |
 | `newTabs`                    | 创建新的标签页块         |
 | `countLegacyTabs`            | 统计旧版标签页数量       |
 | `upgradeLegacyTabs`          | 升级旧版标签页           |
 | `cancelCurrentTask`          | 取消当前批量任务         |
+
+**已知取舍**：
+
+- 拆分时仅当标题不是默认 `Tab{n}`（`/^tab\d+$/i`）才写入 source 属性；若用户手动将标题改为恰好匹配该模式的字符串且与所在索引不一致（如 `Tab2` 位于第 1 个标签），拆分→合并后标题会折损为位置对应的 `Tab{index+1}`。
+- 拆分产物代码块通过 `custom-code-tab-source` 属性（Base64 JSON：`{ id, order, active?, title? }`）标记分组、顺序、默认标签与标题；合并时据此还原。
+- 旧版本（引入 `custom-code-tab-source` 之前）拆分产物只带独立的 `custom-code-tab-title` 属性，新版本合并仅识别 `custom-code-tab-source`，旧产物需手动选中合并，且标题会折损为 `Tab{n}`（不兼容，属有意清理）。
 
 **转换流程**：
 

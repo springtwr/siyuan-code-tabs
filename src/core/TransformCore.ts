@@ -9,12 +9,17 @@ import {
     sql,
     updateBlock,
 } from "@/api";
-import { CODE_TAB_TITLE_ATTR, CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR } from "@/constants";
-import { resolveCodeTextFromSqlBlock, stripInvisibleChars } from "@/utils/encoding";
+import {
+    CODE_TAB_SOURCE_ATTR,
+    CODE_TABS_DATA_ATTR,
+    CODE_TABS_METADATA_ATTR,
+    CUSTOM_ATTR,
+} from "@/constants";
+import { resolveCodeTextFromSqlBlock, stripCodeFence, stripInvisibleChars } from "@/utils/encoding";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
 import { LegacyTabParser } from "@/utils/LegacyTabParser";
-import { CodeTab, TabsData } from "@/types/tabs";
+import { CodeTab, CodeTabSource, TabsData } from "@/types/tabs";
 import { TabRenderer } from "./TabRenderer";
 import { TabData } from "./TabData";
 
@@ -213,13 +218,7 @@ export class TransformCore {
      * @returns Promise<void>
      */
     async codeToTabsInDocument(): Promise<void> {
-        const currentDocument = getActiveEditor(true);
-        if (!currentDocument) return;
-        const rootId =
-            (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
-                ?.protyle?.block?.rootID ??
-            (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
-                ?.rootId;
+        const rootId = this.getActiveDocumentRootId();
         if (!rootId) {
             logger.warn("当前文档代码块 -> 标签页 失败：缺少 rootId");
             pushErrMsg(t(this.i18n, "msg.noRootId"));
@@ -371,25 +370,31 @@ export class TransformCore {
         return ial.match(new RegExp(`${attrName}="([^"]*)"`, "i"))?.[1] ?? "";
     }
 
-    private async extractTabsData(block: TabBlock): Promise<{ id: string; data: TabsData | null }> {
+    private async extractTabsData(block: TabBlock): Promise<{
+        id: string;
+        data: TabsData | null;
+        metadataId: string;
+    }> {
         let id: string;
         let dataRaw: string;
         let legacyRaw: string;
+        let metadataRaw: string;
         if ("ial" in block && typeof block.ial === "string") {
             id = block.id ?? "";
             dataRaw = this.extractAttrFromIal(block.ial, CODE_TABS_DATA_ATTR);
             legacyRaw = this.extractAttrFromIal(block.ial, CUSTOM_ATTR);
+            metadataRaw = this.extractAttrFromIal(block.ial, CODE_TABS_METADATA_ATTR);
         } else {
             const domBlock = block as HTMLElement;
             id = domBlock.getAttribute("data-node-id") ?? "";
             dataRaw = domBlock.getAttribute(CODE_TABS_DATA_ATTR) ?? "";
             legacyRaw = domBlock.getAttribute(CUSTOM_ATTR) ?? "";
-            if (!dataRaw && id) {
+            metadataRaw = domBlock.getAttribute(CODE_TABS_METADATA_ATTR) ?? "";
+            if ((!dataRaw || !metadataRaw) && id) {
                 const attrs = await getBlockAttrs(id);
-                const attrDataRaw = attrs?.[CODE_TABS_DATA_ATTR];
-                const attrLegacyRaw = attrs?.[CUSTOM_ATTR];
-                if (attrDataRaw !== undefined) dataRaw = attrDataRaw;
-                if (attrLegacyRaw !== undefined) legacyRaw = attrLegacyRaw;
+                if (!dataRaw) dataRaw = attrs?.[CODE_TABS_DATA_ATTR] ?? "";
+                if (!legacyRaw) legacyRaw = attrs?.[CUSTOM_ATTR] ?? "";
+                if (!metadataRaw) metadataRaw = attrs?.[CODE_TABS_METADATA_ATTR] ?? "";
             }
         }
 
@@ -399,25 +404,25 @@ export class TransformCore {
             });
             if (legacy) {
                 const upgraded = TabData.upgradeFromLegacy(legacy);
-                return { id, data: upgraded };
+                return { id, data: upgraded, metadataId: "" };
             }
         }
-        if (!dataRaw) return { id, data: null };
-        return { id, data: TabData.decode(dataRaw) };
+        if (!dataRaw) return { id, data: null, metadataId: "" };
+        return { id, data: TabData.decode(dataRaw), metadataId: TabData.decodeMetadata(metadataRaw)?.id ?? "" };
     }
 
     private async collectTabsDataBlocks(
         blockList: TabBlock[],
         context: string
     ): Promise<{
-        toProcess: Array<{ id: string; data: TabsData }>;
+        toProcess: Array<{ id: string; data: TabsData; metadataId: string }>;
         invalid: { nodeId: string; reason: string }[];
     }> {
-        const toProcess: Array<{ id: string; data: TabsData }> = [];
+        const toProcess: Array<{ id: string; data: TabsData; metadataId: string }> = [];
         const invalid: { nodeId: string; reason: string }[] = [];
 
         for (const block of blockList) {
-            const { id, data } = await this.extractTabsData(block);
+            const { id, data, metadataId } = await this.extractTabsData(block);
             if (!id) {
                 const msg = "缺少 nodeId";
                 invalid.push({ nodeId: "unknown", reason: msg });
@@ -439,7 +444,12 @@ export class TransformCore {
                 });
                 continue;
             }
-            toProcess.push({ id, data });
+            // 元数据缺失时（旧块）生成新 id，保证拆分产物仍可被合并识别
+            toProcess.push({
+                id,
+                data,
+                metadataId: metadataId || TabData.createMetadata().id,
+            });
         }
 
         return { toProcess, invalid };
@@ -474,8 +484,8 @@ export class TransformCore {
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.tabsToCodeBlocks"),
             toProcess,
-            async ({ id, data }) => {
-                await this.replaceWithCodeBlocks(id, data.tabs);
+            async ({ id, data, metadataId }) => {
+                await this.replaceWithCodeBlocks(id, data.tabs, metadataId, data.active);
             }
         );
 
@@ -537,22 +547,29 @@ export class TransformCore {
                 const contentEl = block.querySelector<HTMLElement>('[contenteditable="true"]');
                 const languageEl = block.querySelector<HTMLElement>(".protyle-action__language");
                 const languageRaw = languageEl?.textContent?.trim() ?? "";
-                const titleAttr = block.getAttribute(CODE_TAB_TITLE_ATTR) ?? "";
+                // 标题与激活状态读拆分产物 source 属性（无 source 时标题回退为 Tab{n}）
+                const sourceRaw = block.getAttribute(CODE_TAB_SOURCE_ATTR);
+                const source = sourceRaw ? TabData.decodeTabSource(sourceRaw) : null;
+                const titleAttr = source?.title ?? "";
+                const sourceActive = source?.active === true;
                 if (!id || !contentEl) return null;
+                // 思源代码块 DOM 的 textContent 末尾自带一个换行伪影，
+                // 仅去掉这一个，保留用户真实的末尾空行
                 const codeText = stripInvisibleChars(contentEl.textContent || "").replace(
-                    /\n+$/,
+                    /\n$/,
                     ""
                 );
                 if (codeText.trim().length === 0) {
-                    return { id, codeText, languageRaw, titleAttr, isEmpty: true };
+                    return { id, codeText, languageRaw, titleAttr, isActive: sourceActive, isEmpty: true };
                 }
-                return { id, codeText, languageRaw, titleAttr };
+                return { id, codeText, languageRaw, titleAttr, isActive: sourceActive };
             })
             .filter(Boolean) as Array<{
             id: string;
             codeText: string;
             languageRaw: string;
             titleAttr: string;
+            isActive: boolean;
             isEmpty?: boolean;
         }>;
 
@@ -567,6 +584,10 @@ export class TransformCore {
             );
         }
 
+        if (filteredBlocks.length === 0) {
+            pushMsg(`${t(this.i18n, "msg.noCodeBlockToMerge")}`);
+            return;
+        }
         if (filteredBlocks.length < 2) {
             pushMsg(`${t(this.i18n, "msg.mergeNeedMultipleBlocks")}`);
             return;
@@ -589,7 +610,8 @@ export class TransformCore {
             }
             const title = item.titleAttr ? item.titleAttr : `Tab${fallbackIndex}`;
             const language = item.languageRaw ? item.languageRaw : "plaintext";
-            codeArr.push({ title, language, code: item.codeText, isActive: false });
+            // 还原拆分时记录的激活状态（默认标签）
+            codeArr.push({ title, language, code: item.codeText, isActive: item.isActive });
             fallbackIndex += 1;
         }
 
@@ -612,14 +634,24 @@ export class TransformCore {
         );
     }
 
-    async tabsToCodeBlocksInDocument(): Promise<void> {
+    /**
+     * 获取当前活动文档的根块 ID。
+     * @returns 根块 ID，失败返回空字符串
+     */
+    private getActiveDocumentRootId(): string {
         const currentDocument = getActiveEditor(true);
-        if (!currentDocument) return;
-        const rootId =
+        if (!currentDocument) return "";
+        return (
             (currentDocument as { protyle?: { block?: { rootID?: string; rootId?: string } } })
                 ?.protyle?.block?.rootID ??
             (currentDocument as { protyle?: { block?: { rootId?: string } } })?.protyle?.block
-                ?.rootId;
+                ?.rootId ??
+            ""
+        );
+    }
+
+    async tabsToCodeBlocksInDocument(): Promise<void> {
+        const rootId = this.getActiveDocumentRootId();
         if (!rootId) {
             logger.warn("当前文档标签页 -> 多个代码块 失败：缺少 rootId");
             pushErrMsg(t(this.i18n, "msg.noRootId"));
@@ -634,6 +666,196 @@ export class TransformCore {
             rootId,
         });
         this.tabsToCodeBlocksBatch(blockList);
+    }
+
+    /**
+     * 当前文档：将被拆分的代码块按元数据 id 合并回标签页。
+     * @returns 合并统计
+     */
+    async codeBlocksToTabsInDocument(): Promise<ConversionStats> {
+        const rootId = this.getActiveDocumentRootId();
+        if (!rootId) {
+            logger.warn("当前文档代码块 -> 标签页 合并失败：缺少 rootId");
+            pushErrMsg(t(this.i18n, "msg.noRootId"));
+            return { success: 0, failure: 0 };
+        }
+        logger.info("当前文档拆分代码块 -> 标签页 查询开始", { rootId });
+        const blockList = (await sql(
+            `SELECT * FROM blocks WHERE root_id='${rootId}' AND type='c' AND id IN (SELECT block_id FROM attributes AS a WHERE a.name='${CODE_TAB_SOURCE_ATTR}') ORDER BY sort`
+        )) as SqlBlock[];
+        logger.info("当前文档拆分代码块 -> 标签页 查询完成", {
+            count: blockList.length,
+            rootId,
+        });
+        return this.mergeGroupedCodeBlocks(blockList);
+    }
+
+    /**
+     * 将带有同一分组属性的代码块合并为标签页，保留原元数据 id。
+     * @param blockList 拆分产物代码块列表
+     * @returns 合并统计
+     */
+    private async mergeGroupedCodeBlocks(blockList: SqlBlock[]): Promise<ConversionStats> {
+        if (!blockList || blockList.length === 0) {
+            // 文档级合并：无任何拆分产物时给出可操作的详细提示
+            pushMsg(`${t(this.i18n, "msg.noSplitCodeBlocksToMerge")}`);
+            return { success: 0, failure: 0 };
+        }
+
+        const groups = new Map<string, GroupedCodeBlock[]>();
+        const invalid: { nodeId: string; reason: string }[] = [];
+        for (const block of blockList) {
+            const id = block.id ?? "";
+            const ial = block.ial ?? "";
+            const source = this.extractTabSourceFromIal(ial);
+            if (!id || !source) {
+                invalid.push({ nodeId: id || "unknown", reason: "缺少分组属性" });
+                continue;
+            }
+            const codeText = this.extractCodeTextPreservingTrailing(block);
+            if (!codeText || codeText.trim().length === 0) {
+                invalid.push({ nodeId: id, reason: "代码块内容为空" });
+                continue;
+            }
+            const language = this.extractLanguageFromMarkdown(block.markdown ?? "");
+            const list = groups.get(source.id);
+            if (list) {
+                list.push({
+                    id,
+                    order: source.order,
+                    active: source.active === true,
+                    title: source.title ?? "",
+                    language,
+                    code: codeText,
+                });
+            } else {
+                groups.set(source.id, [
+                    {
+                        id,
+                        order: source.order,
+                        active: source.active === true,
+                        title: source.title ?? "",
+                        language,
+                        code: codeText,
+                    },
+                ]);
+            }
+        }
+
+        const toProcess = Array.from(groups.entries()).map(([group, items]) => ({
+            group,
+            items: items.sort((a, b) => {
+                if (!Number.isFinite(a.order) && !Number.isFinite(b.order)) return 0;
+                if (!Number.isFinite(a.order)) return 1;
+                if (!Number.isFinite(b.order)) return -1;
+                return a.order - b.order;
+            }),
+        }));
+
+        if (toProcess.length === 0) {
+            if (invalid.length > 0) {
+                pushMsg(
+                    `${t(this.i18n, "msg.invalidBlocks").replace("{0}", invalid.length.toString())}`
+                );
+            }
+            return { success: 0, failure: invalid.length };
+        }
+
+        const { results } = await this.runBatch(
+            t(this.i18n, "task.progress.codeBlocksToTabs"),
+            toProcess,
+            async ({ group, items }) => {
+                const codeArr: CodeTab[] = items.map((item, index) => ({
+                    title: item.title || `Tab${index + 1}`,
+                    language: item.language || "plaintext",
+                    code: item.code,
+                    isActive: item.active,
+                }));
+                const data = TabData.fromCodeTabs(codeArr);
+                const targetId = items[0].id;
+                const htmlBlock = await TabRenderer.createProtyleHtml(data);
+                await updateBlock("markdown", htmlBlock, targetId);
+                // 保留原元数据 id（即拆分时的分组 id），刷新版本号
+                await TabData.writeFullToBlock(
+                    targetId,
+                    data,
+                    TabData.createMetadata({ id: group })
+                );
+                // 清理拆分残留的 source 属性
+                await setBlockAttrs(targetId, {
+                    [CODE_TAB_SOURCE_ATTR]: "",
+                });
+                const restIds = items.slice(1).map((item) => item.id);
+                const deleteResults = await Promise.allSettled(
+                    restIds.map((restId) => deleteBlock(restId))
+                );
+                const failedDeletes = restIds.filter(
+                    (_, index) => deleteResults[index]?.status === "rejected"
+                );
+                if (failedDeletes.length > 0) {
+                    logger.warn("合并标签页后删除残留代码块失败", {
+                        targetId,
+                        failedDeletes,
+                    });
+                }
+            }
+        );
+
+        const success = results.filter((r) => r.status === "fulfilled").length;
+        const failure = results.length - success + invalid.length;
+        if (success > 0) {
+            this.onSuccess?.();
+            pushMsg(
+                `${t(this.i18n, "msg.codeBlocksToTabsCompleted").replace("{0}", success.toString())}`
+            );
+        }
+        if (failure > 0) {
+            pushMsg(
+                `${t(this.i18n, "msg.codeBlocksToTabsFailed").replace("{0}", failure.toString())}`
+            );
+        }
+        logger.info("拆分代码块 -> 标签页 合并统计", { success, failure });
+        return { success, failure };
+    }
+
+    /**
+     * 从代码块 markdown 首行提取语言标识（如 ```js 中的 js）。
+     * @param markdown 代码块 markdown
+     * @returns 语言标识，未找到返回空字符串
+     */
+    private extractLanguageFromMarkdown(markdown: string): string {
+        const firstLine = markdown.trim().split("\n")[0] ?? "";
+        return firstLine.match(/^`{3,}([^\s`]*)/)?.[1] ?? "";
+    }
+
+    /**
+     * 从 IAL 提取分组来源信息（拆分产物 source 属性）。
+     * @param ial IAL 字符串
+     * @returns 分组来源信息，无法识别返回 null
+     */
+    private extractTabSourceFromIal(ial: string): CodeTabSource | null {
+        const sourceRaw = this.extractAttrFromIal(ial, CODE_TAB_SOURCE_ATTR);
+        if (!sourceRaw) return null;
+        const source = TabData.decodeTabSource(sourceRaw);
+        if (source?.id) return source;
+        logger.debug("拆分产物 source 属性解析失败", { sourceRaw });
+        return null;
+    }
+
+    /**
+     * 从 SQL 代码块提取代码文本：优先 markdown（围栏结构可精确还原末尾空行），content 兜底。
+     * @param block SQL 代码块
+     * @returns 代码文本或 null
+     */
+    private extractCodeTextPreservingTrailing(block: SqlBlock): string | null {
+        const markdown = typeof block.markdown === "string" ? block.markdown : "";
+        if (markdown.trim().length > 0) {
+            const unwrapped = stripCodeFence(markdown);
+            if (unwrapped.trim().length > 0) return stripInvisibleChars(unwrapped);
+        }
+        const content = typeof block.content === "string" ? block.content : "";
+        if (content.trim().length > 0) return stripInvisibleChars(content);
+        return null;
     }
 
     /**
@@ -808,20 +1030,30 @@ export class TransformCore {
 
     private async replaceWithCodeBlocks(
         id: string,
-        tabs: Array<{ title: string; lang: string; code: string }>
+        tabs: Array<{ title: string; lang: string; code: string }>,
+        metadataId: string,
+        activeIndex: number
     ): Promise<void> {
         let previousId = id;
-        for (const tab of tabs) {
+        for (let index = 0; index < tabs.length; index++) {
+            const tab = tabs[index];
             const markdown = this.buildCodeBlock(tab.code, tab.lang);
             const result = await insertBlock("markdown", markdown, "", previousId, "");
             const newId = result[0].doOperations[0].id;
+            // 记录来源标签页元数据 id、组内顺序与激活状态，供“一键合并回标签页”还原
+            const source: CodeTabSource = {
+                id: metadataId,
+                order: index,
+                active: index === activeIndex,
+            };
             if (this.shouldPersistTitle(tab.title)) {
-                await setBlockAttrs(newId, { [CODE_TAB_TITLE_ATTR]: tab.title });
+                source.title = tab.title;
             }
+            await setBlockAttrs(newId, { [CODE_TAB_SOURCE_ATTR]: TabData.encodeTabSource(source) });
             previousId = newId;
         }
         await deleteBlock(id);
-        logger.info("标签页已拆分为代码块", { id, count: tabs.length });
+        logger.info("标签页已拆分为代码块", { id, count: tabs.length, metadataId, activeIndex });
     }
 
     private shouldPersistTitle(title: string): boolean {
@@ -831,6 +1063,7 @@ export class TransformCore {
     }
 
     private buildCodeBlock(code: string, language: string): string {
+        // 保留代码内容原样（含末尾空行，属用户数据）
         const fence = this.resolveFence(code);
         const lang = language && language !== "plaintext" ? language : "";
         return `${fence}${lang ? lang : ""}\n${code}\n${fence}`;
@@ -929,6 +1162,15 @@ type SqlBlock = {
     id?: string;
     content?: string;
     markdown?: string;
+};
+
+type GroupedCodeBlock = {
+    id: string;
+    order: number;
+    active: boolean;
+    title: string;
+    language: string;
+    code: string;
 };
 
 type TabBlock = HTMLElement | SqlBlock;

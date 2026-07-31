@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     CUSTOM_ATTR,
     CODE_TABS_DATA_ATTR,
-    CODE_TAB_TITLE_ATTR,
+    CODE_TAB_SOURCE_ATTR,
     NEWLINE_FLAG,
     TAB_WIDTH_MIN,
     TAB_WIDTH_MAX,
@@ -49,9 +49,9 @@ describe("constants", () => {
             expect(typeof CODE_TABS_DATA_ATTR).toBe("string");
         });
 
-        it("should have valid CODE_TAB_TITLE_ATTR", () => {
-            expect(CODE_TAB_TITLE_ATTR).toBe("custom-code-tab-title");
-            expect(typeof CODE_TAB_TITLE_ATTR).toBe("string");
+        it("should have valid CODE_TAB_SOURCE_ATTR", () => {
+            expect(CODE_TAB_SOURCE_ATTR).toBe("custom-code-tab-source");
+            expect(typeof CODE_TAB_SOURCE_ATTR).toBe("string");
         });
 
         it("should have valid NEWLINE_FLAG", () => {
@@ -200,7 +200,7 @@ describe("constants", () => {
             const stringConstants = [
                 CUSTOM_ATTR,
                 CODE_TABS_DATA_ATTR,
-                CODE_TAB_TITLE_ATTR,
+                CODE_TAB_SOURCE_ATTR,
                 NEWLINE_FLAG,
                 TAB_WIDTH_SETTING_KEY,
                 PLUGIN_STYLE_ID,

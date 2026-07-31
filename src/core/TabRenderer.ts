@@ -1,6 +1,6 @@
 import type { FencedBlockType, TabsData } from "@/types/tabs";
 import { FENCED_BLOCK_META, PROTYLE_HTML } from "@/constants";
-import { encodeSource } from "@/utils/encoding";
+import { encodeSource, stripInvisibleChars } from "@/utils/encoding";
 import logger from "@/utils/logger";
 import { deleteBlock, insertBlock } from "@/api";
 import { getActiveEditor, Viz } from "siyuan";
@@ -19,11 +19,7 @@ export class TabRenderer {
         logger.debug("开始生成 Tabs HTML 块", { count: data.tabs.length });
         const containerDiv = document.createElement("div");
         containerDiv.innerHTML = PROTYLE_HTML;
-        const tabContainer = containerDiv.querySelector(".tabs-container") as HTMLElement;
-
-        const tabsOuter = containerDiv.querySelector(".tabs-outer") as HTMLElement;
         const tabs = containerDiv.querySelector(".tabs") as HTMLElement;
-
         const tabContents = containerDiv.querySelector(".tab-contents") as HTMLElement;
         const activeIndex = Math.min(
             Math.max(data.active ?? 0, 0),
@@ -35,7 +31,8 @@ export class TabRenderer {
         for (let i = 0; i < data.tabs.length; i++) {
             const title = data.tabs[i].title;
             const language = data.tabs[i].lang;
-            const code = data.tabs[i].code;
+            // 提前去除代码中的零宽字符（\u200b 等），避免与空行占位标记混淆、被误转为实体
+            const code = stripInvisibleChars(data.tabs[i].code);
 
             const tab = document.createElement("div");
             tab.className = "tab-item";
@@ -111,13 +108,17 @@ export class TabRenderer {
         }
         logger.debug("Tabs 内容生成完成", { activeIndex, count: data.tabs.length });
 
-        tabsOuter.appendChild(tabs);
-
-        tabContainer.appendChild(tabsOuter);
-        tabContainer.append("\n")
-        tabContainer.appendChild(tabContents);
-        const escaped = this.normalizeHtmlBlockContent(this.escapeHtml(containerDiv.innerHTML));
-        logger.debug("Tabs HTML 块生成完成");
+        // 模板已包含完整结构，节点间换行/缩进需保留（思源优化排版功能据此识别 HTML 块）；
+        // tabContents 由动态 append 构建，内部无 DOM 结构换行，其序列化内容中的 \n 均来自代码，
+        // 因此可在字符串层面安全标记全部空行；仅处理紧贴 </div> 的末尾空行————
+        // 其它闭合标签（如 Lute 渲染的 </code>）前的换行多为渲染结构固有换行，不能进行处理
+        logger.debug("tab-Container innerHtml ", { innerHtml: containerDiv.innerHTML });
+        const tabHtml = tabContents.innerHTML
+            .replace(/\n[ \t]*(?=\n)/g, "\n\u200b") // 中间空行
+            .replace(/\n(?=<\/div>)/g, "\n\u200b"); // 末尾空行（紧贴 </div>）
+        const rawHtml = containerDiv.innerHTML.replace(tabContents.innerHTML, () => tabHtml);
+        const escaped = this.escapeHtml(rawHtml).replace(/\u200b/g, "&#8203;");
+        logger.debug("Tabs HTML 块生成完成", { html: escaped });
         return `<div>${escaped}</div>`;
     }
 
@@ -443,13 +444,6 @@ export class TabRenderer {
         return scripts;
     }
 
-    private static normalizeHtmlBlockContent(input: string): string {
-        return input
-            .split(/\r?\n/)
-            .map((line) => (line.trim().length === 0 ? `${line}&#8203;` : line))
-            .join("\n");
-    }
-
     private static encodeTextNodes(root: HTMLElement): void {
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         let current = walker.nextNode() as Text | null;
@@ -465,13 +459,13 @@ export class TabRenderer {
     }
 
     private static escapeHtml(input: string): string {
+        // 仅做字符转义（HTML 块存储格式要求）；
+        // 不做任何空白处理——模板换行缩进与代码空行均原样保留
         return input
             .replace(/&/g, "&amp;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;")
             .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/^[ \t]+$/gm, "")
-            .replace(/\n+/g, "\n");
+            .replace(/>/g, "&gt;");
     }
 }

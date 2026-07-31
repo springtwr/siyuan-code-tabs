@@ -56,6 +56,29 @@ export function decodeSource(stored: string): string {
 }
 
 /**
+ * 编码对象为 Base64 JSON 字符串（通用安全存储格式，供 metadata/source 等复用）。
+ * @param data 任意可 JSON 序列化的数据
+ * @returns Base64 编码字符串
+ */
+export function encodeJson(data: unknown): string {
+    return encodeSource(JSON.stringify(data));
+}
+
+/**
+ * 解码 Base64 JSON 字符串为对象；非法数据返回 null。
+ * @param raw Base64 编码字符串
+ * @returns 解析后的对象或 null
+ */
+export function decodeJson<T>(raw: string): T | null {
+    if (!raw) return null;
+    try {
+        return JSON.parse(decodeSource(raw)) as T;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * 清理常见的不可见 Unicode 控制字符（常出现在 contenteditable 中）
  * @param str 需要清理的字符串
  * @returns 清理后的字符串

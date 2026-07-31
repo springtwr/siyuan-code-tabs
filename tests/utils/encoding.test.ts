@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+    decodeJson,
     decodeSource,
+    encodeJson,
     encodeSource,
     resolveCodeTextFromSqlBlock,
     stripCodeFence,
@@ -14,6 +16,18 @@ describe("encoding", () => {
         expect(encoded).not.toBe("");
         const decoded = decodeSource(encoded);
         expect(decoded).toBe(input);
+    });
+
+    it("encodeJson/decodeJson roundtrip", () => {
+        const data = { id: "meta-1", order: 2, nested: { ok: true } };
+        const encoded = encodeJson(data);
+        expect(encoded).not.toContain("{");
+        expect(decodeJson(encoded)).toEqual(data);
+    });
+
+    it("decodeJson returns null for empty or invalid input", () => {
+        expect(decodeJson("")).toBeNull();
+        expect(decodeJson("not-json")).toBeNull();
     });
 
     it("decodes legacy newline flag", () => {

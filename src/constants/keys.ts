@@ -5,7 +5,7 @@ import { SIYUAN_PATH } from "./paths";
  */
 export const CUSTOM_ATTR = "custom-plugin-code-tabs-sourcecode";
 export const CODE_TABS_DATA_ATTR = "custom-code-tabs-data";
-export const CODE_TAB_TITLE_ATTR = "custom-code-tab-title";
+export const CODE_TAB_SOURCE_ATTR = "custom-code-tab-source";
 export const CODE_TABS_METADATA_ATTR = "custom-code-tabs-metadata";
 export const DATA_VERSION = 2;
 export const HTML_TEMPLATE_VERSION = 2;

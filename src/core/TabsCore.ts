@@ -2,7 +2,7 @@ import { IObject, Menu } from "siyuan";
 
 import { getBlockAttrs, pushErrMsg, pushMsg, updateBlock } from "@/api";
 import { CODE_TABS_DATA_ATTR, CODE_TABS_METADATA_ATTR, CUSTOM_ATTR } from "@/constants";
-import { decodeSource } from "@/utils/encoding";
+import { decodeSource, stripInvisibleChars } from "@/utils/encoding";
 import { isMobileBackend } from "@/utils/env";
 import { t } from "@/utils/i18n";
 import logger from "@/utils/logger";
@@ -325,7 +325,10 @@ export class TabsCore {
                 }
 
                 const codeEl = tabContent.querySelector(".code");
-                const codeText = codeEl?.textContent ?? tabContent.textContent ?? "";
+                // 清理渲染占位用零宽空格（encodeBlankLines 写入），避免复制到剪贴板的代码含不可见字符
+                const codeText = stripInvisibleChars(
+                    codeEl?.textContent ?? tabContent.textContent ?? ""
+                );
                 await copyTextToClipboard(codeText, i18n);
             },
             setDefault: async (evt: MouseEvent) => {

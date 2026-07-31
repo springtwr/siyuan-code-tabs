@@ -3,6 +3,8 @@
 .trae
 .arts
 .codeartsdoer
+.reasonix
+reasonix.toml
 .vscode/*
 !.vscode/code-tabs.code-snippets
 .DS_Store

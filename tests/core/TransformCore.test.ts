@@ -52,6 +52,58 @@ describe("TransformCore", () => {
         expect(api.pushMsg).toHaveBeenCalledWith("msg.noTabsToUpgrade");
     });
 
+    it("tabsToCodeBlocksBatch: 大标签页（标签数超阈值）显示进度窗口", async () => {
+        const block = document.createElement("div");
+        block.dataset.nodeId = "tab-big";
+        block.dataset.type = "NodeHTMLBlock";
+        const data = TabData.createDefaultData();
+        data.tabs = Array.from({ length: 25 }, (_, i) => ({
+            title: `Tab${i + 1}`,
+            lang: "plaintext",
+            code: `code${i}`,
+        }));
+        vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
+            [CODE_TABS_DATA_ATTR]: TabData.encode(data),
+        });
+        const appendSpy = vi.spyOn(document.body, "appendChild");
+
+        const converter = new TransformCore(i18n);
+        await converter.tabsToCodeBlocksBatch([block]);
+
+        // 25 个标签 >= 阈值 20，应按标签总数触发进度窗口创建
+        const created = appendSpy.mock.calls.some(
+            ([el]) => el instanceof HTMLElement && el.classList.contains("code-tabs__task")
+        );
+        expect(created).toBe(true);
+        appendSpy.mockRestore();
+    });
+
+    it("tabsToCodeBlocksBatch: 小标签页不显示进度窗口", async () => {
+        const block = document.createElement("div");
+        block.dataset.nodeId = "tab-small";
+        block.dataset.type = "NodeHTMLBlock";
+        const data = TabData.createDefaultData();
+        data.tabs = Array.from({ length: 5 }, (_, i) => ({
+            title: `Tab${i + 1}`,
+            lang: "plaintext",
+            code: `code${i}`,
+        }));
+        vi.spyOn(api, "getBlockAttrs").mockResolvedValue({
+            [CODE_TABS_DATA_ATTR]: TabData.encode(data),
+        });
+        const appendSpy = vi.spyOn(document.body, "appendChild");
+
+        const converter = new TransformCore(i18n);
+        await converter.tabsToCodeBlocksBatch([block]);
+
+        // 5 个标签低于阈值，不应创建进度窗口
+        const created = appendSpy.mock.calls.some(
+            ([el]) => el instanceof HTMLElement && el.classList.contains("code-tabs__task")
+        );
+        expect(created).toBe(false);
+        appendSpy.mockRestore();
+    });
+
     it("codeToTabsBatch: 应转换符合语法的代码块", async () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "block-1";
@@ -222,6 +274,30 @@ describe("TransformCore", () => {
         const dataRaw = writeCall?.[1]?.[CODE_TABS_DATA_ATTR] ?? "";
         const decoded = TabData.decode(dataRaw);
         expect(decoded?.tabs[0].code).toBe("a\n\n");
+    });
+
+    it("codeBlocksToTabsInDocument: 组内代码块数超阈值时显示进度窗口", async () => {
+        getActiveEditor.mockReturnValue({
+            protyle: { block: { rootID: "doc-1" } },
+        });
+        // 单个组含 25 个代码块（>= 阈值 20），应按代码块总数触发进度窗口
+        const blocks = Array.from({ length: 25 }, (_, i) => ({
+            id: `code-${i}`,
+            ial: `${CODE_TAB_SOURCE_ATTR}="${TabData.encodeTabSource({ id: "big", order: i })}"`,
+            content: `c${i}`,
+            markdown: "```js\nc" + i + "\n```",
+        }));
+        vi.mocked(api.sql).mockResolvedValue(blocks);
+        const appendSpy = vi.spyOn(document.body, "appendChild");
+
+        const converter = new TransformCore(i18n);
+        await converter.codeBlocksToTabsInDocument();
+
+        const created = appendSpy.mock.calls.some(
+            ([el]) => el instanceof HTMLElement && el.classList.contains("code-tabs__task")
+        );
+        expect(created).toBe(true);
+        appendSpy.mockRestore();
     });
 
     it("codeBlocksToTabsInDocument: 无拆分代码块时提示且不执行", async () => {

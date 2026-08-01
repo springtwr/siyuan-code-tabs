@@ -147,35 +147,43 @@ export class TransformCore {
     private async runBatch<T>(
         title: string,
         items: T[],
-        handler: (item: T) => Promise<void>,
-        options?: { forceProgress?: boolean }
+        handler: (item: T, report?: (completed: number) => void) => Promise<void>,
+        options?: { forceProgress?: boolean; totalUnits?: number }
     ): Promise<BatchResult> {
-        const total = items.length;
-        const task = this.createProgressTask(title, total, options?.forceProgress ?? false);
+        // 进度单位默认为 item 数量；调用方可传 totalUnits 将进度细化到子操作（如标签个数）
+        const totalUnits = options?.totalUnits ?? items.length;
+        const task = this.createProgressTask(title, totalUnits, options?.forceProgress ?? false);
         if (task) {
-            task.update(0, total);
+            task.update(0, totalUnits);
         }
         const results: PromiseSettledResult<unknown>[] = [];
+        let itemBase = 0;
         for (const item of items) {
             if (task?.cancelled) break;
+            let itemCompleted = 0;
             try {
-                await handler(item);
+                await handler(item, (completed) => {
+                    itemCompleted = completed;
+                    task?.update(itemBase + completed, totalUnits);
+                });
                 results.push({ status: "fulfilled", value: undefined });
             } catch (error) {
                 results.push({ status: "rejected", reason: error });
             } finally {
+                // 未使用 report 的调用方按单个 item 推进；已使用 report 的按其子单元数推进
+                itemBase += itemCompleted > 0 ? itemCompleted : 1;
                 if (task) {
-                    task.update(results.length, total);
+                    task.update(itemBase, totalUnits);
                 }
             }
         }
 
-        const cancelledCount = total - results.length;
+        const cancelledCount = items.length - results.length;
         if (cancelledCount > 0) {
             pushMsg(
                 t(this.i18n, "msg.batchCancelled")
                     .replace("{0}", String(results.length))
-                    .replace("{1}", String(total))
+                    .replace("{1}", String(items.length))
             );
         }
 
@@ -481,27 +489,54 @@ export class TransformCore {
             return { success: 0, failure: invalid.length };
         }
 
+        // 进度按标签总数细化：单个标签页可能含大量标签，避免处理慢时无进度反馈
+        const totalTabs = toProcess.reduce((sum, item) => sum + item.data.tabs.length, 0);
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.tabsToCodeBlocks"),
             toProcess,
-            async ({ id, data, metadataId }) => {
-                await this.replaceWithCodeBlocks(id, data.tabs, metadataId, data.active);
-            }
+            async ({ id, data, metadataId }, report) => {
+                await this.replaceWithCodeBlocks(
+                    id,
+                    data.tabs,
+                    metadataId,
+                    data.active,
+                    report
+                );
+            },
+            { totalUnits: totalTabs }
         );
 
         const success = results.filter((r) => r.status === "fulfilled").length;
         const failure = results.length - success;
-        if (success > 0) {
+        // 进度与完成提示统一按“拆分出的代码块数”（即标签数）粒度，避免数量口径不一致
+        let successTabs = 0;
+        let failureTabs = 0;
+        toProcess.forEach((item, index) => {
+            const tabCount = item.data.tabs.length;
+            if (results[index]?.status === "fulfilled") {
+                successTabs += tabCount;
+            } else {
+                failureTabs += tabCount;
+            }
+        });
+        if (successTabs > 0) {
             pushMsg(
-                `${t(this.i18n, "msg.tabsToCodeBlocksCompleted").replace("{0}", success.toString())}`
+                `${t(this.i18n, "msg.tabsToCodeBlocksCompleted")
+                    .replace("{0}", success.toString())
+                    .replace("{1}", successTabs.toString())}`
             );
         }
-        if (failure > 0) {
+        if (failureTabs > 0) {
             pushMsg(
-                `${t(this.i18n, "msg.tabsToCodeBlocksFailed").replace("{0}", failure.toString())}`
+                `${t(this.i18n, "msg.tabsToCodeBlocksFailed").replace("{0}", failureTabs.toString())}`
             );
         }
-        logger.info("标签页 -> 多个代码块 转换统计", { success, failure });
+        logger.info("标签页 -> 多个代码块 转换统计", {
+            success,
+            failure,
+            successTabs,
+            failureTabs,
+        });
         return { success, failure };
     }
 
@@ -761,10 +796,13 @@ export class TransformCore {
             return { success: 0, failure: invalid.length };
         }
 
+        // 进度与完成提示统一按“合并的代码块数”粒度：组内 createProtyleHtml 需逐标签高亮，
+        // 组少但组内代码块多时不显示进度窗口会让人以为卡死
+        const totalCodeBlocks = toProcess.reduce((sum, { items }) => sum + items.length, 0);
         const { results } = await this.runBatch(
             t(this.i18n, "task.progress.codeBlocksToTabs"),
             toProcess,
-            async ({ group, items }) => {
+            async ({ group, items }, report) => {
                 const codeArr: CodeTab[] = items.map((item, index) => ({
                     title: item.title || `Tab${index + 1}`,
                     language: item.language || "plaintext",
@@ -798,23 +836,49 @@ export class TransformCore {
                         failedDeletes,
                     });
                 }
-            }
+                // 本组处理完成，按组内代码块数推进进度
+                report?.(items.length);
+            },
+            { totalUnits: totalCodeBlocks }
         );
 
         const success = results.filter((r) => r.status === "fulfilled").length;
         const failure = results.length - success + invalid.length;
+        // 成功合并的代码块数与标签页数（= 成功组数），供完成提示展示
+        let successCodeBlocks = 0;
+        toProcess.forEach((item, index) => {
+            if (results[index]?.status === "fulfilled") {
+                successCodeBlocks += item.items.length;
+            }
+        });
         if (success > 0) {
             this.onSuccess?.();
             pushMsg(
-                `${t(this.i18n, "msg.codeBlocksToTabsCompleted").replace("{0}", success.toString())}`
+                `${t(this.i18n, "msg.codeBlocksToTabsCompleted")
+                    .replace("{0}", successCodeBlocks.toString())
+                    .replace("{1}", success.toString())}`
             );
         }
         if (failure > 0) {
+            // 未合并的代码块数 = 失败组的代码块数 + 无效块数
+            let failureCodeBlocks = invalid.length;
+            toProcess.forEach((item, index) => {
+                if (results[index]?.status === "rejected") {
+                    failureCodeBlocks += item.items.length;
+                }
+            });
             pushMsg(
-                `${t(this.i18n, "msg.codeBlocksToTabsFailed").replace("{0}", failure.toString())}`
+                `${t(this.i18n, "msg.codeBlocksToTabsFailed").replace(
+                    "{0}",
+                    failureCodeBlocks.toString()
+                )}`
             );
         }
-        logger.info("拆分代码块 -> 标签页 合并统计", { success, failure });
+        logger.info("拆分代码块 -> 标签页 合并统计", {
+            success,
+            failure,
+            successCodeBlocks,
+        });
         return { success, failure };
     }
 
@@ -1032,7 +1096,8 @@ export class TransformCore {
         id: string,
         tabs: Array<{ title: string; lang: string; code: string }>,
         metadataId: string,
-        activeIndex: number
+        activeIndex: number,
+        report?: (completed: number) => void
     ): Promise<void> {
         let previousId = id;
         for (let index = 0; index < tabs.length; index++) {
@@ -1051,6 +1116,8 @@ export class TransformCore {
             }
             await setBlockAttrs(newId, { [CODE_TAB_SOURCE_ATTR]: TabData.encodeTabSource(source) });
             previousId = newId;
+            // 每插入一个代码块上报一次进度（供批量进度窗口按标签粒度刷新）
+            report?.(index + 1);
         }
         await deleteBlock(id);
         logger.info("标签页已拆分为代码块", { id, count: tabs.length, metadataId, activeIndex });

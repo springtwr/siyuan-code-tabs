@@ -1145,8 +1145,8 @@ export class TransformCore {
             pushMsg(messages.skippedDueToFormat.replace("{0}", String(skipped.length)));
         }
 
-        // 如果没有任何成功，且所有项都被跳过或无效
-        if (success === 0 && skipped.length + invalid.length > 0) {
+        // 没有任何成功且无可处理项（或被跳过/无效）时提示，如升级时文档中完全没有标签页
+        if (success === 0 && (skipped.length + invalid.length > 0 || toProcess.length === 0)) {
             pushMsg(messages.noItems);
         }
 

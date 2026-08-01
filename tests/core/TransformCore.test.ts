@@ -42,6 +42,16 @@ describe("TransformCore", () => {
         vi.clearAllMocks();
     });
 
+    it("upgradeAllTabs: 无标签页时给出提示", async () => {
+        vi.mocked(api.sql).mockResolvedValue([]);
+
+        const converter = new TransformCore(i18n);
+        const stats = await converter.upgradeAllTabs();
+
+        expect(stats.success).toBe(0);
+        expect(api.pushMsg).toHaveBeenCalledWith("msg.noTabsToUpgrade");
+    });
+
     it("codeToTabsBatch: 应转换符合语法的代码块", async () => {
         const block = document.createElement("div");
         block.dataset.nodeId = "block-1";

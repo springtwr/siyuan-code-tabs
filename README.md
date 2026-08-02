@@ -79,6 +79,15 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.3.0
+
+- Added "Document: Merge split code blocks into tabs" to restore code blocks split by document-level split (for share/import workflows)
+- Added metadata attributes to tab blocks and improved upgrade detection and flow
+- Show fine-grained progress for batch split/merge/upgrade operations
+- Editor panel: language hint and shortcut help, code comment shortcuts
+- Fixed language suggestion, Esc-to-close-search, tab block folding, and tabs being converted after document formatting
+- Fixed debug log toggle state lost after restart
+
 ### v2.2.2
 
 - Fixed drag-and-drop sorting not working in the editor panel

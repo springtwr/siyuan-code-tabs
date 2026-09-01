@@ -3,15 +3,19 @@ import type { Setting } from "siyuan";
 import { SettingsService } from "@/services/SettingsService";
 import { PLUGIN_STYLE_ID, TAB_WIDTH_DEFAULT, TAB_WIDTH_SETTING_KEY } from "@/constants";
 
-const createPanel = (data: Record<string, unknown>) =>
-    new SettingsService({
+const createPanel = (data: Record<string, unknown>) => {
+    const onApplyEscapeHtmlEnabled = vi.fn();
+    const panel = new SettingsService({
         i18n: {},
         data,
         onAllTabsToCodeBlocks: vi.fn(),
         onUpgradeLegacyTabs: vi.fn(),
         onSaveConfig: vi.fn().mockResolvedValue(undefined),
         buildDebugToggle: () => document.createElement("input"),
+        onApplyEscapeHtmlEnabled,
     });
+    return { panel, onApplyEscapeHtmlEnabled };
+};
 
 describe("SettingsService", () => {
     beforeEach(() => {
@@ -24,15 +28,16 @@ describe("SettingsService", () => {
 
     it("ensureSettings 填充默认配置", () => {
         const data: Record<string, unknown> = {};
-        const panel = createPanel(data);
+        const { panel } = createPanel(data);
         panel.ensureSettings();
         expect(data).toHaveProperty("codeTabsActiveColor", "");
         expect(data).toHaveProperty(TAB_WIDTH_SETTING_KEY);
+        expect(data).toHaveProperty("codeTabsEscapeHtml", false);
     });
 
     it("applySettings 应用默认宽度", () => {
         const data: Record<string, unknown> = {};
-        const panel = createPanel(data);
+        const { panel } = createPanel(data);
         panel.ensureSettings();
         panel.applySettings();
         const styleEl = document.getElementById(PLUGIN_STYLE_ID) as HTMLStyleElement | null;
@@ -43,17 +48,24 @@ describe("SettingsService", () => {
         const data: Record<string, unknown> = {
             [TAB_WIDTH_SETTING_KEY]: { mode: "auto", maxChars: 12 },
         };
-        const panel = createPanel(data);
+        const { panel } = createPanel(data);
         panel.applySettings();
         const styleEl = document.getElementById(PLUGIN_STYLE_ID) as HTMLStyleElement | null;
         expect(styleEl?.innerHTML).toContain("--code-tabs-max-width:none");
     });
 
+    it("applySettings 同步 escapeHtml 开关状态", () => {
+        const data: Record<string, unknown> = { codeTabsEscapeHtml: true };
+        const { panel, onApplyEscapeHtmlEnabled } = createPanel(data);
+        panel.applySettings();
+        expect(onApplyEscapeHtmlEnabled).toHaveBeenCalledWith(true);
+    });
+
     it("init 注册设置项", () => {
         const data: Record<string, unknown> = {};
-        const panel = createPanel(data);
+        const { panel } = createPanel(data);
         const addItem = vi.fn();
         panel.init({ addItem } as unknown as Setting);
-        expect(addItem).toHaveBeenCalledTimes(5);
+        expect(addItem).toHaveBeenCalledTimes(6);
     });
 });

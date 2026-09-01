@@ -25,6 +25,7 @@ export const EDITOR_TAB_SIZE_KEY = "codeTabsEditorTabSize";
 export const EDITOR_WORD_WRAP_KEY = "codeTabsEditorWordWrap";
 export const EDITOR_LINE_NUMBERS_KEY = "codeTabsEditorLineNumbers";
 export const DEBUG_ENABLED_KEY = "codeTabsDebugEnabled";
+export const ESCAPE_HTML_KEY = "codeTabsEscapeHtml";
 
 const ECHARTS_SCRIPTS = [
     {

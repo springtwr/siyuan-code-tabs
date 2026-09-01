@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TabRenderer } from "@/core/TabRenderer";
 import type { TabsData } from "@/types/tabs";
 
@@ -14,6 +14,10 @@ window.Lute = {
 };
 
 describe("TabRenderer", () => {
+    beforeEach(() => {
+        TabRenderer.setEscapeHtmlEnabled(false);
+    });
+
     it("createProtyleHtml 生成基础结构", async () => {
         const data: TabsData = {
             active: 0,
@@ -62,8 +66,8 @@ describe("TabRenderer", () => {
             tabs: [{ title: "A", lang: "plaintext", code: "a\n\n" }],
         };
         const html = await TabRenderer.createProtyleHtml(data);
-        // normalize 处理中间空行，markTrailingBlankLine 补充紧贴闭合标签的末尾空行
-        expect(html).toContain("a\n&#8203;\n&#8203;&lt;/div&gt;");
+        // 默认（关闭 escapeHtml）状态下，结构标签保持原样，仅空行以 &#8203; 实体标记
+        expect(html).toContain("a\n&#8203;\n&#8203;</div>");
     });
 
     it("createProtyleHtml 保留单个末尾空行", async () => {
@@ -72,7 +76,7 @@ describe("TabRenderer", () => {
             tabs: [{ title: "A", lang: "plaintext", code: "a\n" }],
         };
         const html = await TabRenderer.createProtyleHtml(data);
-        expect(html).toContain("a\n&#8203;&lt;/div&gt;");
+        expect(html).toContain("a\n&#8203;</div>");
     });
 
     it("createProtyleHtml 保留模板换行缩进且无结构空行", async () => {
@@ -81,24 +85,40 @@ describe("TabRenderer", () => {
             tabs: [{ title: "A", lang: "plaintext", code: "const a = 1;" }],
         };
         const html = await TabRenderer.createProtyleHtml(data);
-        // 节点间换行/缩进需保留（思源优化排版据此识别 HTML 块）
-        expect(html).toContain("\n&lt;div class=&quot;tabs-container&quot;&gt;");
-        expect(html).toContain("\n    &lt;div class=&quot;tabs-outer&quot;&gt;");
-        expect(html).toContain("\n        &lt;div class=&quot;tabs&quot;&gt;");
+        // 节点间换行/缩进需保留（思源优化排版据此识别 HTML 块）；
+        // 默认（关闭 escapeHtml）状态下结构标签保持原样
+        expect(html).toContain("\n<div class=\"tabs-container\">");
+        expect(html).toContain("\n    <div class=\"tabs-outer\">");
+        expect(html).toContain("\n        <div class=\"tabs\">");
         // 结构区不应存在空行（连续换行）
         const noBlank = html.split("\n").every((line) => line.trim() !== "");
         expect(noBlank).toBe(true);
     });
 
-    it("createProtyleHtml 代码中的特殊字符转义（锁定既有行为基线）", async () => {
+    it("createProtyleHtml 默认不转义特殊字符（锁定默认行为）", async () => {
         const data: TabsData = {
             active: 0,
             tabs: [{ title: "A", lang: "plaintext", code: "a < b && c" }],
         };
         const html = await TabRenderer.createProtyleHtml(data);
-        // 锁定当前多层转义行为（encodeTextNodes + innerHTML 序列化 + escapeHtml）；
-        // 若思源渲染侧对此显示异常，需另行调整转义链路
-        expect(html).toContain("a &amp;amp;lt; b &amp;amp;amp;&amp;amp;amp; c");
+        // 默认（关闭 escapeHtml）仅保留 encodeTextNodes + innerHTML 序列化后的实体
+        expect(html).toContain("a &amp;lt; b &amp;amp;&amp;amp; c");
+    });
+
+    it("createProtyleHtml 启用 escapeHtml 时整块转义（回归）", async () => {
+        TabRenderer.setEscapeHtmlEnabled(true);
+        try {
+            const data: TabsData = {
+                active: 0,
+                tabs: [{ title: "A", lang: "plaintext", code: "a < b && c" }],
+            };
+            const html = await TabRenderer.createProtyleHtml(data);
+            // 开启后对整块 HTML 做字符转义，结构标签与特殊字符均被二次转义
+            expect(html).toContain("a &amp;amp;lt; b &amp;amp;amp;&amp;amp;amp; c");
+            expect(html).toContain("&lt;div class=&quot;tabs-container&quot;&gt;");
+        } finally {
+            TabRenderer.setEscapeHtmlEnabled(false);
+        }
     });
 
     it("renderCode 解析 language-* class", async () => {

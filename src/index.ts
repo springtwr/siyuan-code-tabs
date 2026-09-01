@@ -11,6 +11,7 @@ import {
 } from "@/constants";
 import { TransformCore } from "@/core/TransformCore";
 import { TabsCore } from "@/core/TabsCore";
+import { TabRenderer } from "@/core/TabRenderer";
 import { LineNumberService } from "@/services/LineNumberService";
 import { DebugService } from "@/services/DebugService";
 import { LifecycleService } from "@/services/LifecycleService";
@@ -171,6 +172,7 @@ export default class CodeTabs extends Plugin {
             onUpgradeLegacyTabs: () => this.runUpgradeAllTabs(),
             onSaveConfig: () => this.configService.saveConfig(),
             buildDebugToggle: () => this.debugService.createToggle(),
+            onApplyEscapeHtmlEnabled: (enabled) => TabRenderer.setEscapeHtmlEnabled(enabled),
         });
         this.settingsService.ensureSettings();
         this.settingsService.applySettings();

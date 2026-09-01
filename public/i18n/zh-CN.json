@@ -18,6 +18,8 @@
   "setting.tabWidth.desc": "设置标签标题的宽度",
   "setting.tabWidth.auto": "自动",
   "setting.tabWidth.max": "最大宽度",
+  "setting.escapeHtml.title": "HTML 内容转义",
+  "setting.escapeHtml.desc": "如果生成的代码标签页显示原始 HTML 文本，请开启此开关并重新生成标签页。",
   "setting.upgradeLegacy.title": "升级标签页",
   "setting.upgradeLegacy.desc": "升级所有需要更新的标签页",
   "setting.upgradeLegacy.button": "升级",

@@ -10,6 +10,18 @@ import { getActiveEditor, Viz } from "siyuan";
  * 副作用：插入/删除临时块、触发库加载、生成 HTML 字符串。
  */
 export class TabRenderer {
+    private static escapeHtmlEnabled = false;
+
+    /**
+     * 设置是否对生成的 HTML 块内容进行字符转义。
+     * 上游思源版本对 HTML 块的解析行为不一致，需按环境切换。
+     * @param enabled 是否启用转义
+     * @returns void
+     */
+    static setEscapeHtmlEnabled(enabled: boolean): void {
+        this.escapeHtmlEnabled = enabled;
+    }
+
     /**
      * 生成 HTML 块内容（包含 tabs 结构与内容渲染）。
      * @param data tabs 数据
@@ -117,7 +129,10 @@ export class TabRenderer {
             .replace(/\n[ \t]*(?=\n)/g, "\n\u200b") // 中间空行
             .replace(/\n(?=<\/div>)/g, "\n\u200b"); // 末尾空行（紧贴 </div>）
         const rawHtml = containerDiv.innerHTML.replace(tabContents.innerHTML, () => tabHtml);
-        const escaped = this.escapeHtml(rawHtml).replace(/\u200b/g, "&#8203;");
+        const escaped = (this.escapeHtmlEnabled ? this.escapeHtml(rawHtml) : rawHtml).replace(
+            /\u200b/g,
+            "&#8203;"
+        );
         logger.debug("Tabs HTML 块生成完成", { html: escaped });
         return `<div>${escaped}</div>`;
     }

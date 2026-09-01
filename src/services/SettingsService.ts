@@ -1,6 +1,7 @@
 import { Setting } from "siyuan";
 
 import {
+    ESCAPE_HTML_KEY,
     PLUGIN_STYLE_ID,
     TAB_WIDTH_DEFAULT,
     TAB_WIDTH_MAX,
@@ -21,6 +22,7 @@ type SettingsPanelOptions = {
     onUpgradeLegacyTabs: () => void;
     onSaveConfig: () => Promise<void>;
     buildDebugToggle: () => HTMLInputElement;
+    onApplyEscapeHtmlEnabled: (enabled: boolean) => void;
 };
 
 /**
@@ -33,12 +35,14 @@ export class SettingsService {
     private readonly onUpgradeLegacyTabs: () => void;
     private readonly onSaveConfig: () => Promise<void>;
     private readonly buildDebugToggle: () => HTMLInputElement;
+    private readonly onApplyEscapeHtmlEnabled: (enabled: boolean) => void;
     private readonly activeColorKey = "codeTabsActiveColor";
     private readonly defaultActiveColor = "#7f6df2";
     private readonly tabWidthKey = TAB_WIDTH_SETTING_KEY;
     private activeColorInput?: HTMLInputElement;
     private tabWidthSelect?: HTMLSelectElement;
     private tabWidthInput?: HTMLInputElement;
+    private escapeHtmlToggle?: HTMLInputElement;
 
     constructor(options: SettingsPanelOptions) {
         this.i18n = options.i18n;
@@ -47,6 +51,7 @@ export class SettingsService {
         this.onUpgradeLegacyTabs = options.onUpgradeLegacyTabs;
         this.onSaveConfig = options.onSaveConfig;
         this.buildDebugToggle = options.buildDebugToggle;
+        this.onApplyEscapeHtmlEnabled = options.onApplyEscapeHtmlEnabled;
     }
 
     /**
@@ -80,6 +85,11 @@ export class SettingsService {
             actionElement: this.buildTabWidthSetting(),
         });
         setting.addItem({
+            title: `${t(this.i18n, "setting.escapeHtml.title")}`,
+            description: `${t(this.i18n, "setting.escapeHtml.desc")}`,
+            actionElement: this.buildEscapeHtmlToggle(),
+        });
+        setting.addItem({
             title: `${t(this.i18n, "setting.debug.title")}`,
             description: `${t(this.i18n, "setting.debug.desc")}`,
             actionElement: this.buildDebugToggle(),
@@ -93,6 +103,7 @@ export class SettingsService {
     ensureSettings(): void {
         this.ensureActiveColorSettings();
         this.ensureTabWidthSettings();
+        this.ensureEscapeHtmlSettings();
     }
 
     /**
@@ -102,6 +113,7 @@ export class SettingsService {
     applySettings(): void {
         this.applyActiveTabColors();
         this.applyTabWidthSetting();
+        this.onApplyEscapeHtmlEnabled(this.getEscapeHtmlEnabled());
     }
 
     /**
@@ -111,6 +123,7 @@ export class SettingsService {
     syncInputs(): void {
         this.syncActiveColorInputValue();
         this.syncTabWidthSettingInputs();
+        this.syncEscapeHtmlToggle();
     }
 
     private createSettingButton(textKey: string, onClick: () => void): HTMLButtonElement {
@@ -305,6 +318,44 @@ export class SettingsService {
             tabWidthStyleEnd,
         ].join("\n");
         styleEl.innerHTML = `${cleaned}\n${block}`.trim();
+    }
+
+    private ensureEscapeHtmlSettings(): void {
+        if (typeof this.data[ESCAPE_HTML_KEY] !== "boolean") {
+            this.data[ESCAPE_HTML_KEY] = false;
+        }
+    }
+
+    /**
+     * 构建“HTML 内容转义”开关配置项。
+     * @returns 开关元素
+     */
+    private buildEscapeHtmlToggle(): HTMLInputElement {
+        const toggle = document.createElement("input");
+        toggle.type = "checkbox";
+        toggle.className = "b3-switch";
+        toggle.checked = this.getEscapeHtmlEnabled();
+        toggle.addEventListener("change", () => {
+            this.data[ESCAPE_HTML_KEY] = toggle.checked;
+            this.onApplyEscapeHtmlEnabled(toggle.checked);
+            this.saveConfig();
+        });
+        this.escapeHtmlToggle = toggle;
+        return toggle;
+    }
+
+    /**
+     * 同步 HTML 转义开关控件状态。
+     * @returns void
+     */
+    private syncEscapeHtmlToggle(): void {
+        if (this.escapeHtmlToggle) {
+            this.escapeHtmlToggle.checked = this.getEscapeHtmlEnabled();
+        }
+    }
+
+    private getEscapeHtmlEnabled(): boolean {
+        return this.data[ESCAPE_HTML_KEY] === true;
     }
 
     private getPluginStyleElement(): HTMLStyleElement | null {

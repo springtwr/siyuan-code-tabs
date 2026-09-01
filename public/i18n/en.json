@@ -18,6 +18,8 @@
   "setting.tabWidth.desc": "Set tab title width",
   "setting.tabWidth.auto": "Auto",
   "setting.tabWidth.max": "Max width",
+  "setting.escapeHtml.title": "Escape HTML content",
+  "setting.escapeHtml.desc": "If generated code tabs show raw HTML text, enable this toggle and regenerate the tabs.",
   "setting.upgradeLegacy.title": "Upgrade tabs",
   "setting.upgradeLegacy.desc": "Upgrade all tabs that need updating",
   "setting.upgradeLegacy.button": "Upgrade",

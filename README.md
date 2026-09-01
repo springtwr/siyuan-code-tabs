@@ -79,6 +79,11 @@ A SiYuan plugin that organizes multi-language code into clean, switchable tabs.
 
 ## Changelog
 
+### v2.3.1
+
+- Added an "Escape HTML content" toggle in settings to control whether tab-generated HTML block content is character-escaped (disabled by default)
+- Compatible with differences in how SiYuan versions parse HTML blocks: if generated tabs show raw HTML text, enable this toggle and regenerate
+
 ### v2.3.0
 
 - Added "Document: Merge split code blocks into tabs" to restore code blocks split by document-level split (for share/import workflows)
